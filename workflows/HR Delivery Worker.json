@@ -1,0 +1,766 @@
+{
+  "name": "HR Delivery Worker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        5168,
+        1728
+      ],
+      "id": "9e577b00-5346-4c45-b5e4-89d383147ab9",
+      "name": "Schedule Trigger: deliver pending outbox"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH picked AS (\n    SELECT id\n    FROM outbox\n    WHERE status = 'pending'\n      AND channel = 'telegram'\n    ORDER BY created_at ASC\n    LIMIT 1\n    FOR UPDATE SKIP LOCKED\n),\nupdated AS (\n    UPDATE outbox o\n    SET status = 'sending'\n    FROM picked\n    WHERE o.id = picked.id\n    RETURNING\n        o.id AS outbox_id,\n        o.intake_event_id,\n        o.candidate_id,\n        o.channel,\n        o.recipient,\n        o.message_type,\n        o.body,\n        o.reply_markup,\n        o.metadata,\n        o.status\n)\nSELECT\n    updated.*,\n    bc.bot_token\nFROM updated\nJOIN bot_credentials bc\n    ON bc.bot_code = 'hr_assistant';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        5408,
+        1728
+      ],
+      "id": "32cb9384-0658-4b5e-b8e6-ab3bfd0eb9d5",
+      "name": "PG: claim pending outbox",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d199180d-c147-4215-a4e2-808c419e5cf2",
+              "leftValue": "={{ Boolean($json.outbox_id) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        5648,
+        1728
+      ],
+      "id": "52016804-ed56-4cd4-8eee-6122df7fb6e3",
+      "name": "IF: has pending outbox?"
+    },
+    {
+      "parameters": {
+        "jsCode": "let metadata = $json.metadata || {};\n\nif (typeof metadata === 'string') {\n  try {\n    metadata = JSON.parse(metadata);\n  } catch (e) {\n    metadata = {};\n  }\n}\n\nreturn [{\n  json: {\n    ...$json,\n    metadata,\n    outbox_id: $json.outbox_id,\n    response_recipient: $json.recipient,\n    response_body: $json.body,\n    reply_markup: $json.reply_markup || null,\n    bot_token: $json.bot_token,\n    chat_id: $json.recipient,\n\n    tts_required: Boolean(metadata.tts_required),\n    tts_text: metadata.tts_text || null,\n\n    visual_required: Boolean(metadata.visual_required),\n    visual_prompt: metadata.visual_prompt || null,\n    visual_title: metadata.visual_title || null,\n    visual_score: metadata.visual_score ?? null,\n    visual_candidate_name: metadata.visual_candidate_name || null,\n    visual_vacancy_title: metadata.visual_vacancy_title || null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5888,
+        1728
+      ],
+      "id": "78e212e6-f35b-4352-b4f0-4757a7bb1e0e",
+      "name": "Build context after outbox"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE outbox\n    SET\n        status = 'sent',\n        sent_at = now()\n    WHERE id = '{{ $(\"Build context after outbox\").first().json.outbox_id }}'\n    RETURNING\n        id,\n        intake_event_id,\n        candidate_id,\n        recipient,\n        message_type,\n        body,\n        metadata,\n        status,\n        sent_at\n),\nlogged AS (\n    SELECT log_processing_event(\n        'delivery_worker',\n        updated.intake_event_id,\n        'response_sent',\n        updated.status,\n        'Telegram response sent and outbox marked as sent',\n        NULL,\n        1\n    )\n    FROM updated\n)\nSELECT\n    updated.id AS outbox_id,\n    updated.intake_event_id,\n    updated.candidate_id,\n    updated.recipient,\n    updated.message_type,\n    updated.body,\n    updated.metadata,\n    updated.status,\n    updated.sent_at\nFROM updated\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        6336,
+        1728
+      ],
+      "id": "94ace05e-c1cd-480d-aa23-567cc9a351c6",
+      "name": "PG: mark outbox sent",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $json.bot_token + '/sendMessage' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  chat_id: $json.response_recipient,\n  text: $json.response_body,\n  reply_markup: $json.reply_markup || undefined\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6112,
+        1728
+      ],
+      "id": "a9ca3ced-6e21-4d9e-83b1-6f9beb9354d0",
+      "name": "HTTP: Telegram sendMessage",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE outbox\n    SET\n        status = 'error',\n        error_text = '{{ JSON.stringify($json).replace(/'/g, \"''\") }}'\n    WHERE id = '{{ $(\"Build context after outbox\").first().json.outbox_id }}'\n    RETURNING id, intake_event_id, candidate_id, status, error_text\n),\nlogged AS (\n    SELECT log_processing_event(\n        'delivery_worker',\n        updated.intake_event_id,\n        'delivery_error',\n        'error',\n        'Telegram delivery failed for outbox_id=' || updated.id,\n        updated.error_text,\n        1\n    )\n    FROM updated\n)\nSELECT updated.id, updated.status, updated.error_text\nFROM updated\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        6352,
+        1920
+      ],
+      "id": "9ea49e23-7b21-4faf-8cd0-a03831159014",
+      "name": "PG: mark outbox error",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3a2974e8-3438-45c4-a5d7-f84f1b46b542",
+              "leftValue": "={{ $json.tts_required === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6784,
+        1632
+      ],
+      "id": "a8162f66-f4f1-4d54-b474-9773c8519149",
+      "name": "IF: should send TTS?"
+    },
+    {
+      "parameters": {
+        "jsCode": "let metadata = $json.metadata || {};\n\nif (typeof metadata === 'string') {\n  try {\n    metadata = JSON.parse(metadata);\n  } catch (e) {\n    metadata = {};\n  }\n}\n\nconst body = String($json.body || '');\nlet ttsText = String($json.tts_text || metadata.tts_text || '');\n\nif (!ttsText.trim()) {\n  ttsText = body\n    .replace(/\\n+/g, ' ')\n    .replace(/[•📊💼📝✅ℹ️📞🔄📄]/g, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nif (ttsText.length > 500) {\n  ttsText = ttsText.slice(0, 500) + '...';\n}\n\nreturn [{\n  json: {\n    ...$json,\n    outbox_id: $json.outbox_id,\n    intake_event_id: $json.intake_event_id,\n    candidate_id: $json.candidate_id,\n    recipient: $json.recipient,\n    bot_token: $json.bot_token || $('Build context after outbox').first().json.bot_token,\n    tts_required: $json.tts_required,\n    visual_required: $json.visual_required,\n    visual_prompt: $json.visual_prompt,\n    visual_title: $json.visual_title,\n    visual_score: $json.visual_score,\n    visual_candidate_name: $json.visual_candidate_name,\n    visual_vacancy_title: $json.visual_vacancy_title,\n    tts_text: ttsText || 'Результат анализа готов.'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7104,
+        1616
+      ],
+      "id": "cc88c50c-eaa0-417d-8d4c-13f07d366e9e",
+      "name": "Build TTS payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/speech",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-4o-mini-tts', voice: 'alloy', input: $json.tts_text, response_format: 'mp3' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7312,
+        1616
+      ],
+      "id": "9acafdb4-c369-44a3-a209-a3d90d1871ea",
+      "name": "HTTP: OpenAI TTS",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $('Build TTS payload').first().json.bot_token + '/sendAudio' }}",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Build TTS payload').first().json.recipient }}"
+            },
+            {
+              "name": "caption",
+              "value": "🎧 Голосовая версия результата"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "audio",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7536,
+        1600
+      ],
+      "id": "197f158f-6ee4-4448-af15-638888ec4252",
+      "name": "HTTP: Telegram send TTS audio",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT log_processing_event(\n    'delivery_worker',\n    NULLIF('{{ $(\"Build TTS payload\").first().json.intake_event_id || \"\" }}', '')::uuid,\n    'tts_sent',\n    'success',\n    'TTS audio sent to Telegram',\n    NULL,\n    1\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        7776,
+        1584
+      ],
+      "id": "6b1a5b41-ec19-4324-89d3-bb59518d8c1f",
+      "name": "PG: log TTS sent",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT log_processing_event(\n    'delivery_worker',\n    NULLIF('{{ $(\"Build TTS payload\").first().json.intake_event_id || \"\" }}', '')::uuid,\n    'tts_error',\n    'error',\n    'TTS audio generation or delivery failed',\n    '{{ JSON.stringify($json).replace(/'/g, \"''\") }}',\n    1\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        7776,
+        1744
+      ],
+      "id": "cdcac2d2-d11f-4688-8d20-e0e963bae5dc",
+      "name": "PG: log TTS error",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "60b08790-37f8-475e-b07d-932b5b120ca3",
+              "leftValue": "={{ $json.visual_required === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6784,
+        1824
+      ],
+      "id": "0a78deea-680c-4bab-8aca-ab4796a7e73d",
+      "name": "IF: should send visual?"
+    },
+    {
+      "parameters": {
+        "jsCode": "let metadata = $json.metadata || {};\n\nif (typeof metadata === 'string') {\n  try {\n    metadata = JSON.parse(metadata);\n  } catch (e) {\n    metadata = {};\n  }\n}\n\nconst fallbackPrompt =\n  'Современная HR-карточка результата подбора. ' +\n  'Сделай чистую корпоративную инфографику по результату анализа резюме. ' +\n  'Стиль: светлый фон, аккуратный UI, технологичный HR AI assistant. ' +\n  'Без мелкого текста и без перегруженных деталей.';\n\nconst visualPrompt = String(\n  $json.visual_prompt ||\n  metadata.visual_prompt ||\n  fallbackPrompt\n).trim();\n\nreturn [{\n  json: {\n    ...$json,\n\n    outbox_id: $json.outbox_id,\n    intake_event_id: $json.intake_event_id,\n    candidate_id: $json.candidate_id,\n    recipient: $json.recipient,\n\n    bot_token:\n      $json.bot_token ||\n      $('Build context after outbox').first().json.bot_token,\n\n    visual_prompt: visualPrompt,\n\n    visual_title:\n      $json.visual_title ||\n      metadata.visual_title ||\n      null,\n\n    visual_score:\n      $json.visual_score ??\n      metadata.visual_score ??\n      null,\n\n    visual_candidate_name:\n      $json.visual_candidate_name ||\n      metadata.visual_candidate_name ||\n      null,\n\n    visual_vacancy_title:\n      $json.visual_vacancy_title ||\n      metadata.visual_vacancy_title ||\n      null,\n\n    image_body: {\n      model: 'gpt-image-1',\n      prompt: visualPrompt,\n      size: '1024x1024'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7104,
+        1872
+      ],
+      "id": "2d8b2668-d55d-4e48-9ab8-d5d2465e191e",
+      "name": "Build visual payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  model: 'gpt-image-1',\n  prompt: $json.visual_prompt,\n  size: '1024x1024',\n  output_format: 'png'\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7312,
+        1936
+      ],
+      "id": "63f39ff3-5f21-4698-9ed9-204acd56c673",
+      "name": "HTTP: OpenAI Image generation",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b64 =\n  $json.data?.[0]?.b64_json ||\n  $json.data?.[0]?.image_base64 ||\n  $json.b64_json ||\n  '';\n\nif (!b64) {\n  throw new Error('OpenAI image response does not contain base64 image');\n}\n\nconst ctx = $('Build visual payload').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    visual_image_ready: true\n  },\n  binary: {\n    data: {\n      data: b64,\n      mimeType: 'image/png',\n      fileName: 'hr_result_card.png'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7536,
+        1920
+      ],
+      "id": "e0da6b3c-a9fb-4662-940c-d9b7028115ef",
+      "name": "Convert image base64 to binary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $('Build visual payload').first().json.bot_token + '/sendPhoto' }}",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Build visual payload').first().json.recipient }}"
+            },
+            {
+              "name": "caption",
+              "value": "🖼 Визуальная карточка результата"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "photo",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7776,
+        1920
+      ],
+      "id": "255a5db4-9694-4769-9c62-8abe9f59f336",
+      "name": "HTTP: Telegram send visual photo",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT log_processing_event(\n    'delivery_worker',\n    NULLIF('{{ $(\"Build visual payload\").first().json.intake_event_id || \"\" }}', '')::uuid,\n    'visual_sent',\n    'success',\n    'Visual result card sent to Telegram',\n    NULL,\n    1\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        8016,
+        1904
+      ],
+      "id": "9d2e8f2c-2c39-4c69-83a8-6c2f76799a8b",
+      "name": "PG: log visual sent",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT log_processing_event(\n    'delivery_worker',\n    NULLIF('{{ $(\"Build visual payload\").first().json.intake_event_id || \"\" }}', '')::uuid,\n    'visual_error',\n    'error',\n    'Visual result card generation or delivery failed',\n    '{{ JSON.stringify($json).replace(/'/g, \"''\") }}',\n    1\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        8016,
+        2096
+      ],
+      "id": "944cb195-2f9e-41c1-b0f6-65524fe117d3",
+      "name": "PG: log visual error",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sent = $json;\n\nconst source = $('Build context after outbox').first().json || {};\n\nconst metadata = source.metadata || {};\n\nreturn [{\n  json: {\n    ...source,\n    ...sent,\n\n    outbox_id: source.outbox_id,\n    intake_event_id: source.intake_event_id,\n    candidate_id: source.candidate_id,\n    recipient: source.recipient,\n    message_type: source.message_type,\n    body: source.body,\n    metadata,\n\n    tts_required:\n      metadata.tts_required === true ||\n      metadata.tts_required === 'true',\n\n    tts_text:\n      metadata.tts_text ||\n      source.body ||\n      '',\n\n    visual_required:\n      metadata.visual_required === true ||\n      metadata.visual_required === 'true',\n\n    visual_prompt:\n      metadata.visual_prompt ||\n      source.body ||\n      '',\n\n    visual_title:\n      metadata.visual_title ||\n      null,\n\n    visual_score:\n      metadata.visual_score ?? null,\n\n    visual_candidate_name:\n      metadata.visual_candidate_name ||\n      null,\n\n    visual_vacancy_title:\n      metadata.visual_vacancy_title ||\n      null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6560,
+        1728
+      ],
+      "id": "863a77b9-f6c3-48fd-b75f-88fbeaae3df6",
+      "name": "Build multimodal context"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger: deliver pending outbox": {
+      "main": [
+        [
+          {
+            "node": "PG: claim pending outbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: claim pending outbox": {
+      "main": [
+        [
+          {
+            "node": "IF: has pending outbox?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: has pending outbox?": {
+      "main": [
+        [
+          {
+            "node": "Build context after outbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after outbox": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Telegram sendMessage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Telegram sendMessage": {
+      "main": [
+        [
+          {
+            "node": "PG: mark outbox sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: mark outbox error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: mark outbox sent": {
+      "main": [
+        [
+          {
+            "node": "Build multimodal context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: should send TTS?": {
+      "main": [
+        [
+          {
+            "node": "Build TTS payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Build TTS payload": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI TTS": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Telegram send TTS audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log TTS error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Telegram send TTS audio": {
+      "main": [
+        [
+          {
+            "node": "PG: log TTS sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log TTS error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: log TTS sent": {
+      "main": [
+        []
+      ]
+    },
+    "PG: log TTS error": {
+      "main": [
+        []
+      ]
+    },
+    "IF: should send visual?": {
+      "main": [
+        [
+          {
+            "node": "Build visual payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build visual payload": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI Image generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI Image generation": {
+      "main": [
+        [
+          {
+            "node": "Convert image base64 to binary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log visual error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert image base64 to binary": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Telegram send visual photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Telegram send visual photo": {
+      "main": [
+        [
+          {
+            "node": "PG: log visual sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log visual error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build multimodal context": {
+      "main": [
+        [
+          {
+            "node": "IF: should send TTS?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF: should send visual?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "1X2n7ogsTWUwNL3l",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "66440ce3-9393-45c1-8ef8-21788aaf38c1",
+  "meta": {
+    "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
+  },
+  "id": "0suumtBRHrMdsC2C",
+  "tags": []
+}

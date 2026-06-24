@@ -1,0 +1,70 @@
+{
+  "name": "HR Queue Watchdog - outbox",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        -128
+      ],
+      "id": "5156644e-905a-475c-846e-ef424eb61c93",
+      "name": "Schedule Trigger: reset stuck outbox"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE outbox\n    SET status = 'pending'\n    WHERE status = 'sending'\n      AND created_at < now() - interval '10 minutes'\n    RETURNING id, intake_event_id, candidate_id, status\n)\nSELECT COUNT(*) AS reset_count\nFROM updated;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        -128
+      ],
+      "id": "10df330e-b018-4b24-a215-62299811e02e",
+      "name": "PG: reset stuck outbox",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger: reset stuck outbox": {
+      "main": [
+        [
+          {
+            "node": "PG: reset stuck outbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "43eb882b-99e3-44a9-a130-12e77e7095a6",
+  "meta": {
+    "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
+  },
+  "id": "NtusuY19gWvdPVwv",
+  "tags": []
+}

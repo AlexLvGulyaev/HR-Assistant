@@ -1,0 +1,525 @@
+{
+  "name": "HR Generate Video",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        736
+      ],
+      "id": "86542bb4-5488-4611-83b8-1fbc3d7a6119",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        960
+      ],
+      "id": "401999d9-b047-4a03-9356-9103cbacccc5",
+      "name": "Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first()?.json || {};\n\nconst chatId = String(\n  input.chat_id ||\n  input.response_recipient ||\n  input.recipient ||\n  '331349444'\n);\n\nconst rawPrompt =\n`Short vertical video of a modern analytics interface.\n\nScene:\nA clean digital dashboard appears on screen.\nA progress bar smoothly fills from 0 to 100 percent.\n\nVisual style:\nminimal corporate UI, white background,\nsoft shadows, blue and cyan accents,\nno people, no faces, no personal data.\n\nAnimation:\nsmooth transitions, light zoom-in,\nfocused on the dashboard and progress indicator.\n\nAtmosphere:\nhigh-tech, calm, professional.`;\n\nconst safePrompt = rawPrompt\n  .replace(/candidate/gi, 'profile')\n  .replace(/HR/gi, 'analytics')\n  .replace(/hiring/gi, 'evaluation')\n  .replace(/resume/gi, 'data')\n  .trim();\n\nreturn [{\n  json: {\n    ...input,\n    execution_id: input.execution_id || ($execution.id + '_' + Date.now()),\n    source: input.source || 'video_request',\n    chat_id: chatId,\n\n    candidate_name: input.candidate_name || 'demo_profile',\n    vacancy_title: input.vacancy_title || 'analytics_result',\n    score: input.score ?? 100,\n\n    video_required: true,\n    video_prompt: safePrompt\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        736
+      ],
+      "id": "3c36acfd-ac82-4cda-a7f9-25ad65bf75ce",
+      "name": "Build video context"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  model: 'sora-2',\n  prompt: $json.video_prompt,\n  seconds: '4',\n  size: '720x1280'\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -688,
+        736
+      ],
+      "id": "cabae1ef-9187-4ea9-9cbe-802a659732e7",
+      "name": "HTTP: OpenAI create video",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const videoId = $json.id || $json.video?.id || null;\n\nif (!videoId) {\n  throw new Error('OpenAI video id is missing');\n}\n\nconst ctx = $('Build video context').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    video_id: videoId,\n    video_status: $json.status || 'queued',\n    poll_attempt: 1,\n    max_poll_attempts: 20\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        736
+      ],
+      "id": "0b4d25b9-cd9d-4413-8b51-85c484dd9846",
+      "name": "Build video polling context"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        736
+      ],
+      "id": "572d50ca-4877-4598-9a6e-51e85e1defbb",
+      "name": "Wait: before video status check",
+      "webhookId": "1f2271da-e775-4f1a-ac73-089e04e18491"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openai.com/v1/videos/{{$json.video_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        32,
+        736
+      ],
+      "id": "034250fa-bba9-4803-a544-cc7ca898a744",
+      "name": "HTTP: OpenAI get video status",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Build video polling context').first().json;\n\nreturn [{\n  json: {\n    ...prev,\n    video_status: $json.status || 'unknown',\n    video_response: $json,\n    poll_attempt: Number($json.poll_attempt || prev.poll_attempt || 1)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        736
+      ],
+      "id": "3930af2a-18bd-4d7f-834a-dd472a9580dc",
+      "name": "Build video status context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ec1b19fc-bc5f-4b3d-9de4-291d12ff288a",
+              "leftValue": "={{ $json.video_status === 'completed' || $json.video_status === 'succeeded' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        736
+      ],
+      "id": "8ad41fc5-780e-441d-86a7-5318fe3fe632",
+      "name": "IF: video completed?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ea7ef5de-1e9e-4e61-8b5c-282a7792fb47",
+              "leftValue": "={{ Number($json.poll_attempt || 1) < Number($json.max_poll_attempts || 20) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        752,
+        896
+      ],
+      "id": "f643e061-09b1-4af2-b061-d585cba77b13",
+      "name": "IF: can continue polling?"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    poll_attempt: Number($json.poll_attempt || 1) + 1\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        896
+      ],
+      "id": "a15b0481-e8dd-4204-b2dc-937c46694322",
+      "name": "Increment poll attempt"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openai.com/v1/videos/{{$json.video_id}}/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        752,
+        576
+      ],
+      "id": "fddc75f5-ac1f-4515-828a-99d5b6dfee6c",
+      "name": "HTTP: OpenAI download video",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $('Build video context').first().json.chat_id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "🎬 Видео-версия результата анализа"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        576
+      ],
+      "id": "4573147d-17fd-4967-8da0-df608c1b2b15",
+      "name": "TG: send generated video",
+      "webhookId": "9cfcf9ae-a242-4806-9e4a-515ddc1609f1",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fi6LudeVjIxVCbK3",
+          "name": "Pem05"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT log_processing_event(\n  '{{ $(\"Build video context\").first().json.execution_id }}',\n  NULL,\n  'video_sent',\n  'success',\n  'Generated HR result video sent to Telegram',\n  NULL,\n  1\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1232,
+        576
+      ],
+      "id": "86a7b9e9-53ce-4915-9e44-37b53432d572",
+      "name": "PG: log video sent",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT log_processing_event(\n  '{{ $(\"Build video context\").first().json.execution_id || \"video_workflow\" }}',\n  NULL,\n  'video_error',\n  'error',\n  'Video generation or delivery failed',\n  '{{ JSON.stringify($json).replace(/'/g, \"''\") }}',\n  1\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1232,
+        896
+      ],
+      "id": "83ba0f80-307c-4938-a35f-c218c5d2130e",
+      "name": "PG: log video error",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build video context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build video context": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI create video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI create video": {
+      "main": [
+        [
+          {
+            "node": "Build video polling context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log video error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build video polling context": {
+      "main": [
+        [
+          {
+            "node": "Wait: before video status check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait: before video status check": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI get video status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI get video status": {
+      "main": [
+        [
+          {
+            "node": "Build video status context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log video error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build video status context": {
+      "main": [
+        [
+          {
+            "node": "IF: video completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: video completed?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI download video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: can continue polling?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: can continue polling?": {
+      "main": [
+        [
+          {
+            "node": "Increment poll attempt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log video error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment poll attempt": {
+      "main": [
+        [
+          {
+            "node": "Wait: before video status check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI download video": {
+      "main": [
+        [
+          {
+            "node": "TG: send generated video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log video error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG: send generated video": {
+      "main": [
+        [
+          {
+            "node": "PG: log video sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: log video error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build video context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "90db224d-8ad4-4487-9467-9cc874c8423c",
+  "meta": {
+    "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
+  },
+  "id": "PCHnZjzQxCu1T78c",
+  "tags": []
+}

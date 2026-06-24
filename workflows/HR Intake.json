@@ -1,0 +1,1833 @@
+{
+  "name": "HR Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        19760,
+        9680
+      ],
+      "id": "a4cae0d5-69ce-499c-bc39-3de0838798f3",
+      "name": "Telegram Trigger1",
+      "webhookId": "6bb3bdfc-91cc-44fa-8e9b-9004882f8d6c",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fi6LudeVjIxVCbK3",
+          "name": "Pem05"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const isCallback = Boolean($json.callback_query);\n\nconst callback = $json.callback_query || null;\nconst message = isCallback\n  ? (callback.message || {})\n  : ($json.message || {});\n\nconst text = isCallback\n  ? String(callback.data || '').trim()\n  : String(message.text || '').trim();\n\nconst inputType = isCallback ? 'callback'\n  : message.voice ? 'voice'\n  : message.photo ? 'image'\n  : message.document ? 'document'\n  : 'text';\n\n// КРИТИЧЕСКИЙ ФИКС:\n// Для обычных сообщений используем message_id.\n// Для callback используем callback.id, потому что message.message_id у кнопки повторяется.\nconst externalMessageId = isCallback\n  ? 'callback:' + String(callback.id || '')\n  : 'message:' + String(message.message_id || '');\n\nreturn [{\n  json: {\n    execution_id: $execution.id + '_' + Date.now(),\n    source: 'telegram',\n    input_type: inputType,\n\n    // Это поле дальше уходит в intake_events.external_message_id\n    message_id: externalMessageId,\n\n    chat_id: message.chat?.id || null,\n    user_id: isCallback ? (callback.from?.id || null) : (message.from?.id || null),\n\n    text,\n    callback_data: isCallback ? text : null,\n    is_callback: isCallback,\n    is_command: !isCallback && text.startsWith('/'),\n\n    raw: $json\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        19984,
+        9680
+      ],
+      "id": "669f2129-833a-45f9-88ab-78136d6a3e84",
+      "name": "Init execution context"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO intake_events (\n      execution_id,\n      source,\n      input_type,\n      external_message_id,\n      telegram_chat_id,\n      telegram_user_id,\n      raw_payload,\n      status\n    )\n    VALUES (\n      '{{ $json.execution_id }}',\n      '{{ $json.source }}',\n      '{{ $json.input_type }}',\n      '{{ $json.message_id }}',\n      {{ $json.chat_id }},\n      {{ $json.user_id }},\n      '{{ JSON.stringify($json.raw).replace(/'/g, \"''\") }}'::jsonb,\n      CASE\n        WHEN {{ $json.is_command }} THEN 'ignored_command'\n        WHEN {{ $json.is_callback }} THEN 'ignored_callback'\n        ELSE 'received'\n      END\n    )\n    RETURNING id, execution_id, status\n),\nlogged AS (\n    SELECT log_processing_event(\n        inserted.execution_id,\n        inserted.id,\n        'intake_received',\n        inserted.status,\n        'Telegram input saved to intake_events',\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT inserted.id, inserted.execution_id, inserted.status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        20192,
+        9680
+      ],
+      "id": "3d9bf8ca-f07b-41af-8c31-703675ac4d35",
+      "name": "Postgres: INSERT intake_events",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Init execution context').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    intake_event_id: $json.id || null,\n    intake_status: $json.status || null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20416,
+        9680
+      ],
+      "id": "82afbfb9-7add-4e5a-aa3d-d573cd07dd5c",
+      "name": "Build context after intake insert"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2fe692d1-d2c6-4f13-a4f8-0755b2ba9311",
+              "leftValue": "={{ $json.is_callback }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        20640,
+        9680
+      ],
+      "id": "0c0ea05c-a262-4c19-97f1-638817401e51",
+      "name": "IF: это callback?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0cfab182-51f5-49a9-923a-040396a3f447",
+              "leftValue": "={{ $json.is_command }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        20880,
+        9680
+      ],
+      "id": "52aa3f82-9bb4-432d-b569-018a7a77498a",
+      "name": "TG: это команда?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "42c6f04e-38ab-4bbc-8a22-be193ff0cab5",
+                    "leftValue": "={{ $json.callback_data }}",
+                    "rightValue": "help",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "help"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e50bef90-605d-4599-848d-25851a60b613",
+                    "leftValue": "={{ $json.callback_data }}",
+                    "rightValue": "about",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "about"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "df941bc3-7086-4cc6-9c73-275c02803bac",
+                    "leftValue": "={{ $json.callback_data }}",
+                    "rightValue": "restart",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "restart"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "12fa8125-c348-4e86-a79b-5290e8529628",
+                    "leftValue": "={{ $json.callback_data }}",
+                    "rightValue": "apply",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "apply"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "86d02a51-a71b-464f-8421-15fcbf9cbd7d",
+                    "leftValue": "={{ $json.callback_data }}",
+                    "rightValue": "next",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "next"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "52a7edff-8821-4c6b-9387-dd62d04f0068",
+                    "leftValue": "={{ $json.callback_data }}",
+                    "rightValue": "video",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "video"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        20880,
+        9424
+      ],
+      "id": "78207a6e-ddb5-4c2a-8c78-be365494e0f9",
+      "name": "Switch: callback"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: String($json.chat_id),\n    response_message_type: 'help',\n    response_body:\n`📄 Как отправить резюме\n\nМожно прислать:\n• текст обычным сообщением\n• PDF или DOCX\n• фото резюме\n• голосовое сообщение\n\nЯ приведу данные к тексту, извлеку профиль кандидата и сравню его с открытыми вакансиями.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21104,
+        8688
+      ],
+      "id": "d9612ffd-638d-4673-848d-028146ed35c4",
+      "name": "Build TG help response"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: String($json.chat_id),\n    response_message_type: 'about',\n    response_body:\n`💼 О проекте\n\nЭто мультимодальный HR-ассистент.\n\nОн принимает резюме в разных форматах, приводит их к единому виду, анализирует данные кандидата и подбирает наиболее подходящую вакансию.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21104,
+        8848
+      ],
+      "id": "583de482-2771-40be-bde7-74ea41635af9",
+      "name": "Build TG about response"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: String($json.chat_id),\n    response_message_type: 'restart',\n    response_body:\n`📄 Готов принять новое резюме.\n\nОтправьте его текстом, файлом PDF/DOCX, фото или голосовым сообщением.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21104,
+        8992
+      ],
+      "id": "20bce8f2-9e95-401d-ba63-69b3dacb0dfe",
+      "name": "Build TG restart response"
+    },
+    {
+      "parameters": {
+        "jsCode": "const command = ($json.text || '').trim();\n\nlet body;\nlet telegram_reply_markup = null;\n\nif (command === '/start') {\n  body =\n    'Привет! Я HR-ассистент 🤖\\n\\n' +\n    'Отправьте резюме любым удобным способом:\\n' +\n    '• текстом\\n' +\n    '• PDF / DOCX\\n' +\n    '• фото\\n' +\n    '• голосовым сообщением\\n\\n' +\n    'Я извлеку данные кандидата и подберу подходящую вакансию.';\n\n  telegram_reply_markup = {\n    inline_keyboard: [\n      [\n        { text: '📄 Как отправить резюме', callback_data: 'help' }\n      ],\n      [\n        { text: '💼 О проекте', callback_data: 'about' }\n      ]\n    ]\n  };\n} else if (command === '/help') {\n  body =\n    '📄 Как пользоваться HR-ассистентом:\\n\\n' +\n    '1. Пришлите резюме текстом, PDF/DOCX, фото или голосом.\\n' +\n    '2. Я извлеку ФИО, город, должность, опыт, навыки, контакты и зарплатные ожидания.\\n' +\n    '3. Затем сравню кандидата с открытыми вакансиями.\\n' +\n    '4. В ответе верну подходящую вакансию или сообщение, что подходящей позиции пока нет.';\n} else {\n  body =\n    'Команда получена. Для проверки пришлите резюме обычным сообщением, файлом PDF/DOCX, фото или голосом.';\n}\n\nreturn [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: $json.chat_id ? String($json.chat_id) : null,\n    response_message_type: 'command',\n    response_subject: null,\n    response_body: body,\n    telegram_reply_markup\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21104,
+        9664
+      ],
+      "id": "3e50c088-1fe4-4e8e-9259-1c9aca2c7758",
+      "name": "Build TG command response"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9b0b3333-a0ce-482a-9f6f-691b423074b5",
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "48461b57-3d69-42a4-be32-d6f59ad26a91",
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "voice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "eeccfe58-8029-4aa4-bcb3-5418ad0b0f86",
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "document",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "document"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "65d57096-ce8c-4e80-83a4-966b00d450ae",
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        21120,
+        9824
+      ],
+      "id": "dc7bcfbd-0ff5-4071-99a5-5b1c6e9d5324",
+      "name": "Switch: input type"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO candidate_inputs (\n        intake_event_id,\n        execution_id,\n        source,\n        input_type,\n        original_text,\n        normalized_text,\n        processing_status\n    )\n    VALUES (\n        '{{ $json.intake_event_id }}',\n        '{{ $json.execution_id }}',\n        '{{ $json.source }}',\n        '{{ $json.input_type }}',\n        '{{ ($json.text || \"\").replace(/'/g, \"''\") }}',\n        '{{ ($json.normalized_text || $json.text || \"\").replace(/'/g, \"''\") }}',\n        'prepared'\n    )\n    RETURNING id, intake_event_id, execution_id, processing_status\n),\nlogged AS (\n    SELECT log_processing_event(\n        inserted.execution_id,\n        inserted.intake_event_id,\n        'candidate_input_prepared',\n        inserted.processing_status,\n        'Candidate input saved to candidate_inputs',\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT inserted.id, inserted.intake_event_id, inserted.execution_id, inserted.processing_status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        21344,
+        9792
+      ],
+      "id": "86887706-87eb-42e0-b653-9dcd57f1f920",
+      "name": "PG: insert candidate_inputs",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build context after intake insert').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    candidate_input_id: $json.id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21568,
+        9792
+      ],
+      "id": "346b7449-3d41-4e40-905e-5b3a8f9c6cb6",
+      "name": "Build context after candidate_inputs"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: $json.chat_id ? String($json.chat_id) : null,\n    response_message_type: 'accepted',\n    response_subject: null,\n    response_body: '📥 Резюме получено\\n\\n⏳ Начинаю анализ...'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21792,
+        9792
+      ],
+      "id": "5d1834c5-6985-4b3f-a426-d1ff520c5e31",
+      "name": "Build TG accepted response"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO outbox (\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        subject,\n        body,\n        reply_markup,\n        status\n    )\n    VALUES (\n       NULLIF('{{ $json.intake_event_id || \"\" }}', '')::uuid,\n       NULLIF('{{ $json.candidate_id || \"\" }}', '')::uuid,\n        '{{ $json.response_channel }}',\n        COALESCE(\n            NULLIF('{{ $json.response_recipient || \"\" }}', ''),\n            (\n                SELECT telegram_chat_id::text\n                FROM intake_events\n                WHERE id = '{{ $json.intake_event_id }}'\n                LIMIT 1\n            )\n        ),\n        '{{ $json.response_message_type }}',\n        NULL,\n        '{{ ($json.response_body || \"\").replace(/'/g, \"''\") }}',\n        NULLIF('{{ JSON.stringify($json.telegram_reply_markup || null).replace(/'/g, \"''\") }}', 'null')::jsonb,\n        'pending'\n    )\n    RETURNING\n        id,\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        body,\n        reply_markup,\n        status\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        inserted.intake_event_id,\n        'outbox_prepared',\n        inserted.status,\n        'Telegram response prepared in outbox, type=' || inserted.message_type,\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT\n    id AS outbox_id,\n    intake_event_id,\n    candidate_id,\n    channel,\n    recipient,\n    message_type,\n    body,\n    reply_markup,\n    status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        22576,
+        9680
+      ],
+      "id": "f8d6f73c-7213-4d2f-8093-89b9ed3ba989",
+      "name": "PG: insert outbox pending",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.raw.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        21344,
+        10000
+      ],
+      "id": "55212354-34c7-41d6-826a-91e1ec2409d9",
+      "name": "TG: get voice file",
+      "webhookId": "2b901566-3a6f-4e16-9851-7801cd1f9715",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fi6LudeVjIxVCbK3",
+          "name": "Pem05"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\n\nreturn [{\n  json: item.json,\n  binary: {\n    data: {\n      ...item.binary.data,\n      fileName: 'voice.ogg',\n      mimeType: 'audio/ogg',\n      fileExtension: 'ogg'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21568,
+        10000
+      ],
+      "id": "ac0eb78d-ba63-4394-b53b-31f309fdea18",
+      "name": "Rename OGA to OGG for OpenAI STT"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4o-mini-transcribe"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        21792,
+        10000
+      ],
+      "id": "646bc4a2-d408-4634-9f32-008f45981dda",
+      "name": "HTTP: OpenAI STT voice to text",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build context after intake insert').first().json;\n\nconst sttText =\n  $json.text ||\n  $json.transcription ||\n  $json.result ||\n  '';\n\nreturn [{\n  json: {\n    ...ctx,\n    input_type: 'voice',\n    text: String(sttText).trim(),\n    normalized_text: String(sttText).trim(),\n    stt_provider: 'openai',\n    stt_status: String(sttText).trim() ? 'success' : 'empty'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22016,
+        10000
+      ],
+      "id": "dd2a8911-68eb-41a4-9ddf-52c9ee88685d",
+      "name": "Normalize STT result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "776f6a72-b150-4c08-9328-25306bc847b7",
+              "leftValue": "={{ $json.normalized_text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        22240,
+        10000
+      ],
+      "id": "4fccfc64-27f4-40e2-959d-3082c9d99237",
+      "name": "IF: STT text exists?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build context after intake insert').first().json || {};\nconst err = $json.error || $json;\nconst technicalMessage = err.message || err.description || err.error || 'Voice transcription failed or returned empty text';\n\nreturn [{\n  json: {\n    ...ctx,\n    error_stage: 'intake',\n    error_type: 'stt_error',\n    error_message: String(technicalMessage || 'Voice transcription failed or returned empty text'),\n    error_recoverable: true,\n    response_channel: 'telegram',\n    response_recipient: ctx.chat_id ? String(ctx.chat_id) : null,\n    response_message_type: 'voice_stt_error',\n    response_subject: null,\n    response_body:\n`⚠️ Не удалось распознать голосовое сообщение\n\nПопробуйте:\n• сказать чётче\n• записать короче\n• отправить резюме текстом или PDF/DOCX`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22464,
+        10128
+      ],
+      "id": "373075e9-b279-4acf-81bd-27b66feee9e7",
+      "name": "Build TG voice error response"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.raw.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        21328,
+        10352
+      ],
+      "id": "4d9d8d27-0acd-4fb3-a533-6402fd9767b1",
+      "name": "TG: get document file",
+      "webhookId": "0742ed63-1815-4638-8d7b-95f17169b349",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fi6LudeVjIxVCbK3",
+          "name": "Pem05"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first();\nconst ctx = $('Build context after intake insert').first().json;\n\nconst binary = input.binary || {};\nconst file = binary.data || {};\n\nconst fileName =\n  file.fileName ||\n  input.json.raw?.message?.document?.file_name ||\n  'document';\n\nconst mimeType =\n  file.mimeType ||\n  input.json.raw?.message?.document?.mime_type ||\n  '';\n\nconst ext = (fileName.split('.').pop() || '').toLowerCase();\nconst isPdf = ext === 'pdf' || mimeType === 'application/pdf';\nconst isDocx = ext === 'docx' || mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';\n\nreturn [{\n  json: {\n    ...ctx,\n    input_type: 'document',\n    document_file_name: fileName,\n    document_mime_type: mimeType,\n    file_extension: ext,\n    is_pdf: isPdf,\n    is_docx: isDocx,\n    document_supported: isPdf || isDocx\n  },\n  binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21552,
+        10352
+      ],
+      "id": "a0a0f660-33ba-4638-a26a-d1a4f7d8210d",
+      "name": "Detect document type"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a5f08aad-eb72-438f-8893-1deddbee0b52",
+                    "leftValue": "={{ $json.is_pdf }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4ae67cf6-f9e9-47b7-b3fb-b405fe589536",
+                    "leftValue": "={{ $json.is_docx }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "docx"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d705b4c2-a4e0-49d6-8e44-feea413aec9b",
+                    "leftValue": "={{ $json.document_supported }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "unsupported"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        21776,
+        10352
+      ],
+      "id": "d8b04206-7187-4708-9792-8de28b4a3f3f",
+      "name": "Switch: document type"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "purpose",
+              "value": "user_data"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        22000,
+        10320
+      ],
+      "id": "c57533fe-f2b5-4422-9b7c-9b90902884f5",
+      "name": "HTTP: OpenAI upload document file",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Detect document type').first().json;\nconst fileId = $json.id || $json.file_id || '';\n\nreturn [{\n  json: {\n    ...ctx,\n    openai_file_id: fileId,\n    openai_body: {\n      model: 'gpt-4o-mini',\n      input: [\n        {\n          role: 'user',\n          content: [\n            {\n              type: 'input_file',\n              file_id: fileId\n            },\n            {\n              type: 'input_text',\n              text: 'Извлеки весь читаемый текст из файла резюме. Верни только сам текст резюме без комментариев, без Markdown и без JSON. Если текст не удалось извлечь, верни пустую строку.'\n            }\n          ]\n        }\n      ],\n      temperature: 0\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22224,
+        10320
+      ],
+      "id": "ad552828-3601-4fb2-990d-17e4748de176",
+      "name": "Prepare OpenAI Body: Extract document text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        22448,
+        10320
+      ],
+      "id": "9659b694-96d0-4398-b2ca-ef1b00826fad",
+      "name": "HTTP: OpenAI extract document text",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare OpenAI Body: Extract document text').first().json;\n\nfunction collectTextFromResponsesApi(j) {\n  if (typeof j.output_text === 'string') return j.output_text;\n  if (typeof j.text === 'string') return j.text;\n  if (typeof j.content === 'string') return j.content;\n  if (Array.isArray(j.output)) {\n    const chunks = [];\n    for (const out of j.output) {\n      if (Array.isArray(out.content)) {\n        for (const c of out.content) {\n          if (typeof c.text === 'string') chunks.push(c.text);\n          if (typeof c.output_text === 'string') chunks.push(c.output_text);\n        }\n      }\n    }\n    return chunks.join('\\n').trim();\n  }\n  return '';\n}\n\nconst text = collectTextFromResponsesApi($json);\n\nreturn [{\n  json: {\n    ...ctx,\n    input_type: 'document',\n    text: String(text).trim(),\n    normalized_text: String(text).trim(),\n    extraction_provider: 'openai',\n    extraction_status: String(text).trim() ? 'success' : 'empty'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22672,
+        10320
+      ],
+      "id": "dbe9bf4f-16d9-4af4-9112-8dd2557b2f79",
+      "name": "Normalize document text"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5f84eec6-fc66-4245-af22-8ead555896d5",
+              "leftValue": "={{ $json.normalized_text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        22896,
+        10320
+      ],
+      "id": "d50596bc-8e29-41cd-a929-80a9a4302f6d",
+      "name": "IF: extracted text exists?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build context after intake insert').first().json || {};\nconst err = $json.error || $json;\nconst technicalMessage = err.message || err.description || err.error || 'Document text extraction failed or returned empty text';\n\nreturn [{\n  json: {\n    ...ctx,\n    error_stage: 'intake',\n    error_type: 'document_extract_error',\n    error_message: String(technicalMessage || 'Document text extraction failed or returned empty text'),\n    error_recoverable: true,\n    response_channel: 'telegram',\n    response_recipient: ctx.chat_id ? String(ctx.chat_id) : null,\n    response_message_type: 'document_error',\n    response_subject: null,\n    response_body:\n`⚠️ Не удалось извлечь текст из файла\n\nПопробуйте:\n• отправить PDF/DOCX с читаемым текстом\n• отправить резюме текстом\n• сделать фото резюме`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        23120,
+        10464
+      ],
+      "id": "5098574e-59e9-4407-9db8-759fd671cbf1",
+      "name": "Build TG document error response"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.raw.message.photo[$json.raw.message.photo.length - 1].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        21328,
+        10608
+      ],
+      "id": "a4f95957-09e4-406b-8712-c961e55b4613",
+      "name": "TG: get image file",
+      "webhookId": "ce4db921-9903-497a-826f-ae6878fbb176",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fi6LudeVjIxVCbK3",
+          "name": "Pem05"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "purpose",
+              "value": "user_data"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        21552,
+        10608
+      ],
+      "id": "1586597b-967a-4f1a-bd72-6444463d1b1f",
+      "name": "HTTP: OpenAI upload image file",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build context after intake insert').first().json;\nconst fileId = $json.id || $json.file_id || '';\n\nreturn [{\n  json: {\n    ...ctx,\n    input_type: 'image',\n    openai_image_file_id: fileId,\n    openai_body: {\n      model: 'gpt-4o-mini',\n      input: [\n        {\n          role: 'user',\n          content: [\n            {\n              type: 'input_text',\n              text: 'Извлеки весь читаемый текст с изображения резюме или анкеты кандидата. Верни только извлечённый текст без комментариев, без Markdown и без JSON.'\n            },\n            {\n              type: 'input_image',\n              file_id: fileId\n            }\n          ]\n        }\n      ],\n      temperature: 0\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21776,
+        10608
+      ],
+      "id": "c6518c98-a1ed-4eb0-907e-43ed1abd604b",
+      "name": "Prepare OpenAI Body: OCR image"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        22000,
+        10608
+      ],
+      "id": "31400064-27a2-4ea9-a700-18d957d77244",
+      "name": "HTTP: OpenAI OCR image to text",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare OpenAI Body: OCR image').first().json;\n\nfunction extractText(j) {\n  if (typeof j.output_text === 'string' && j.output_text.trim()) {\n    return j.output_text.trim();\n  }\n\n  const output = Array.isArray(j.output) ? j.output : [];\n  const chunks = [];\n\n  for (const item of output) {\n    const content = Array.isArray(item.content) ? item.content : [];\n\n    for (const part of content) {\n      if (typeof part.text === 'string') {\n        chunks.push(part.text);\n      }\n\n      if (typeof part.output_text === 'string') {\n        chunks.push(part.output_text);\n      }\n    }\n  }\n\n  return chunks.join('\\n').trim();\n}\n\nconst text = extractText($json);\n\nreturn [{\n  json: {\n    ...ctx,\n    text: text,\n    normalized_text: text,\n    extraction_provider: 'openai',\n    extraction_type: 'ocr_image',\n    extraction_status: text ? 'success' : 'empty'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22224,
+        10608
+      ],
+      "id": "89e89baa-3b5a-42ff-8b25-56a235e5ebff",
+      "name": "Normalize OCR result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3446cd51-930b-4db5-bba1-a75018b4b4d3",
+              "leftValue": "={{ $json.normalized_text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        22448,
+        10608
+      ],
+      "id": "2230e41c-42d8-45a8-b751-f7337457595f",
+      "name": "IF: OCR text exists?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build context after intake insert').first().json || {};\nconst err = $json.error || $json;\nconst technicalMessage = err.message || err.description || err.error || 'Image OCR failed or returned empty text';\n\nreturn [{\n  json: {\n    ...ctx,\n    error_stage: 'intake',\n    error_type: 'ocr_error',\n    error_message: String(technicalMessage || 'Image OCR failed or returned empty text'),\n    error_recoverable: true,\n    response_channel: 'telegram',\n    response_recipient: ctx.chat_id ? String(ctx.chat_id) : null,\n    response_message_type: 'image_ocr_error',\n    response_subject: null,\n    response_body:\n`⚠️ Не удалось прочитать текст с изображения\n\nПопробуйте:\n• сделать фото без бликов\n• приблизить текст\n• отправить PDF/DOCX или текст`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22672,
+        10736
+      ],
+      "id": "39e591ad-b533-4d85-8e7c-c02c37256e35",
+      "name": "Build TG image error response"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE intake_events\n    SET status = 'error'\n    WHERE id = '{{ $json.intake_event_id }}'\n    RETURNING id, execution_id, status\n),\nlogged AS (\n    SELECT log_processing_event(\n        COALESCE(updated.execution_id, '{{ $json.execution_id || \"unknown\" }}'),\n        updated.id,\n        '{{ $json.error_type || \"intake_error\" }}',\n        'error',\n        '{{ ($json.error_stage || \"intake\").replace(/'/g, \"''\") }}',\n        '{{ ($json.error_message || \"Intake error\").replace(/'/g, \"''\") }}',\n        1\n    )\n    FROM updated\n)\nSELECT updated.id, updated.status\nFROM updated\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        22832,
+        10960
+      ],
+      "id": "f73d7462-eec9-4dd8-a202-3366b71578f5",
+      "name": "PG: log intake error",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: String($json.chat_id),\n    response_message_type: 'apply',\n    response_subject: null,\n    response_body:\n`📩 Отклик принят!\n\nМы передали вашу кандидатуру специалисту.\nВ ближайшее время с вами свяжутся.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21104,
+        9152
+      ],
+      "id": "44066f4d-bf57-433e-b2a6-2ab2729f27c2",
+      "name": "Build TG allpy response"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: String($json.chat_id),\n    response_message_type: 'next',\n    response_subject: null,\n    response_body:\n`🔄 Пока доступна только лучшая вакансия.\n\nФункция просмотра альтернативных вакансий будет добавлена следующим шагом.\nСейчас вы можете отправить другое резюме.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21104,
+        9312
+      ],
+      "id": "c457294b-495d-4618-9bfa-1ba71eee1d32",
+      "name": "Build TG next response"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: String($json.chat_id),\n    response_message_type: 'video_request',\n    response_subject: null,\n    response_body:\n`🎬 Запрос на генерацию видео принят.\n\nВидео создаётся отдельно и может занять несколько минут.\nЯ отправлю его сюда, когда оно будет готово.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21104,
+        9472
+      ],
+      "id": "467cb4fa-b4df-4954-ab7c-db836b33476a",
+      "name": "Build TG video accepted response"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "PCHnZjzQxCu1T78c",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/PCHnZjzQxCu1T78c",
+          "cachedResultName": "HR Generate Video"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        21568,
+        9504
+      ],
+      "id": "72c39d04-0682-4ae6-b4b5-44037a4a7e6b",
+      "name": "Execute Workflow: HR Generate Video"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Init execution context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init execution context": {
+      "main": [
+        [
+          {
+            "node": "Postgres: INSERT intake_events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: INSERT intake_events": {
+      "main": [
+        [
+          {
+            "node": "Build context after intake insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after intake insert": {
+      "main": [
+        [
+          {
+            "node": "IF: это callback?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: это callback?": {
+      "main": [
+        [
+          {
+            "node": "Switch: callback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TG: это команда?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: callback": {
+      "main": [
+        [
+          {
+            "node": "Build TG help response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG about response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG restart response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG allpy response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG next response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG video accepted response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG help response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG about response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG restart response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG: это команда?": {
+      "main": [
+        [
+          {
+            "node": "Build TG command response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch: input type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG command response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: input type": {
+      "main": [
+        [
+          {
+            "node": "PG: insert candidate_inputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TG: get voice file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TG: get document file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TG: get image file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert candidate_inputs": {
+      "main": [
+        [
+          {
+            "node": "Build context after candidate_inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after candidate_inputs": {
+      "main": [
+        [
+          {
+            "node": "Build TG accepted response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG accepted response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG: get voice file": {
+      "main": [
+        [
+          {
+            "node": "Rename OGA to OGG for OpenAI STT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename OGA to OGG for OpenAI STT": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI STT voice to text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI STT voice to text": {
+      "main": [
+        [
+          {
+            "node": "Normalize STT result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG voice error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize STT result": {
+      "main": [
+        [
+          {
+            "node": "IF: STT text exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: STT text exists?": {
+      "main": [
+        [
+          {
+            "node": "PG: insert candidate_inputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG voice error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG voice error response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PG: log intake error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG: get document file": {
+      "main": [
+        [
+          {
+            "node": "Detect document type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect document type": {
+      "main": [
+        [
+          {
+            "node": "Switch: document type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: document type": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI upload document file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: OpenAI upload document file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG document error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI upload document file": {
+      "main": [
+        [
+          {
+            "node": "Prepare OpenAI Body: Extract document text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG document error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare OpenAI Body: Extract document text": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI extract document text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI extract document text": {
+      "main": [
+        [
+          {
+            "node": "Normalize document text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG document error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize document text": {
+      "main": [
+        [
+          {
+            "node": "IF: extracted text exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: extracted text exists?": {
+      "main": [
+        [
+          {
+            "node": "PG: insert candidate_inputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG document error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG document error response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PG: log intake error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG: get image file": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI upload image file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI upload image file": {
+      "main": [
+        [
+          {
+            "node": "Prepare OpenAI Body: OCR image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG image error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare OpenAI Body: OCR image": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI OCR image to text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI OCR image to text": {
+      "main": [
+        [
+          {
+            "node": "Normalize OCR result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG image error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize OCR result": {
+      "main": [
+        [
+          {
+            "node": "IF: OCR text exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: OCR text exists?": {
+      "main": [
+        [
+          {
+            "node": "PG: insert candidate_inputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG image error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG image error response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PG: log intake error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG allpy response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG next response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG video accepted response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute Workflow: HR Generate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "1X2n7ogsTWUwNL3l",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "e3cbb195-fe23-429b-bb42-39a25c5aa1a3",
+  "meta": {
+    "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
+  },
+  "id": "0xDpYqa1S3KRlaIt",
+  "tags": []
+}

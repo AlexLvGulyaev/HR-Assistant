@@ -1,0 +1,1476 @@
+{
+  "name": "HR Processing Worker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        29328,
+        9248
+      ],
+      "id": "60e33ab1-fc6e-49e4-83da-63b8c703e596",
+      "name": "Schedule Trigger: process pending inputs"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH picked AS (\n    SELECT id\n    FROM candidate_inputs\n    WHERE processing_status = 'prepared'\n    ORDER BY created_at ASC\n    LIMIT 1\n    FOR UPDATE SKIP LOCKED\n),\nupdated AS (\n    UPDATE candidate_inputs ci\n    SET processing_status = 'processing'\n    FROM picked\n    WHERE ci.id = picked.id\n    RETURNING\n        ci.id AS candidate_input_id,\n        ci.intake_event_id,\n        ci.execution_id,\n        ci.source,\n        ci.input_type,\n        ci.original_text,\n        ci.normalized_text,\n        ci.processing_status\n),\nlogged AS (\n    SELECT log_processing_event(\n        updated.execution_id,\n        updated.intake_event_id,\n        'processing_started',\n        updated.processing_status,\n        'Candidate input claimed by Processing Worker',\n        NULL,\n        1\n    )\n    FROM updated\n)\nSELECT\n    u.*,\n    ie.telegram_chat_id AS chat_id,\n    ie.telegram_user_id AS user_id\nFROM updated u\nCROSS JOIN logged\nLEFT JOIN intake_events ie\n    ON ie.id = u.intake_event_id;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        29504,
+        9248
+      ],
+      "id": "22d09bec-87d9-4acc-baaa-c90be5e68760",
+      "name": "PG: claim pending candidate_inputs",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c0dab2d6-b2da-4bf7-9d57-d01e72a6f934",
+              "leftValue": "={{ Boolean($json.candidate_input_id) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        29680,
+        9248
+      ],
+      "id": "c3cfca9e-6cd0-48f0-8c69-371563507ed4",
+      "name": "IF: has pending input?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String(\n  $json.normalized_text ||\n  $json.original_text ||\n  $json.text ||\n  ''\n);\n\nreturn [\n  {\n    json: {\n      ...$json,\n      openai_body: {\n        model: 'gpt-4o-mini',\n        temperature: 0,\n        messages: [\n          {\n            role: 'system',\n            content:\n              'Ты — HR-ассистент для извлечения структурированных данных из резюме. Извлекай только явно присутствующие данные. Не выдумывай отсутствующие сведения.'\n          },\n          {\n            role: 'user',\n            content:\n              'Извлеки данные кандидата из текста резюме:\\n\\n' +\n              text\n          }\n        ],\n        response_format: {\n          type: 'json_schema',\n          json_schema: {\n            name: 'candidate_profile',\n            strict: true,\n            schema: {\n              type: 'object',\n              additionalProperties: false,\n              properties: {\n                full_name: {\n                  type: ['string', 'null']\n                },\n                city: {\n                  type: ['string', 'null']\n                },\n                desired_position: {\n                  type: ['string', 'null']\n                },\n                experience_years: {\n                  type: ['number', 'null']\n                },\n                skills: {\n                  type: 'array',\n                  items: {\n                    type: 'string'\n                  }\n                },\n                salary_expectation: {\n                  type: ['number', 'null']\n                },\n                email: {\n                  type: ['string', 'null']\n                },\n                phone: {\n                  type: ['string', 'null']\n                },\n                summary: {\n                  type: ['string', 'null']\n                }\n              },\n              required: [\n                'full_name',\n                'city',\n                'desired_position',\n                'experience_years',\n                'skills',\n                'salary_expectation',\n                'email',\n                'phone',\n                'summary'\n              ]\n            }\n          }\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29920,
+        9248
+      ],
+      "id": "997e04f6-7c1d-414d-b513-df8d8771f263",
+      "name": "Prepare OpenAI Body: Extract candidate JSON"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        30160,
+        9248
+      ],
+      "id": "c1959993-6804-4108-9d44-5ae1d942124b",
+      "name": "LLM: OpenAI Extract candidate JSON",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw) {\n  if (!raw || typeof raw !== 'string') {\n    return null;\n  }\n\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst ctx = $('Prepare OpenAI Body: Extract candidate JSON').first().json;\nconst raw = extractRaw($json);\nconst candidate = parseJson(raw);\n\nconst requiredFields = [\n  'full_name',\n  'city',\n  'desired_position',\n  'experience_years',\n  'skills',\n  'salary_expectation',\n  'email',\n  'phone',\n  'summary'\n];\n\nconst hasObject = candidate && typeof candidate === 'object' && !Array.isArray(candidate);\n\nconst hasAllFields = hasObject && requiredFields.every(field =>\n  Object.prototype.hasOwnProperty.call(candidate, field)\n);\n\nconst validTypes =\n  hasObject &&\n  Array.isArray(candidate.skills) &&\n  (candidate.experience_years === null || typeof candidate.experience_years === 'number') &&\n  (candidate.salary_expectation === null || typeof candidate.salary_expectation === 'number');\n\nconst isValid = Boolean(hasObject && hasAllFields && validTypes);\n\nreturn [\n  {\n    json: {\n      ...ctx,\n      llm_provider: 'openai',\n      llm_raw_candidate_response: raw,\n      candidate: isValid ? candidate : null,\n      candidate_json_valid: isValid,\n      candidate_json_error: isValid ? null : 'Invalid candidate JSON structure from OpenAI'\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30416,
+        9248
+      ],
+      "id": "ced2ed25-44c6-4e54-b64b-15791f27ecc5",
+      "name": "Parse OpenAI Candidate JSON"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9d8231a4-dbff-4727-8a39-d7b47b2be1f2",
+              "leftValue": "={{ $json.candidate_json_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        30832,
+        9248
+      ],
+      "id": "c4ff53f7-b2e0-4e39-9bc6-92739b47745f",
+      "name": "IF: candidate JSON valid?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resumeText = String(\n  $json.normalized_text ||\n  $json.original_text ||\n  $json.text ||\n  ''\n);\n\nconst rawBadResponse = String($json.llm_raw_candidate_response || '');\n\nreturn [{\n  json: {\n    ...$json,\n    openai_body: {\n      model: 'gpt-4o-mini',\n      temperature: 0,\n      messages: [\n        {\n          role: 'system',\n          content: 'Ты исправляешь JSON-ответ HR-ассистента. Нельзя добавлять данные, которых нет в исходном резюме.'\n        },\n        {\n          role: 'user',\n          content:\n            'Исходный текст резюме:\\n' +\n            resumeText +\n            '\\n\\nНекорректный ответ модели:\\n' +\n            rawBadResponse +\n            '\\n\\nИсправь ответ по строгой JSON-схеме.'\n        }\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'candidate_profile_repair',\n          strict: true,\n          schema: {\n            type: 'object',\n            additionalProperties: false,\n            properties: {\n              full_name: { type: ['string', 'null'] },\n              city: { type: ['string', 'null'] },\n              desired_position: { type: ['string', 'null'] },\n              experience_years: { type: ['number', 'null'] },\n              skills: { type: 'array', items: { type: 'string' } },\n              salary_expectation: { type: ['number', 'null'] },\n              email: { type: ['string', 'null'] },\n              phone: { type: ['string', 'null'] },\n              summary: { type: ['string', 'null'] }\n            },\n            required: [\n              'full_name',\n              'city',\n              'desired_position',\n              'experience_years',\n              'skills',\n              'salary_expectation',\n              'email',\n              'phone',\n              'summary'\n            ]\n          }\n        }\n      }\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31328,
+        9376
+      ],
+      "id": "6bfce2f4-b399-47f5-8787-4df468a4b6ab",
+      "name": "Prepare OpenAI Body: Repair candidate JSON"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        31568,
+        9376
+      ],
+      "id": "fcd11f0e-261f-491b-bd7d-9e3ca6b224e5",
+      "name": "LLM: OpenAI Repair candidate JSON",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content\n    || itemJson.message?.content\n    || itemJson.text\n    || itemJson.output\n    || '';\n}\n\nfunction parseJson(raw) {\n  if (!raw || typeof raw !== 'string') {\n    return null;\n  }\n\n  let cleaned = raw.trim();\n\n  cleaned = cleaned\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return null;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return null;\n    }\n  }\n}\n\nconst ctx = $('Parse OpenAI Candidate JSON').first().json;\n\nconst raw = extractRaw($json);\nconst candidate = parseJson(raw);\n\nconst requiredFields = [\n  'full_name',\n  'city',\n  'desired_position',\n  'experience_years',\n  'skills',\n  'salary_expectation',\n  'email',\n  'phone',\n  'summary'\n];\n\nconst hasObject =\n  candidate &&\n  typeof candidate === 'object' &&\n  !Array.isArray(candidate);\n\nconst hasAllFields =\n  hasObject &&\n  requiredFields.every(field =>\n    Object.prototype.hasOwnProperty.call(candidate, field)\n  );\n\nconst validTypes =\n  hasObject &&\n  (candidate.skills === null || Array.isArray(candidate.skills)) &&\n  (candidate.experience_years === null || typeof candidate.experience_years === 'number') &&\n  (candidate.salary_expectation === null || typeof candidate.salary_expectation === 'number');\n\nconst isValid = Boolean(hasObject && hasAllFields && validTypes);\n\nreturn [\n  {\n    json: {\n      ...ctx,\n      llm_provider: 'openai',\n      llm_raw_candidate_repair_response: raw,\n      candidate: isValid ? candidate : null,\n      candidate_json_valid: isValid,\n      candidate_json_error: isValid\n        ? null\n        : 'Invalid candidate JSON after OpenAI repair'\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31808,
+        9376
+      ],
+      "id": "fa820cd4-937d-4abe-b179-ac9e42a36163",
+      "name": "Parse OpenAI Repair Candidate JSON"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9d8231a4-dbff-4727-8a39-d7b47b2be1f2",
+              "leftValue": "={{ $json.candidate_json_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        32048,
+        9376
+      ],
+      "id": "262726d3-a8c5-4019-9030-66525d0de255",
+      "name": "IF: repaired JSON valid?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $json.candidate || {};\n\nconst hasName = Boolean(c.full_name && c.full_name.trim());\nconst hasPosition = Boolean(c.desired_position && c.desired_position.trim());\nconst hasContacts = Boolean(\n  (c.email && c.email.trim()) ||\n  (c.phone && c.phone.trim())\n);\nconst hasSkills = Array.isArray(c.skills) && c.skills.length >= 2;\n\nconst isMeaningful =\n  hasName ||\n  hasPosition ||\n  hasContacts ||\n  hasSkills;\n\nreturn [{\n  json: {\n    ...$json,\n    candidate_meaningful: isMeaningful\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31328,
+        9136
+      ],
+      "id": "d3655348-e13f-48b5-a2b9-fb484178b651",
+      "name": "Validate candidate content"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "198f1305-a108-4e51-a8e4-d9a0141aa95b",
+              "leftValue": "={{ $json.candidate_meaningful === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        31568,
+        9136
+      ],
+      "id": "047aaf34-ced8-4c3f-9e4e-696e639c09d8",
+      "name": "IF: candidate meaningful?"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    error_stage: 'processing',\n    error_type: 'invalid_resume',\n    error_message: 'Extracted candidate profile is not meaningful',\n    error_recoverable: true,\n    response_channel: 'telegram',\n    response_recipient: $json.chat_id ? String($json.chat_id) : null,\n    response_message_type: 'invalid_input',\n    response_subject: null,\n    response_body:\n`⚠️ Не удалось распознать резюме\n\nПохоже, в сообщении недостаточно данных.\n\nПопробуйте отправить:\n• текст резюме\n• PDF/DOCX\n• более чёткое фото\n• голосовое сообщение с ФИО, опытом и навыками`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31808,
+        8944
+      ],
+      "id": "c513e927-31ea-4028-8b8a-5f4c4ba12a2d",
+      "name": "Build TG invalid resume response"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    error_stage: 'processing',\n    error_type: 'candidate_json_error',\n    error_message: $json.candidate_json_error || 'Candidate JSON parsing failed',\n    error_recoverable: true,\n    response_channel: 'telegram',\n    response_recipient: $json.chat_id ? String($json.chat_id) : null,\n    response_message_type: 'error',\n    response_subject: null,\n    response_body:\n`⚠️ Не удалось корректно разобрать данные резюме\n\nПожалуйста, попробуйте отправить резюме ещё раз или используйте другой формат: текст, PDF/DOCX, фото или голос.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32288,
+        9504
+      ],
+      "id": "bd3463b4-a074-44bf-a43f-e398a57760c6",
+      "name": "Build TG error response"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $json;\nconst candidate = ctx.candidate || {};\n\nconst email = (candidate.email || '').toLowerCase().trim();\n\nlet phone = (candidate.phone || '').trim();\nphone = phone.replace(/[^\\d+]/g, '');\n\nif (phone.startsWith('8') && phone.length === 11) {\n  phone = '+7' + phone.slice(1);\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    candidate: {\n      ...candidate,\n      email_normalized: email || null,\n      phone_normalized: phone || null\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31808,
+        9168
+      ],
+      "id": "21645f79-2575-4ff6-9520-16e2878afce5",
+      "name": "Normalize candidate contacts"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH matches AS (\n    SELECT\n        c.id AS candidate_id,\n        c.full_name,\n        c.desired_position,\n        cc.contact_type,\n        cc.normalized_value\n    FROM candidates c\n    JOIN candidate_contacts cc\n        ON cc.candidate_id = c.id\n    WHERE\n        (\n            '{{ $json.candidate.email_normalized || \"\" }}' <> ''\n            AND cc.contact_type = 'email'\n            AND cc.normalized_value = '{{ $json.candidate.email_normalized || \"\" }}'\n        )\n        OR\n        (\n            '{{ $json.candidate.phone_normalized || \"\" }}' <> ''\n            AND cc.contact_type = 'phone'\n            AND cc.normalized_value = '{{ $json.candidate.phone_normalized || \"\" }}'\n        )\n),\ngrouped AS (\n    SELECT\n        candidate_id,\n        MAX(full_name) AS full_name,\n        MAX(desired_position) AS desired_position,\n        BOOL_OR(contact_type = 'email') AS email_match,\n        BOOL_OR(contact_type = 'phone') AS phone_match,\n        COUNT(*) AS matched_contacts\n    FROM matches\n    GROUP BY candidate_id\n),\nsummary AS (\n    SELECT\n        COUNT(*) AS matched_candidates_count,\n\n        (ARRAY_AGG(candidate_id) FILTER (WHERE email_match AND phone_match))[1] AS exact_candidate_id,\n        (ARRAY_AGG(candidate_id) FILTER (WHERE email_match))[1] AS email_candidate_id,\n        (ARRAY_AGG(candidate_id) FILTER (WHERE phone_match))[1] AS phone_candidate_id\n    FROM grouped\n)\nSELECT\n    CASE\n        WHEN matched_candidates_count = 0 THEN NULL\n        WHEN exact_candidate_id IS NOT NULL THEN exact_candidate_id\n        WHEN matched_candidates_count = 1 THEN COALESCE(email_candidate_id, phone_candidate_id)\n        ELSE NULL\n    END AS candidate_id,\n\n    CASE\n        WHEN matched_candidates_count = 0 THEN 'not_found'\n        WHEN exact_candidate_id IS NOT NULL THEN 'exact_duplicate'\n        WHEN matched_candidates_count = 1 THEN 'probable_duplicate'\n        ELSE 'contact_conflict'\n    END AS dedup_result,\n\n    matched_candidates_count,\n    email_candidate_id,\n    phone_candidate_id\nFROM summary;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        32048,
+        9168
+      ],
+      "id": "e9bf5b8d-c24e-4e09-8f65-4a7cee151ea9",
+      "name": "PG: find existing candidate",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Normalize candidate contacts').first().json;\n\nconst dedupResult = $json.dedup_result || 'not_found';\nconst existingCandidateId = $json.candidate_id || null;\n\nreturn [{\n  json: {\n    ...ctx,\n    existing_candidate_id: existingCandidateId,\n    is_duplicate_candidate: Boolean(existingCandidateId),\n    dedup_result: dedupResult,\n    matched_candidates_count: Number($json.matched_candidates_count || 0),\n    email_candidate_id: $json.email_candidate_id || null,\n    phone_candidate_id: $json.phone_candidate_id || null,\n    contact_conflict: dedupResult === 'contact_conflict'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32288,
+        9168
+      ],
+      "id": "aa4666ae-c9c7-4feb-b12b-4f7ad8818874",
+      "name": "Build context after dedup search"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f41befff-e623-49d0-82ba-7e08a03120da",
+              "leftValue": "={{ $json.is_duplicate_candidate }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        32528,
+        9168
+      ],
+      "id": "f8d5971d-b9a4-41c5-883f-b0d920fe5d80",
+      "name": "Candidate already exists?"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    candidate_id: $json.existing_candidate_id,\n    candidate_dedup_status: 'existing'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32768,
+        9024
+      ],
+      "id": "ed045626-346d-44bc-9e3b-805aec7e3920",
+      "name": "Use existing candidate"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO candidates (\n        full_name,\n        city,\n        desired_position,\n        experience_years,\n        skills,\n        salary_expectation,\n        candidate_summary,\n        source_input_id\n    )\n    VALUES (\n        '{{ ($json.candidate.full_name || \"\").replace(/'/g, \"''\") }}',\n        '{{ ($json.candidate.city || \"\").replace(/'/g, \"''\") }}',\n        '{{ ($json.candidate.desired_position || \"\").replace(/'/g, \"''\") }}',\n        {{ $json.candidate.experience_years || 'null' }},\n        ARRAY[{{ ($json.candidate.skills || []).map(s => \"'\" + String(s).replace(/'/g, \"''\") + \"'\").join(\",\") }}]::text[],\n        {{ $json.candidate.salary_expectation || 'null' }},\n        '{{ ($json.candidate.summary || \"\").replace(/'/g, \"''\") }}',\n        '{{ $json.candidate_input_id }}'\n    )\n    RETURNING id\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        '{{ $json.intake_event_id }}',\n        'candidate_saved',\n        'success',\n        'New candidate saved to candidates',\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT inserted.id\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        32768,
+        9296
+      ],
+      "id": "688ab709-f18c-4be7-a757-b44cb11bef54",
+      "name": "PG: insert candidates",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Normalize candidate contacts').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    candidate_id: $json.id,\n    candidate_dedup_status: 'new'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33008,
+        9296
+      ],
+      "id": "466bd22b-a40c-4c97-9b9d-af6cdb4ed635",
+      "name": "Build context after candidates"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO candidate_contacts (\n        candidate_id,\n        contact_type,\n        contact_value,\n        normalized_value,\n        is_primary\n    )\n    VALUES\n    (\n        '{{ $json.candidate_id }}',\n        'email',\n        '{{ ($json.candidate.email || \"\").replace(/'/g, \"''\") }}',\n        '{{ ($json.candidate.email_normalized || \"\").replace(/'/g, \"''\") }}',\n        true\n    ),\n    (\n        '{{ $json.candidate_id }}',\n        'phone',\n        '{{ ($json.candidate.phone || \"\").replace(/'/g, \"''\") }}',\n        '{{ ($json.candidate.phone_normalized || \"\").replace(/'/g, \"''\") }}',\n        false\n    )\n    ON CONFLICT DO NOTHING\n    RETURNING id\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        '{{ $json.intake_event_id }}',\n        'candidate_contacts_saved',\n        'success',\n        'Candidate contacts saved to candidate_contacts',\n        NULL,\n        1\n    )\n)\nSELECT COUNT(*) AS contacts_saved\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        33248,
+        9296
+      ],
+      "id": "fdce7af2-d30a-48db-b840-d7f266450e83",
+      "name": "PG: insert candidate_contacts",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build context after candidates').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    contacts_saved: true\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33488,
+        9296
+      ],
+      "id": "64d6292e-6971-4d32-84a3-0db21e1bd970",
+      "name": "Build context after contacts"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH logged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        '{{ $json.intake_event_id }}',\n        'matching_started',\n        'started',\n        'Loading open vacancies for candidate_id={{ $json.candidate_id }}',\n        NULL,\n        1\n    )\n)\nSELECT\n    '{{ $json.execution_id }}' AS execution_id,\n    '{{ $json.intake_event_id }}' AS intake_event_id,\n    '{{ $json.candidate_input_id }}' AS candidate_input_id,\n    '{{ $json.candidate_id }}' AS candidate_id,\n    '{{ JSON.stringify($json.candidate).replace(/'/g, \"''\") }}'::jsonb AS candidate,\n    jsonb_build_object(\n        'id', id,\n        'title', title,\n        'description', description,\n        'requirements', requirements,\n        'salary_min', salary_min,\n        'salary_max', salary_max\n    ) AS vacancy\nFROM vacancies\nCROSS JOIN logged\nWHERE status = 'open'\nORDER BY created_at DESC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        33728,
+        9168
+      ],
+      "id": "b3627652-6391-42da-a686-850919150b5e",
+      "name": "PG: get open vacancies",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const candidate = $json.candidate || {};\nconst vacancy = $json.vacancy || {};\n\nreturn {\n  json: {\n    ...$json,\n    openai_body: {\n      model: 'gpt-4o-mini',\n      temperature: 0,\n      messages: [\n        {\n          role: 'system',\n          content:\n`Ты HR matching assistant.\n\nСравни кандидата и вакансию по критериям:\n\n1. Должность / роль — 30 баллов\n2. Навыки — 35 баллов\n3. Опыт — 20 баллов\n4. Город / формат / зарплатные ожидания — 15 баллов\n\nИтоговый score должен быть от 0 до 100.\n\nПравила:\n- score >= 60 → decision = \"match\"\n- score < 60 → decision = \"no_match\"\n- не выдумывай навыки и опыт\n- если данных недостаточно, снижай score\n- reason должен кратко объяснять, почему выставлен такой score\n\nВерни строго JSON по схеме.`\n        },\n        {\n          role: 'user',\n          content:\n            'Кандидат:\\n' +\n            JSON.stringify(candidate, null, 2) +\n            '\\n\\nВакансия:\\n' +\n            JSON.stringify(vacancy, null, 2)\n        }\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'vacancy_match_result',\n          strict: true,\n          schema: {\n            type: 'object',\n            additionalProperties: false,\n            properties: {\n              vacancy_id: { type: ['string', 'null'] },\n              title: { type: ['string', 'null'] },\n              role_score: { type: 'number' },\n              skills_score: { type: 'number' },\n              experience_score: { type: 'number' },\n              conditions_score: { type: 'number' },\n              score: { type: 'number' },\n              decision: {\n                type: 'string',\n                enum: ['match', 'no_match']\n              },\n              reason: { type: 'string' }\n            },\n            required: [\n              'vacancy_id',\n              'title',\n              'role_score',\n              'skills_score',\n              'experience_score',\n              'conditions_score',\n              'score',\n              'decision',\n              'reason'\n            ]\n          }\n        }\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33968,
+        9168
+      ],
+      "id": "530b7b58-910d-46ff-adc5-64924710bd8a",
+      "name": "Prepare OpenAI Body: Match candidate vacancy"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        34208,
+        9168
+      ],
+      "id": "9bef185e-b33a-4c74-b30c-45df23b64294",
+      "name": "LLM: OpenAI match candidate vacancy",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pANFrhR1xZgvvzrJ",
+          "name": "OpenAI API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw, fallback) {\n  if (!raw || typeof raw !== 'string') {\n    return fallback;\n  }\n\n  let cleaned = raw.trim()\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return fallback;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return fallback;\n    }\n  }\n}\n\nfunction clamp(value, min, max) {\n  return Math.max(min, Math.min(max, Number(value || 0)));\n}\n\nconst sourceItems = $('Prepare OpenAI Body: Match candidate vacancy').all();\n\nreturn items.map((item, index) => {\n  const source = sourceItems[index]?.json || {};\n  const raw = extractRaw(item.json);\n\n  const fallback = {\n    vacancy_id: source.vacancy?.id || null,\n    title: source.vacancy?.title || '',\n    role_score: 0,\n    skills_score: 0,\n    experience_score: 0,\n    conditions_score: 0,\n    score: 0,\n    decision: 'no_match',\n    reason: 'Не удалось разобрать ответ модели'\n  };\n\n  const parsed = parseJson(raw, fallback);\n\n  const roleScore = clamp(parsed.role_score, 0, 30);\n  const skillsScore = clamp(parsed.skills_score, 0, 35);\n  const experienceScore = clamp(parsed.experience_score, 0, 20);\n  const conditionsScore = clamp(parsed.conditions_score, 0, 15);\n\n  const calculatedScore =\n    roleScore +\n    skillsScore +\n    experienceScore +\n    conditionsScore;\n\n  const modelScore = clamp(parsed.score, 0, 100);\n  const score = calculatedScore > 0 ? calculatedScore : modelScore;\n\n  return {\n    json: {\n      ...source,\n      llm_provider: 'openai',\n      llm_raw_match_response: raw,\n      match_result: {\n        vacancy_id: parsed.vacancy_id || source.vacancy?.id || null,\n        title: parsed.title || source.vacancy?.title || '',\n        role_score: roleScore,\n        skills_score: skillsScore,\n        experience_score: experienceScore,\n        conditions_score: conditionsScore,\n        score,\n        decision: score >= 60 ? 'match' : 'no_match',\n        reason: parsed.reason || ''\n      }\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34448,
+        9168
+      ],
+      "id": "73341a44-c814-4839-a1ed-75ab2c2e7194",
+      "name": "Parse match JSON"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO matches (\n        candidate_id,\n        vacancy_id,\n        score,\n        decision,\n        reason,\n        raw_llm_response\n    )\n    VALUES (\n        '{{ $json.candidate_id }}',\n        '{{ $json.match_result.vacancy_id || $json.vacancy.id }}',\n        {{ Number($json.match_result.score || 0) }},\n        '{{ $json.match_result.decision || \"no_match\" }}',\n        '{{ ($json.match_result.reason || \"\").replace(/'/g, \"''\") }}',\n        '{{ JSON.stringify($json.match_result).replace(/'/g, \"''\") }}'::jsonb\n    )\n    RETURNING id, candidate_id, vacancy_id, score, decision\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        '{{ $json.intake_event_id }}',\n        'match_saved',\n        inserted.decision,\n        'Match result saved for vacancy_id=' || inserted.vacancy_id || ', score=' || inserted.score,\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT inserted.id, inserted.candidate_id, inserted.vacancy_id, inserted.score, inserted.decision\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        34688,
+        9168
+      ],
+      "id": "f766da2b-d125-4687-94d5-ccf3b7eabe9c",
+      "name": "PG: insert matches",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsedItems = $('Parse match JSON').all();\n\nreturn items.map((item, index) => {\n  const source = parsedItems[index].json;\n\n  return {\n    json: {\n      ...source,\n      match_db: item.json\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34928,
+        9168
+      ],
+      "id": "ae837190-1d86-4a5a-9d0e-8d1ffef58926",
+      "name": "Build context after matches"
+    },
+    {
+      "parameters": {
+        "jsCode": "const all = items.map(i => i.json);\n\nall.sort((a, b) => {\n  const scoreA = Number(a.match_db?.score || a.match_result?.score || 0);\n  const scoreB = Number(b.match_db?.score || b.match_result?.score || 0);\n  return scoreB - scoreA;\n});\n\nconst best = all[0] || {};\nconst bestScore = Number(best.match_db?.score || best.match_result?.score || 0);\n\nconst hasMatch = bestScore >= 60;\n\nconst criteria = best.match_result || {};\n\nreturn [{\n  json: {\n    ...best,\n    best_match: {\n      match_id: best.match_db?.id || null,\n      vacancy_id: best.match_db?.vacancy_id || best.vacancy?.id || null,\n      title: best.match_result?.title || best.vacancy?.title || '',\n      score: bestScore,\n      decision: hasMatch ? 'match' : 'no_match',\n      reason: best.match_result?.reason || '',\n      criteria: {\n        role_score: Number(criteria.role_score || 0),\n        skills_score: Number(criteria.skills_score || 0),\n        experience_score: Number(criteria.experience_score || 0),\n        conditions_score: Number(criteria.conditions_score || 0)\n      }\n    },\n    has_match: hasMatch\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35168,
+        9168
+      ],
+      "id": "428e81a8-0f42-450b-af35-403fdc19f004",
+      "name": "Select best match"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO final_decisions (\n        candidate_id,\n        best_match_id,\n        has_match,\n        decision_status,\n        decision_reason\n    )\n    VALUES (\n        '{{ $json.candidate_id }}',\n        '{{ $json.best_match.match_id }}',\n        {{ $json.has_match }},\n        '{{ $json.has_match ? \"match\" : \"no_match\" }}',\n        '{{ ($json.best_match.reason || \"\").replace(/'/g, \"''\") }}'\n    )\n    RETURNING id, candidate_id, has_match, decision_status\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        '{{ $json.intake_event_id }}',\n        'decision_made',\n        inserted.decision_status,\n        'Final decision saved: ' || inserted.decision_status,\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT inserted.id, inserted.candidate_id, inserted.has_match, inserted.decision_status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        35408,
+        9168
+      ],
+      "id": "03c1b620-483f-4486-90ae-87d4b8efb2f0",
+      "name": "PG: insert final_decisions",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Select best match').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    final_decision_id: $json.id\n  }\n}];;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35648,
+        9168
+      ],
+      "id": "24bfa619-a345-433a-a75d-5eaa79c2081d",
+      "name": "Build context after final_decision"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceCtx = $('Prepare OpenAI Body: Extract candidate JSON').first().json || {};\n\nconst match = $json.best_match || {};\nconst c = match.criteria || {};\n\nconst chatId =\n  $json.chat_id ||\n  sourceCtx.chat_id ||\n  null;\n\nif (!chatId) {\n  throw new Error('chat_id is missing before final Telegram response');\n}\n\nconst title = match.title || 'Подходящая вакансия';\nconst score = Number(match.score || 0);\n\nlet body;\n\nif ($json.has_match) {\n  body =\n`💼 ${title}\n\n📊 Совпадение: ${score}/100\n\nДетализация:\n• роль: ${c.role_score || 0}/30\n• навыки: ${c.skills_score || 0}/35\n• опыт: ${c.experience_score || 0}/20\n• условия: ${c.conditions_score || 0}/15\n\n📝 ${match.reason || '—'}\n\nВы можете откликнуться на вакансию или отправить другое резюме.`;\n} else {\n  body =\n`ℹ️ Результат анализа\n\nПодходящей вакансии пока нет.\n\n📊 Лучшее совпадение: ${score}/100\n\nДетализация:\n• роль: ${c.role_score || 0}/30\n• навыки: ${c.skills_score || 0}/35\n• опыт: ${c.experience_score || 0}/20\n• условия: ${c.conditions_score || 0}/15\n\n📝 ${match.reason || '—'}\n\nМы сохраним информацию и вернёмся при появлении релевантной позиции.`;\n}\n\nconst buttons = $json.has_match\n  ? [\n      [\n        {\n          text: '✅ Откликнуться',\n          callback_data: 'apply'\n        }\n      ],\n      [\n        {\n          text: '🔄 Другая вакансия',\n          callback_data: 'next'\n        }\n      ],\n      [\n        {\n          text: '🎬 Сгенерировать видео',\n          callback_data: 'video'\n        }\n      ],\n      [\n        {\n          text: '📄 Отправить другое резюме',\n          callback_data: 'restart'\n        }\n      ]\n    ]\n  : [\n      [\n        {\n          text: '📄 Отправить другое резюме',\n          callback_data: 'restart'\n        }\n      ]\n    ];\n\nreturn [{\n  json: {\n    ...$json,\n\n    chat_id: String(chatId),\n\n    response_channel: 'telegram',\n    response_recipient: String(chatId),\n    response_message_type: $json.has_match ? 'match_card' : 'no_match',\n    response_subject: null,\n    response_body: body,\n\n    telegram_reply_markup: {\n      inline_keyboard: buttons\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35888,
+        9168
+      ],
+      "id": "94aee3c2-3ac3-44c5-8448-e2c2569b215a",
+      "name": "Build TG response"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO outbox (\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        subject,\n        body,\n        reply_markup,\n        status\n    )\n    VALUES (\n       NULLIF('{{ $json.intake_event_id || \"\" }}', '')::uuid,\n       NULLIF('{{ $json.candidate_id || \"\" }}', '')::uuid,\n        '{{ $json.response_channel }}',\n        COALESCE(\n            NULLIF('{{ $json.response_recipient || \"\" }}', ''),\n            (\n                SELECT telegram_chat_id::text\n                FROM intake_events\n                WHERE id = '{{ $json.intake_event_id }}'\n                LIMIT 1\n            )\n        ),\n        '{{ $json.response_message_type }}',\n        NULL,\n        '{{ ($json.response_body || \"\").replace(/'/g, \"''\") }}',\n        NULLIF('{{ JSON.stringify($json.telegram_reply_markup || null).replace(/'/g, \"''\") }}', 'null')::jsonb,\n        'pending'\n    )\n    RETURNING\n        id,\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        body,\n        reply_markup,\n        status\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        inserted.intake_event_id,\n        'final_response_prepared',\n        inserted.status,\n        'Telegram response prepared in outbox, type=' || inserted.message_type,\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT\n    id AS outbox_id,\n    intake_event_id,\n    candidate_id,\n    channel,\n    recipient,\n    message_type,\n    body,\n    reply_markup,\n    status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        30736,
+        9888
+      ],
+      "id": "088db8fa-670f-4ecb-b574-f691b8d89c58",
+      "name": "PG: insert outbox pending result",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE candidate_inputs\n    SET processing_status = 'done'\n    WHERE id = '{{ $(\"Build TG response\").first().json.candidate_input_id }}'\n    RETURNING id, intake_event_id, execution_id, processing_status\n),\nlogged AS (\n    SELECT log_processing_event(\n        updated.execution_id,\n        updated.intake_event_id,\n        'processing_done',\n        updated.processing_status,\n        'Processing completed successfully',\n        NULL,\n        1\n    )\n    FROM updated\n)\nSELECT updated.id, updated.processing_status\nFROM updated\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        30976,
+        9888
+      ],
+      "id": "ded2e722-c087-42ff-b66a-4846ac0a316b",
+      "name": "PG: mark candidate_input done",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO outbox (\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        subject,\n        body,\n        reply_markup,\n        status\n    )\n    VALUES (\n       NULLIF('{{ $json.intake_event_id || \"\" }}', '')::uuid,\n       NULLIF('{{ $json.candidate_id || \"\" }}', '')::uuid,\n        '{{ $json.response_channel }}',\n        COALESCE(\n            NULLIF('{{ $json.response_recipient || \"\" }}', ''),\n            (\n                SELECT telegram_chat_id::text\n                FROM intake_events\n                WHERE id = '{{ $json.intake_event_id }}'\n                LIMIT 1\n            )\n        ),\n        '{{ $json.response_message_type }}',\n        NULL,\n        '{{ ($json.response_body || \"\").replace(/'/g, \"''\") }}',\n        NULLIF('{{ JSON.stringify($json.telegram_reply_markup || null).replace(/'/g, \"''\") }}', 'null')::jsonb,\n        'pending'\n    )\n    RETURNING\n        id,\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        body,\n        reply_markup,\n        status\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        inserted.intake_event_id,\n        'outbox_prepared',\n        inserted.status,\n        'Telegram response prepared in outbox, type=' || inserted.message_type,\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT\n    id AS outbox_id,\n    intake_event_id,\n    candidate_id,\n    channel,\n    recipient,\n    message_type,\n    body,\n    reply_markup,\n    status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        30736,
+        9408
+      ],
+      "id": "f53cb25b-7978-4031-8b8f-d6bc8a721a57",
+      "name": "PG: insert outbox pending invalid",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE candidate_inputs\n    SET processing_status = 'error'\n    WHERE id = '{{ $(\"Build TG invalid resume response\").first().json.candidate_input_id }}'\n    RETURNING id, intake_event_id, execution_id, processing_status\n),\nlogged AS (\n    SELECT log_processing_event(\n        updated.execution_id,\n        updated.intake_event_id,\n        'processing_error',\n        'error',\n        '{{ ($(\"Build TG invalid resume response\").first().json.error_type || \"invalid_resume\").replace(/'/g, \"''\") }}',\n        '{{ ($(\"Build TG invalid resume response\").first().json.error_message || \"Invalid resume\").replace(/'/g, \"''\") }}',\n        1\n    )\n    FROM updated\n)\nSELECT updated.id, updated.processing_status\nFROM updated\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        30976,
+        9408
+      ],
+      "id": "ae65698e-eeb2-4543-b91e-a87f07116473",
+      "name": "PG: mark candidate_input error invalid",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO outbox (\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        subject,\n        body,\n        reply_markup,\n        status\n    )\n    VALUES (\n       NULLIF('{{ $json.intake_event_id || \"\" }}', '')::uuid,\n       NULLIF('{{ $json.candidate_id || \"\" }}', '')::uuid,\n        '{{ $json.response_channel }}',\n        COALESCE(\n            NULLIF('{{ $json.response_recipient || \"\" }}', ''),\n            (\n                SELECT telegram_chat_id::text\n                FROM intake_events\n                WHERE id = '{{ $json.intake_event_id }}'\n                LIMIT 1\n            )\n        ),\n        '{{ $json.response_message_type }}',\n        NULL,\n        '{{ ($json.response_body || \"\").replace(/'/g, \"''\") }}',\n        NULLIF('{{ JSON.stringify($json.telegram_reply_markup || null).replace(/'/g, \"''\") }}', 'null')::jsonb,\n        'pending'\n    )\n    RETURNING\n        id,\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        body,\n        reply_markup,\n        status\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id }}',\n        inserted.intake_event_id,\n        'outbox_prepared',\n        inserted.status,\n        'Telegram response prepared in outbox, type=' || inserted.message_type,\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT\n    id AS outbox_id,\n    intake_event_id,\n    candidate_id,\n    channel,\n    recipient,\n    message_type,\n    body,\n    reply_markup,\n    status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        30736,
+        9568
+      ],
+      "id": "138ae9f7-fcb7-4b1c-9e4a-efad287c8142",
+      "name": "PG: insert outbox pending JSON error",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE candidate_inputs\n    SET processing_status = 'error'\n    WHERE id = '{{ $(\"Build TG error response\").first().json.candidate_input_id }}'\n    RETURNING id, intake_event_id, execution_id, processing_status\n),\nlogged AS (\n    SELECT log_processing_event(\n        updated.execution_id,\n        updated.intake_event_id,\n        'processing_error',\n        'error',\n        '{{ ($(\"Build TG error response\").first().json.error_type || \"candidate_json_error\").replace(/'/g, \"''\") }}',\n        '{{ ($(\"Build TG error response\").first().json.error_message || \"Candidate JSON parsing failed\").replace(/'/g, \"''\") }}',\n        1\n    )\n    FROM updated\n)\nSELECT updated.id, updated.processing_status\nFROM updated\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        32528,
+        9504
+      ],
+      "id": "3e4f2d43-1d35-41cf-b903-d321057833a1",
+      "name": "PG: mark candidate_input error JSON",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$json,\n    response_channel: 'telegram',\n    response_recipient: String($json.chat_id),\n    response_message_type: 'processing',\n    response_body:\n`🔍 Анализирую резюме\n\n📊 Сравниваю кандидата с открытыми вакансиями...`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29920,
+        9056
+      ],
+      "id": "3f8d3cd7-36ac-498b-b2b0-6ef9f611f1fb",
+      "name": "Build TG processing status"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO outbox (\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        subject,\n        body,\n        reply_markup,\n        status\n    )\n    VALUES (\n        NULLIF('{{ $json.intake_event_id || \"\" }}', '')::uuid,\n        NULL,\n        '{{ $json.response_channel }}',\n        '{{ $json.response_recipient }}',\n        '{{ $json.response_message_type }}',\n        NULL,\n        '{{ ($json.response_body || \"\").replace(/'/g, \"''\") }}',\n        NULLIF('{{ JSON.stringify($json.telegram_reply_markup || null).replace(/'/g, \"''\") }}', 'null')::jsonb,\n        'pending'\n    )\n    RETURNING id\n)\nSELECT id AS outbox_id\nFROM inserted;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        30160,
+        9056
+      ],
+      "id": "ed36de13-3cdf-4038-af50-4e5c599b6883",
+      "name": "PG: insert outbox pending processing",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare OpenAI Body: Extract candidate JSON').first().json || {};\nconst err = $json.error || $json;\nconst msg = err.message || err.description || err.error || JSON.stringify(err);\nconst chatId = ctx.chat_id || $json.chat_id || null;\n\nreturn [{\n  json: {\n    ...ctx,\n    error_stage: 'processing',\n    error_type: 'llm_extract_error',\n    error_message: String(msg || 'OpenAI request failed after retries'),\n    error_recoverable: true,\n    candidate_input_id: ctx.candidate_input_id || null,\n    intake_event_id: ctx.intake_event_id || null,\n    execution_id: ctx.execution_id || null,\n    chat_id: chatId,\n    response_channel: 'telegram',\n    response_recipient: chatId ? String(chatId) : null,\n    response_message_type: 'processing_error',\n    response_subject: null,\n    response_body: `⚠️ Не удалось обработать резюме\n\nПопробуйте отправить его ещё раз или в другом формате.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30160,
+        9744
+      ],
+      "id": "f1641364-e4d3-4569-83a4-d5703b869982",
+      "name": "Build processing error context: Extract"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare OpenAI Body: Repair candidate JSON').first().json || {};\nconst err = $json.error || $json;\nconst msg = err.message || err.description || err.error || JSON.stringify(err);\nconst chatId = ctx.chat_id || $json.chat_id || null;\n\nreturn [{\n  json: {\n    ...ctx,\n    error_stage: 'processing',\n    error_type: 'llm_repair_error',\n    error_message: String(msg || 'OpenAI request failed after retries'),\n    error_recoverable: true,\n    candidate_input_id: ctx.candidate_input_id || null,\n    intake_event_id: ctx.intake_event_id || null,\n    execution_id: ctx.execution_id || null,\n    chat_id: chatId,\n    response_channel: 'telegram',\n    response_recipient: chatId ? String(chatId) : null,\n    response_message_type: 'processing_error',\n    response_subject: null,\n    response_body: `⚠️ Не удалось обработать резюме\n\nПопробуйте отправить его ещё раз или в другом формате.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31568,
+        9776
+      ],
+      "id": "bfed5a08-c551-4b48-a581-1100f4e3542f",
+      "name": "Build processing error context: Repair"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare OpenAI Body: Match candidate vacancy').first().json || {};\nconst err = $json.error || $json;\nconst msg = err.message || err.description || err.error || JSON.stringify(err);\nconst chatId = ctx.chat_id || $json.chat_id || null;\n\nreturn [{\n  json: {\n    ...ctx,\n    error_stage: 'processing',\n    error_type: 'llm_match_error',\n    error_message: String(msg || 'OpenAI request failed after retries'),\n    error_recoverable: true,\n    candidate_input_id: ctx.candidate_input_id || null,\n    intake_event_id: ctx.intake_event_id || null,\n    execution_id: ctx.execution_id || null,\n    chat_id: chatId,\n    response_channel: 'telegram',\n    response_recipient: chatId ? String(chatId) : null,\n    response_message_type: 'processing_error',\n    response_subject: null,\n    response_body: `⚠️ Не удалось обработать резюме\n\nПопробуйте отправить его ещё раз или в другом формате.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34208,
+        9536
+      ],
+      "id": "18511ddb-8ddf-4f0a-b3dc-a887d6307899",
+      "name": "Build processing error context: Match"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE candidate_inputs\n    SET processing_status = 'error'\n    WHERE id = '{{ $json.candidate_input_id }}'\n    RETURNING id, intake_event_id, execution_id, processing_status\n),\nlogged AS (\n    SELECT log_processing_event(\n        COALESCE(updated.execution_id, '{{ $json.execution_id || \"unknown\" }}'),\n        updated.intake_event_id,\n        'processing_error',\n        'error',\n        '{{ ($json.error_type || \"processing_error\").replace(/'/g, \"''\") }}',\n        '{{ ($json.error_message || \"Processing error\").replace(/'/g, \"''\") }}',\n        1\n    )\n    FROM updated\n)\nSELECT updated.id, updated.processing_status\nFROM updated\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        32528,
+        9776
+      ],
+      "id": "9f7a8d84-c5f2-45a7-84a7-82cd7eb23e05",
+      "name": "PG: mark candidate_input error + log",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n    INSERT INTO outbox (\n        intake_event_id,\n        candidate_id,\n        channel,\n        recipient,\n        message_type,\n        subject,\n        body,\n        reply_markup,\n        status\n    )\n    VALUES (\n       NULLIF('{{ $json.intake_event_id || \"\" }}', '')::uuid,\n       NULLIF('{{ $json.candidate_id || \"\" }}', '')::uuid,\n        '{{ $json.response_channel || \"telegram\" }}',\n        COALESCE(\n            NULLIF('{{ $json.response_recipient || \"\" }}', ''),\n            (\n                SELECT telegram_chat_id::text\n                FROM intake_events\n                WHERE id = '{{ $json.intake_event_id }}'\n                LIMIT 1\n            )\n        ),\n        '{{ $json.response_message_type || \"processing_error\" }}',\n        NULL,\n        '{{ ($json.response_body || \"⚠️ Не удалось обработать резюме. Попробуйте отправить его ещё раз или в другом формате.\").replace(/'/g, \"''\") }}',\n        NULL,\n        'pending'\n    )\n    RETURNING id, intake_event_id, status\n),\nlogged AS (\n    SELECT log_processing_event(\n        '{{ $json.execution_id || \"unknown\" }}',\n        inserted.intake_event_id,\n        'fallback_prepared',\n        inserted.status,\n        'Telegram fallback prepared after processing error',\n        NULL,\n        1\n    )\n    FROM inserted\n)\nSELECT inserted.id AS outbox_id, inserted.status\nFROM inserted\nCROSS JOIN logged;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        32768,
+        9776
+      ],
+      "id": "e9ddc8bd-cad7-482c-85d7-52226ce25bbd",
+      "name": "PG: insert outbox pending processing error",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger: process pending inputs": {
+      "main": [
+        [
+          {
+            "node": "PG: claim pending candidate_inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: claim pending candidate_inputs": {
+      "main": [
+        [
+          {
+            "node": "IF: has pending input?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: has pending input?": {
+      "main": [
+        [
+          {
+            "node": "Prepare OpenAI Body: Extract candidate JSON",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build TG processing status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare OpenAI Body: Extract candidate JSON": {
+      "main": [
+        [
+          {
+            "node": "LLM: OpenAI Extract candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: OpenAI Extract candidate JSON": {
+      "main": [
+        [
+          {
+            "node": "Parse OpenAI Candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse OpenAI Candidate JSON": {
+      "main": [
+        [
+          {
+            "node": "IF: candidate JSON valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: candidate JSON valid?": {
+      "main": [
+        [
+          {
+            "node": "Validate candidate content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare OpenAI Body: Repair candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare OpenAI Body: Repair candidate JSON": {
+      "main": [
+        [
+          {
+            "node": "LLM: OpenAI Repair candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: OpenAI Repair candidate JSON": {
+      "main": [
+        [
+          {
+            "node": "Parse OpenAI Repair Candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Repair",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse OpenAI Repair Candidate JSON": {
+      "main": [
+        [
+          {
+            "node": "IF: repaired JSON valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: repaired JSON valid?": {
+      "main": [
+        [
+          {
+            "node": "Validate candidate content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG error response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate candidate content": {
+      "main": [
+        [
+          {
+            "node": "IF: candidate meaningful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: candidate meaningful?": {
+      "main": [
+        [
+          {
+            "node": "Normalize candidate contacts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build TG invalid resume response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG invalid resume response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert outbox pending invalid": {
+      "main": [
+        [
+          {
+            "node": "PG: mark candidate_input error invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG error response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending JSON error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert outbox pending JSON error": {
+      "main": [
+        [
+          {
+            "node": "PG: mark candidate_input error JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize candidate contacts": {
+      "main": [
+        [
+          {
+            "node": "PG: find existing candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: find existing candidate": {
+      "main": [
+        [
+          {
+            "node": "Build context after dedup search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after dedup search": {
+      "main": [
+        [
+          {
+            "node": "Candidate already exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidate already exists?": {
+      "main": [
+        [
+          {
+            "node": "Use existing candidate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: insert candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use existing candidate": {
+      "main": [
+        [
+          {
+            "node": "PG: get open vacancies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert candidates": {
+      "main": [
+        [
+          {
+            "node": "Build context after candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after candidates": {
+      "main": [
+        [
+          {
+            "node": "PG: insert candidate_contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert candidate_contacts": {
+      "main": [
+        [
+          {
+            "node": "Build context after contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after contacts": {
+      "main": [
+        [
+          {
+            "node": "PG: get open vacancies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: get open vacancies": {
+      "main": [
+        [
+          {
+            "node": "Prepare OpenAI Body: Match candidate vacancy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare OpenAI Body: Match candidate vacancy": {
+      "main": [
+        [
+          {
+            "node": "LLM: OpenAI match candidate vacancy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: OpenAI match candidate vacancy": {
+      "main": [
+        [
+          {
+            "node": "Parse match JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse match JSON": {
+      "main": [
+        [
+          {
+            "node": "PG: insert matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert matches": {
+      "main": [
+        [
+          {
+            "node": "Build context after matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after matches": {
+      "main": [
+        [
+          {
+            "node": "Select best match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select best match": {
+      "main": [
+        [
+          {
+            "node": "PG: insert final_decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert final_decisions": {
+      "main": [
+        [
+          {
+            "node": "Build context after final_decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context after final_decision": {
+      "main": [
+        [
+          {
+            "node": "Build TG response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG response": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert outbox pending result": {
+      "main": [
+        [
+          {
+            "node": "PG: mark candidate_input done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TG processing status": {
+      "main": [
+        [
+          {
+            "node": "PG: insert outbox pending processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build processing error context: Extract": {
+      "main": [
+        [
+          {
+            "node": "PG: mark candidate_input error + log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PG: insert outbox pending processing error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build processing error context: Repair": {
+      "main": [
+        [
+          {
+            "node": "PG: mark candidate_input error + log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PG: insert outbox pending processing error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build processing error context: Match": {
+      "main": [
+        [
+          {
+            "node": "PG: mark candidate_input error + log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PG: insert outbox pending processing error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "1X2n7ogsTWUwNL3l",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "2d608c93-6cb7-4fc3-a152-a354c8cc5969",
+  "meta": {
+    "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
+  },
+  "id": "nDQqNQj9nql7GBwl",
+  "tags": []
+}

@@ -1,0 +1,146 @@
+{
+  "name": "PEm05: error_handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a0d3105b-b85d-4553-8223-764c4392fca6",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\n\nconst execution = j.execution || {};\nconst workflow = j.workflow || {};\nconst error = execution.error || j.error || {};\nconst node = error.node || {};\n\nconst executionId = execution.id ? String(execution.id) : 'unknown';\n\nconst workflowName =\n  workflow.name ||\n  'unknown';\n\nconst workflowId =\n  workflow.id ||\n  null;\n\nconst nodeName =\n  node.name ||\n  execution.lastNodeExecuted ||\n  'unknown';\n\nconst nodeType =\n  node.type ||\n  null;\n\nconst errorText =\n  error.message ||\n  error.description ||\n  error.name ||\n  'unknown';\n\nconst executionUrl =\n  execution.url ||\n  null;\n\nreturn [{\n  json: {\n    execution_id: executionId,\n    workflow_id: workflowId,\n    workflow_name: workflowName,\n    node_name: nodeName,\n    node_type: nodeType,\n    stage: 'workflow_error',\n    status: 'error',\n    details:\n      'Workflow error in node: ' +\n      nodeName +\n      (executionUrl ? '\\nExecution URL: ' + executionUrl : ''),\n    error_text: errorText,\n    attempt: 1\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "93fb59d8-164b-4d96-b911-333ea41a78d3",
+      "name": "Normalize error event"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO processing_logs (\n    execution_id,\n    intake_event_id,\n    stage,\n    status,\n    details,\n    error_text,\n    attempt\n)\nVALUES (\n    '{{ $json.execution_id }}',\n    NULL,\n    '{{ $json.stage }}',\n    '{{ $json.status }}',\n    '{{ ($json.details || \"\").replace(/'/g, \"''\") }}',\n    '{{ ($json.error_text || \"\").replace(/'/g, \"''\") }}',\n    {{ $json.attempt || 1 }}\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        416,
+        0
+      ],
+      "id": "83f1619d-5ecd-442f-b5ae-06551b872747",
+      "name": "PG: insert error log",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "331349444",
+        "text": "={{ \"⚠️ Ошибка HR workflow\\n\\nWorkflow: \" + ($json.workflow_name || \"unknown\") + \"\\nNode: \" + ($json.node_name || \"unknown\") + \"\\nError: \" + ($json.error_text || \"unknown\") }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        848,
+        0
+      ],
+      "id": "75d6d0c7-5db9-4f6b-828e-6b990e737617",
+      "name": "Send a text message",
+      "webhookId": "af45bdfe-701f-4990-864c-6c709cdede13",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fi6LudeVjIxVCbK3",
+          "name": "Pem05"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Normalize error event').first().json;\n\nreturn [{\n  json: {\n    ...ctx,\n    error_logged: true\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "8efad2c2-fb90-4025-b2f5-82413e37b020",
+      "name": "Restore error context after PG log"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize error event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize error event": {
+      "main": [
+        [
+          {
+            "node": "PG: insert error log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: insert error log": {
+      "main": [
+        [
+          {
+            "node": "Restore error context after PG log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore error context after PG log": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bf907d2b-1106-45a5-8ef6-0fd619e626c0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
+  },
+  "id": "1X2n7ogsTWUwNL3l",
+  "tags": []
+}

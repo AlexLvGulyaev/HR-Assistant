@@ -1,0 +1,70 @@
+{
+  "name": "HR Queue Watchdog - candidate_inputs",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "00e95071-86c1-407d-9584-fd06e71814c1",
+      "name": "Schedule Trigger: reset stuck candidate_inputs"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (\n    UPDATE candidate_inputs\n    SET processing_status = 'prepared'\n    WHERE processing_status = 'processing'\n      AND created_at < now() - interval '10 minutes'\n    RETURNING id, intake_event_id, execution_id, processing_status\n)\nSELECT COUNT(*) AS reset_count\nFROM updated;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        0
+      ],
+      "id": "6ff1aeba-b4f1-4efe-86ef-52f220c26707",
+      "name": "PG: reset stuck candidate_inputs",
+      "credentials": {
+        "postgres": {
+          "id": "PPycmQuJ6vutwkt7",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger: reset stuck candidate_inputs": {
+      "main": [
+        [
+          {
+            "node": "PG: reset stuck candidate_inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2f32bb2d-0690-4888-94ff-9bacaa905620",
+  "meta": {
+    "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
+  },
+  "id": "BDtDFgaZuqQF7eWa",
+  "tags": []
+}
