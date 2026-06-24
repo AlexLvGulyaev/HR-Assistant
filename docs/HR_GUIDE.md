@@ -65,29 +65,37 @@ HR-специалист получает:
 
 ### Примеры результатов matching
 
-#### Высокий score (85)
-
-![Результат match](screenshots/raw/report_v2_-010.png)
-
-*Пример успешного сопоставления (match) с высоким score*
+#### Высокий score (90)
 
 ```json
 {
   "candidate": {
-    "full_name": "Иванов Иван",
-    "city": "Москва",
-    "desired_position": "Frontend Developer",
-    "experience_years": 5,
-    "skills": ["React", "TypeScript", "Node.js"],
-    "salary_expectation": 180000,
-    "email": "ivanov@example.com",
-    "phone": "+79001234567"
+    "full_name": "Смирнов Кирилл Андреевич",
+    "city": "Санкт-Петербург",
+    "desired_position": "Специалист по внедрению AI-решений / AI Automation Engineer",
+    "experience_years": 4,
+    "skills": [
+      "AI Automation", "n8n", "PostgreSQL", "Python", "REST API",
+      "BPMN", "CRM-интеграции", "OpenAI API", "Docker", "Git",
+      "SQL", "Анализ бизнес-процессов", "Техническая документация"
+    ],
+    "salary_expectation": 220000,
+    "candidate_summary": "Имею опыт проектирования и внедрения AI-решений для HR, продаж и клиентского сервиса..."
   },
+  "contacts": [
+    {"contact_type": "phone", "contact_value": "+7 (921) 555-78-43"},
+    {"contact_type": "email", "contact_value": "k.smirnov.pro@mail.ru"}
+  ],
   "match": {
-    "vacancy": "Senior Frontend Developer",
-    "score": 85,
+    "vacancy_id": "3cc72567-e82a-4b5f-803a-497878f223b9",
+    "title": "Prompt Engineer / AI Automation Specialist",
+    "role_score": 30,
+    "skills_score": 30,
+    "experience_score": 15,
+    "conditions_score": 15,
+    "score": 90,
     "decision": "match",
-    "reason": "Опыт 5 лет, навыки React и TypeScript соответствуют, город Москва, зарплата в рамках вилки."
+    "reason": "Кандидат соответствует должности и требованиям, имеет необходимые навыки и опыт, а также подходит по зарплатным ожиданиям."
   }
 }
 ```
@@ -96,56 +104,78 @@ HR-специалист получает:
 
 ---
 
-#### Средний score (65)
+#### Средний score (75)
 
 ```json
 {
   "candidate": {
-    "full_name": "Петрова Анна",
+    "full_name": "Смирнов Кирилл Андреевич",
     "city": "Санкт-Петербург",
-    "desired_position": "UX Designer",
-    "experience_years": 2,
-    "skills": ["Figma", "Sketch"],
-    "salary_expectation": 150000
+    "desired_position": "Специалист по внедрению AI-решений / AI Automation Engineer",
+    "experience_years": 4,
+    "skills": [
+      "AI Automation", "n8n", "PostgreSQL", "Python", "REST API",
+      "BPMN", "CRM-интеграции", "OpenAI API", "Docker", "Git"
+    ],
+    "salary_expectation": 220000
   },
+  "contacts": [
+    {"contact_type": "phone", "contact_value": "+7 (921) 555-78-43"},
+    {"contact_type": "email", "contact_value": "k.smirnov.pro@mail.ru"}
+  ],
   "match": {
-    "vacancy": "UX Designer",
-    "score": 65,
+    "vacancy_id": "43c55b9c-367e-4b40-9261-212c204b1872",
+    "title": "Системный аналитик",
+    "role_score": 15,
+    "skills_score": 30,
+    "experience_score": 15,
+    "conditions_score": 15,
+    "score": 75,
     "decision": "match",
-    "reason": "Навыки соответствуют, опыт меньше требуемого (2 года вместо 3), город не совпадает (удалёнка возможна)."
+    "reason": "Кандидат имеет релевантные навыки и опыт, а также соответствует зарплатным ожиданиям и городу."
   }
 }
 ```
 
-**Действие:** Рассмотреть для интервью, обсудить удалённую работу и обучение.
+**Действие:** Рассмотреть для интервью, кандидат имеет смежный профиль.
 
 ---
 
-#### Низкий score (35)
+#### Низкий score (40)
 
-![Результат no_match](screenshots/raw/report_v2_-011.png)
+![Визуальная карточка кандидата](screenshots/raw/report_v2_-011.png)
 
-*Пример неуспешного сопоставления (no_match) с низким score*
+*Визуальная карточка кандидата с результатами matching*
 
 ```json
 {
   "candidate": {
-    "full_name": "Смирнов Сергей",
-    "desired_position": "Backend Developer",
-    "experience_years": 1,
-    "skills": ["Python"],
-    "salary_expectation": 200000
+    "full_name": "Смирнов Кирилл Андреевич",
+    "city": "Санкт-Петербург",
+    "desired_position": "Специалист по внедрению AI-решений / AI Automation Engineer",
+    "experience_years": 4,
+    "skills": ["AI Automation", "n8n", "PostgreSQL", "Python"],
+    "salary_expectation": 220000
   },
+  "contacts": [
+    {"contact_type": "phone", "contact_value": "+7 (921) 555-78-43"},
+    {"contact_type": "email", "contact_value": "k.smirnov.pro@mail.ru"}
+  ],
   "match": {
-    "vacancy": "Senior Backend Developer",
-    "score": 35,
+    "vacancy_id": "3f11544a-458c-4c1b-b853-702286378cec",
+    "title": "Специалист по разметке данных",
+    "role_score": 10,
+    "skills_score": 20,
+    "experience_score": 10,
+    "conditions_score": 0,
+    "score": 40,
     "decision": "no_match",
-    "reason": "Опыт 1 год вместо 5, навыки ограничены Python, зарплата выше вилки, нет ключевых навыков (Java, Spring)."
+    "reason": "Кандидат имеет опыт в AI, но его желаемая позиция и навыки не соответствуют требованиям вакансии, а также зарплатные ожидания значительно выше."
   }
 }
 ```
 
-**Действие:** Отклонить или предложить другую вакансию (Junior).
+**Действие:** Отклонить или предложить вакансию с более высоким уровнем.
 
 ---
 
@@ -153,13 +183,14 @@ HR-специалист получает:
 
 ### Сценарий 1: Высокий score (80+)
 
-**Ситуация:** Кандидат получил score 85 для вакансии Senior Frontend Developer.
+**Ситуация:** Кандидат получил score 90 для вакансии Prompt Engineer / AI Automation Specialist.
 
 **Данные кандидата:**
-- Опыт: 5 лет (соответствует)
-- Навыки: React, TypeScript, Node.js (соответствуют)
-- Город: Москва (соответствует)
-- Зарплата: 180 000 руб. (в рамках вилки)
+- ФИО: Смирнов Кирилл Андреевич
+- Опыт: 4 года (соответствует)
+- Навыки: AI Automation, n8n, PostgreSQL, Python, REST API (соответствуют)
+- Город: Санкт-Петербург (удалёнка возможна)
+- Зарплата: 220 000 руб. (в рамках вилки 120-250 тыс.)
 
 **Рекомендация:**
 - ✅ Позвонить в течение 24 часов
@@ -170,35 +201,37 @@ HR-специалист получает:
 
 ### Сценарий 2: Средний score (60-80)
 
-**Ситуация:** Кандидат получил score 70 для вакансии Middle React Developer.
+**Ситуация:** Кандидат получил score 75 для вакансии Системный аналитик.
 
 **Данные кандидата:**
-- Опыт: 3 года (ниже требуемого 4)
-- Навыки: React, JavaScript (TypeScript отсутствует)
-- Город: Удалённо (офис не требуется)
-- Зарплата: 150 000 руб. (в рамках вилки)
+- ФИО: Смирнов Кирилл Андреевич
+- Опыт: 4 года (соответствует)
+- Навыки: BPMN, SQL, REST API, анализ бизнес-процессов (соответствуют)
+- Город: Санкт-Петербург (возможна удалёнка)
+- Зарплата: 220 000 руб. (верхняя граница вилки)
 
 **Рекомендация:**
 - ✅ Рассмотреть для интервью
-- ⚠️ Оценить готовность к обучению TypeScript
-- ⚠️ Обсудить опыт работы с TypeScript на практике
+- ⚠️ Обсудить релевантность опыта (AI vs классическая аналитика)
+- ⚠️ Оценить готовность к смежным задачам
 
 ---
 
 ### Сценарий 3: Низкий score (< 60)
 
-**Ситуация:** Кандидат получил score 45 для вакансии Senior Backend Developer.
+**Ситуация:** Кандидат получил score 40 для вакансии Специалист по разметке данных.
 
 **Данные кандидата:**
-- Опыт: 2 года (требуется 5)
-- Навыки: Python, Django (требуется Java, Spring)
-- Город: Регион (офис Москва)
-- Зарплата: 220 000 руб. (выше вилки)
+- ФИО: Смирнов Кирилл Андреевич
+- Опыт: 4 года (избыточен для позиции)
+- Навыки: AI Automation, n8n, PostgreSQL (избыточны для разметки)
+- Город: Санкт-Петербург (возможна удалёнка)
+- Зарплата: 220 000 руб. (выше вилки 60-120 тыс.)
 
 **Рекомендация:**
-- ❌ Не подходит для Senior позиции
-- ✅ Рассмотреть для Junior/Middle позиции
-- ✅ Или отклонить
+- ❌ Не подходит для позиции разметчика (overqualified)
+- ✅ Предложить вакансию Prompt Engineer / AI Automation Specialist
+- ✅ Или отклонить с объяснением причин
 
 ---
 
@@ -210,13 +243,13 @@ HR-специалист получает:
 
 | Вакансия | Score | Decision |
 |----------|-------|----------|
-| Senior Frontend Developer | 85 | match |
-| Middle React Developer | 90 | match |
-| Fullstack Developer | 70 | match |
+| Prompt Engineer / AI Automation Specialist | 90 | match |
+| Системный аналитик | 75 | match |
+| Специалист по разметке данных | 40 | no_match |
 
 **Рекомендация:**
-- Выбрать вакансию с наивысшим score (Middle React Developer)
-- Или предложить кандидату выбор
+- Выбрать вакансию с наивысшим score (Prompt Engineer)
+- Или предложить кандидату выбор из двух match-вакансий
 
 ---
 
@@ -224,20 +257,33 @@ HR-специалист получает:
 
 ### Структура данных кандидата
 
-Система автоматически извлекает:
+Система автоматически извлекает и хранит данные в двух таблицах:
 
-**Обязательные поля:**
-- `full_name` — ФИО кандидата
-- `desired_position` — желаемая должность
-- `experience_years` — опыт работы (в годах)
+**Таблица `candidates` — профиль кандидата:**
 
-**Дополнительные поля:**
-- `city` — город проживания
-- `skills` — навыки (массив)
-- `salary_expectation` — зарплатные ожидания
-- `email` — email
-- `phone` — телефон
-- `summary` — краткое описание
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Уникальный идентификатор |
+| `full_name` | TEXT | ФИО кандидата |
+| `city` | TEXT | Город проживания |
+| `desired_position` | TEXT | Желаемая должность |
+| `experience_years` | NUMERIC | Опыт работы (в годах) |
+| `skills` | TEXT[] | Навыки (массив) |
+| `salary_expectation` | NUMERIC | Зарплатные ожидания |
+| `candidate_summary` | TEXT | Краткое описание |
+| `data_quality_status` | TEXT | Статус качества данных |
+
+**Таблица `candidate_contacts` — контакты кандидата:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `candidate_id` | UUID | Ссылка на кандидата |
+| `contact_type` | TEXT | Тип контакта (email, phone) |
+| `contact_value` | TEXT | Значение контакта |
+| `normalized_value` | TEXT | Нормализованное значение |
+| `is_primary` | BOOLEAN | Основной контакт |
+
+**Примечание:** Контакты извлекаются автоматически и хранятся отдельно от профиля кандидата.
 
 ---
 
@@ -262,6 +308,33 @@ HR-специалист может:
 1. **Проверить извлечённые данные** — сравнить с исходным резюме
 2. **Дополнить данные** — добавить недостающие поля
 3. **Исправить ошибки** — скорректировать неточности
+
+---
+
+### Структура данных matching
+
+**Таблица `matches` — результаты сопоставления:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `candidate_id` | UUID | Ссылка на кандидата |
+| `vacancy_id` | UUID | Ссылка на вакансию |
+| `score` | NUMERIC | Итоговая оценка (0-100) |
+| `decision` | TEXT | Решение (match/no_match) |
+| `reason` | TEXT | Обоснование решения |
+
+**Детальные оценки в `raw_llm_response`:**
+
+| Поле | Баллы | Описание |
+|------|-------|----------|
+| `role_score` | 0-30 | Соответствие должности/роли |
+| `skills_score` | 0-35 | Соответствие навыков |
+| `experience_score` | 0-20 | Соответствие опыта |
+| `conditions_score` | 0-15 | Город, формат, зарплата |
+
+**Правила принятия решения:**
+- `score >= 60` → `decision = "match"`
+- `score < 60` → `decision = "no_match"`
 
 ---
 
@@ -333,7 +406,16 @@ Score — рекомендация, не обязательство. HR-спец
 
 ### Как связаться с кандидатом?
 
-Используйте контакты, извлечённые системой:
+Используйте контакты из таблицы `candidate_contacts`:
+
+```sql
+SELECT contact_type, contact_value, normalized_value
+FROM candidate_contacts
+WHERE candidate_id = '<candidate_id>'
+ORDER BY is_primary DESC;
+```
+
+**Типы контактов:**
 - `email` — email кандидата
 - `phone` — телефон кандидата
 
@@ -351,10 +433,27 @@ Score — рекомендация, не обязательство. HR-спец
 ### Как добавить вакансию в систему?
 
 Вакансии добавляются администратором в базу данных:
-1. Создайте запись в таблице `vacancies`
-2. Укажите title, description, requirements
-3. Укажите salary_min, salary_max
-4. Установите status = 'active'
+
+```sql
+INSERT INTO vacancies (title, description, requirements, salary_min, salary_max, status)
+VALUES (
+  'Название вакансии',
+  'Описание вакансии',
+  'Требования к кандидату',
+  150000,  -- salary_min
+  220000,  -- salary_max
+  'open'   -- status: 'open' или 'closed'
+);
+```
+
+**Обязательные поля:**
+- `title` — название вакансии
+- `description` — описание
+- `status` — статус ('open', 'closed')
+
+**Опциональные поля:**
+- `requirements` — требования
+- `salary_min`, `salary_max` — вилка зарплат
 
 ---
 
@@ -427,4 +526,4 @@ Score — рекомендация, не обязательство. HR-спец
 ---
 
 **Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-23
+**Последнее обновление:** 2026-06-24

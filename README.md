@@ -42,16 +42,27 @@
 
 **Полный путь резюме:**
 
-```
-Кандидат → Telegram Bot → n8n Workflows → OpenAI API → Matching → Ответ кандидату
-                                   ↓
-                            PostgreSQL (кандидаты, вакансии)
+```mermaid
+graph LR
+    A[Кандидат] -->|текст/голос/документ/фото| B[Telegram Bot]
+    B -->|webhook| C[HR Intake]
+    C -->|normalized_text| D[HR Processing Worker]
+    D -->|extraction| E[GPT-4o-mini]
+    E -->|candidate_profile| F[Matching]
+    F -->|matching| E
+    E -->|match_result| G[HR Delivery Worker]
+    G -->|TTS/Visual| H[OpenAI API]
+    H -->|media| G
+    G -->|message| I[Telegram Bot]
+    I -->|result| A
+    D -->|save| J[(PostgreSQL)]
+    J -->|read| D
 ```
 
 1. **Кандидат** отправляет резюме (текст/голос/документ/фото)
 2. **HR Intake** принимает, классифицирует тип, нормализует данные
 3. **GPT-4o-mini** извлекает структурированные данные (ФИО, город, навыки, зарплата)
-4. **GPT-4** сравнивает профиль с вакансиями, формирует score (0-100)
+4. **GPT-4o-mini** сравнивает профиль с вакансиями, формирует score (0-100)
 5. **HR Delivery Worker** генерирует мультимедийный ответ (текст + TTS + визуал)
 6. **Кандидат** получает результат matching за < 1 минуту
 
@@ -78,7 +89,7 @@
 |-----------|-----------|-----------|
 | **Workflow Automation** | n8n | Оркестрация процессов |
 | **Database** | PostgreSQL | Хранение данных |
-| **AI Models** | OpenAI GPT-4o-mini, GPT-4, TTS, DALL-E 3 | Извлечение данных, matching, мультимедиа |
+| **AI Models** | OpenAI GPT-4o-mini, GPT-4o-mini-tts, GPT-image-1, Sora-2 | Извлечение данных, matching, мультимедиа |
 | **Bot** | Telegram Bot API | Входной канал |
 
 **Подробно:** [Архитектура](docs/ARCHITECTURE.md)
@@ -135,9 +146,9 @@ psql -U hr_user -d hr_assistant -f database/schema_hr_assistant.sql
 
 ## Состояние проекта
 
-**Статус:** Production-ready (v2.0)  
-**Покрытие документации:** 100%  
-**Известные проблемы:** 2 (KP-001, KP-002)
+**Статус:** Production-ready (v2.0)
+**Покрытие документации:** 100%
+**Известные проблемы:** 1 (KP-001: metadata gap)
 
 **Подробно:** [PROJECT_STATE](docs/PROJECT_STATE.md)
 
@@ -170,12 +181,10 @@ hr-assistant/
 
 ## Контакты
 
-**Проект:** HR Assistant  
-**Модуль:** PEm05  
-**Интеграция в APL:** 2026-06-23
+**Проект:** HR Assistant
+**Модуль:** PEm05
+**Версия:** 2.0
 
 ---
 
-**См. также:**
-- [AI Automation Portfolio Lab](../../README.md)
-- [Lead Qualification MVP](../n8n-lead-qualification/) — reference implementation
+**Статус:** Production-ready | **Документация:** 100% | **Код:** MIT License

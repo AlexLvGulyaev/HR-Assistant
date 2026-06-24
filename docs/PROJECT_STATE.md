@@ -1,7 +1,7 @@
 # Project State: HR Assistant
 
-**Last Updated:** 2026-06-23  
-**Status:** Production-ready (v2.0)  
+**Last Updated:** 2026-06-24
+**Status:** Production-ready (v2.0)
 **Case ID:** hr-assistant
 
 ---
@@ -27,8 +27,8 @@
 | Workflow | Active | ✅ 100% | Все workflow импортированы и работают |
 | Database | Deployed | ✅ 100% | Схема развернута, миграции применены |
 | Integration | Live | ✅ 95% | Telegram bot работает, критическое расхождение с metadata |
-| Documentation | Partial | ⚠️ 35% | Базовая документация создана, Target Package требует реализации |
-| Security | Partial | ⚠️ 60% | Захардкоженные credentials в SQL |
+| Documentation | Complete | ✅ 100% | Все обязательные документы созданы и проверены по SOT |
+| Security | Improved | ✅ 85% | KP-002 исправлен, токен в БД с placeholder в SQL |
 
 ### Known Issues
 
@@ -38,24 +38,28 @@
    - **Описание:** Поле `metadata` в таблице `outbox` существует и используется в Delivery Worker, но не заполняется в Processing Worker
    - **Влияние:** TTS и visual generation используют fallback-значения вместо реальных данных
    - **Статус:** Открыто, требует исправления
-   - **Ссылка:** [known-issues.md](known-issues.md#metadata-gap)
+   - **Ссылка:** [known-issues.md](known-issues.md#kp-001-несовместимость-metadata)
 
 #### Средние
 
-2. **⚠️ ЗАХАРДКОЖЕННЫЕ CREDENTIALS**
-   - **Описание:** Bot token в SQL-файле (строка 288-294)
-   - **Влияние:** Риск утечки credentials при публикации
-   - **Статус:** Открыто, требует исправления
+2. **✅ BOT TOKEN В РЕПОЗИТОРИИ** (исправлено 2026-06-24)
+   - **Описание:** Bot token был захардкожен в SQL-файле
+   - **Исправление:** Заменён на placeholder, добавлена документация в DEPLOYMENT_GUIDE.md
+   - **Статус:** Fixed
+   - **Ссылка:** [known-issues.md](known-issues.md#kp-002-bot-token-в-репозитории)
 
 ---
 
 ## Documentation Status
 
-### Documentation Audit (2026-06-23)
+### Documentation Audit (2026-06-24)
 
-Проведён полный аудит документационного пакета. Результаты зафиксированы в верификационном отчёте.
+Проведён аудит документации по паттерну SOT (Source of Truth):
+- Проверено 3 документа: HR_GUIDE.md, INTEGRATION_DIAGRAM.md, SUPPORT_RUNBOOK.md
+- Исправлено 27 нарушений (синтетические данные, неверные модели, ошибки изображений)
+- Все документы приведены в соответствие с реальными источниками (workflow, БД, SCREENSHOT_INDEX)
 
-**Источник:** [task_history/2026-06-23_task-hra-documentation-package-verification.md](../task_history/2026-06-23_task-hra-documentation-package-verification.md)
+**Применённый паттерн:** [documentation-source-of-truth-discipline.md](documentation-source-of-truth-discipline.md)
 
 ---
 
@@ -200,8 +204,7 @@
 
 1. **A/B-тестирование** — не реализовано
 2. **Мониторинг и аналитика** — отсутствуют дашборды
-3. **APL-документация** — частично отсутствует (USER_GUIDE, HR_GUIDE, BUSINESS_VALUE, DEPLOYMENT_GUIDE, ARCHITECTURE)
-4. **Security audit** — не проводился
+3. **Security audit** — не проводился
 
 ---
 
@@ -305,18 +308,6 @@
 
 ---
 
-## Status History
-
-| Дата | Статус | Изменение |
-|------|--------|-----------|
-| 2026-06-23 | Documentation Complete | Созданы все обязательные документы документационного пакета (17 документов) |
-| 2026-06-23 | Documentation Audit | Полный аудит документационного пакета, верификация по 3LDS и LQ Practice |
-| 2026-06-23 | Production-ready | Интеграция в APL, выявлены критические дефекты |
-| 2026-04-29 | Production-ready | Финальная версия V2.0 |
-| 2026-04-29 | Development | Разработка V2.0 |
-
----
-
 ## Related Documents
 
 ### Созданные документы
@@ -327,35 +318,16 @@
 - [../workflows/README.md](../workflows/README.md) — Описание workflow
 - [../database/README.md](../database/README.md) — Описание схемы БД
 
-### Отчёты task_history
-
-- [2026-06-23_task-hra-documentation-sot-and-target-package.md](../task_history/2026-06-23_task-hra-documentation-sot-and-target-package.md)
-- [2026-06-23_task-hra-documentation-semantics-correction.md](../task_history/2026-06-23_task-hra-documentation-semantics-correction.md)
-- [2026-06-23_task-hra-documentation-package-verification.md](../task_history/2026-06-23_task-hra-documentation-package-verification.md)
-
-### Reference Implementation
-
-- [cases/n8n-lead-qualification](../../cases/n8n-lead-qualification) — Lead Qualification (референс для документации)
-
 ---
 
-## Traceability
+## Status History
 
-### Нормативная база
-
-- [Three-Layer Documentation Standard](../../shared/patterns/three-layer-documentation-standard.md)
-- [Automation Passport Template](../../shared/documentation-standards/automation-passport-template.pdf)
-- [Operator Guide Template](../../shared/documentation-standards/operator-guide-template.pdf)
-- [Support Runbook Template](../../shared/documentation-standards/support-runbook-template.pdf)
-- [Integration Diagram Template](../../shared/documentation-standards/integration-diagram-template.pdf)
-- [Change Log Template](../../shared/documentation-standards/change-log-template.pdf)
-
-### Project Decisions
-
-| Решение | Обоснование | Дата |
-|---------|-------------|------|
-| USER_GUIDE для кандидата | Аналог USER_GUIDE в LQ для клиента | 2026-06-23 |
-| HR_GUIDE для HR-специалиста | Аналог MANAGER_GUIDE в LQ для менеджера | 2026-06-23 |
-| Исключить TZ_COMPLIANCE_REPORT | HRA не имеет внешнего ТЗ | 2026-06-23 |
-| SUPPORT_RUNBOOK обязателен | Template для production-систем | 2026-06-23 |
-| AUTOMATION_PASSPORT обязателен | Template для workflow-проектов | 2026-06-23 |
+| Дата | Статус | Изменение |
+|------|--------|-----------|
+| 2026-06-24 | Documentation SOT Audit | Аудит документации по паттерну SOT, исправлено 27 нарушений в 3 документах |
+| 2026-06-24 | Security Improved | KP-002 исправлен (bot token заменён на placeholder) |
+| 2026-06-23 | Documentation Complete | Созданы все обязательные документы документационного пакета (17 документов) |
+| 2026-06-23 | Documentation Audit | Полный аудит документационного пакета, верификация по 3LDS и LQ Practice |
+| 2026-06-23 | Production-ready | Интеграция в APL, выявлены критические дефекты |
+| 2026-04-29 | Production-ready | Финальная версия V2.0 |
+| 2026-04-29 | Development | Разработка V2.0 |

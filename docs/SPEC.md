@@ -1,7 +1,7 @@
 # SPEC: HR Assistant
 
-**Version:** 2.0  
-**Last Updated:** 2026-06-23  
+**Version:** 2.0
+**Last Updated:** 2026-06-24
 **Status:** Production-ready
 
 ---
@@ -72,37 +72,55 @@
 
 ### 2.2 Компоненты системы
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Telegram Bot API                        │
-│                  (Webhook + Inline Keyboard)                 │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     n8n Workflows                            │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  HR Intake   │──│ Processing   │──│  Delivery    │      │
-│  │  (Webhook)   │  │   Worker     │  │   Worker     │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│         │                  │                  │              │
-│         └──────────────────┼──────────────────┘              │
-│                            ▼                                 │
-│                   ┌──────────────┐                           │
-│                   │  PostgreSQL  │                           │
-│                   │   Database   │                           │
-│                   └──────────────┘                           │
-└─────────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      OpenAI API                              │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
-│  │  GPT-4   │ │ GPT-4o   │ │  TTS     │ │  Sora-2  │       │
-│  │          │ │  mini    │ │          │ │          │       │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph External["Внешние системы"]
+        Telegram[Telegram Bot API<br/>Webhook + Inline Keyboard]
+        OpenAI[OpenAI API]
+    end
+
+    subgraph n8n["n8n Workflows"]
+        Intake[HR Intake<br/>Webhook receiver]
+        Processing[HR Processing Worker<br/>Data extraction & Matching]
+        Delivery[HR Delivery Worker<br/>Message delivery & Media generation]
+        Video[HR Generate Video<br/>On-demand video]
+        Watchdog1[Watchdog<br/>candidate_inputs]
+        Watchdog2[Watchdog<br/>outbox]
+    end
+
+    subgraph DB["Database"]
+        PostgreSQL[(PostgreSQL<br/>11 tables)]
+    end
+
+    subgraph AI["OpenAI Models"]
+        GPT[gpt-4o-mini<br/>Data extraction & Matching]
+        TTS[gpt-4o-mini-tts<br/>Text-to-Speech]
+        Image[gpt-image-1<br/>Image Generation]
+        Sora[sora-2<br/>Video Generation]
+    end
+
+    Telegram -->|messages & callbacks| Intake
+    Intake -->|candidate_inputs| PostgreSQL
+    PostgreSQL -->|polling| Processing
+    Processing -->|gpt-4o-mini| GPT
+    Processing -->|candidates & matches| PostgreSQL
+    PostgreSQL -->|polling| Delivery
+    Delivery -->|gpt-4o-mini-tts| TTS
+    Delivery -->|gpt-image-1| Image
+    Delivery -->|outbox| PostgreSQL
+    PostgreSQL -->|messages| Telegram
+
+    Processing -.->|on-demand| Video
+    Video -->|sora-2| Sora
+    Video -->|video| PostgreSQL
+
+    Watchdog1 -.->|cleanup| PostgreSQL
+    Watchdog2 -.->|cleanup| PostgreSQL
+
+    style External fill:#e1f5ff
+    style n8n fill:#fff4e1
+    style DB fill:#f0f0f0
+    style AI fill:#f9f9f9
 ```
 
 ### 2.3 Workflow состав
@@ -128,10 +146,10 @@
 
 **Функции:**
 - Чтение записей из `candidate_inputs` (status='prepared')
-- Извлечение данных кандидата с помощью OpenAI GPT-4o-mini
+- Извлечение данных кандидата с помощью OpenAI GPT-4o-mini (JSON Schema)
 - Валидация JSON-структуры
 - Создание/обновление записи кандидата в `candidates`
-- Matching с вакансиями (GPT-4)
+- Matching с вакансиями (GPT-4o-mini, JSON Schema)
 - Подготовка ответа в `outbox`
 
 **Обработка ошибок:**
@@ -349,12 +367,14 @@
 
 1. **GPT-4o-mini**
    - Извлечение данных кандидата из текста резюме
+   - Matching кандидата с вакансиями
    - Температура: 0
    - Response format: JSON Schema
 
-2. **GPT-4**
-   - Matching кандидата с вакансиями
-   - Анализ соответствия
+2. **GPT-4o-mini-tts**
+   - Генерация голосовых сообщений
+   - Язык: русский
+   - Voice: alloy
 
 3. **GPT-image-1**
    - Генерация визуальных материалов (инфографика)
@@ -364,10 +384,6 @@
    - Генерация видео
    - Размер: 720x1280 (vertical)
    - Длительность: 4 секунды
-
-5. **TTS**
-   - Генерация голосовых сообщений
-   - Язык: русский
 
 ---
 
@@ -459,7 +475,7 @@
 
 ### 4.3 Безопасность
 
-**NFR-008:** Хранение credentials в таблице `bot_credentials` (⚠️ Требуется улучшение — вынести в env).
+**NFR-008:** Хранение credentials в таблице `bot_credentials` (✅ KP-002 исправлен — placeholder в SQL, реальный токен в БД).
 
 **NFR-009:** Уникальные индексы для предотвращения дублирования сообщений.
 
@@ -509,15 +525,20 @@
 
 ### 6.2 Средние
 
-#### KP-002: ЗАХАРДКОЖЕННЫЕ CREDENTIALS
+#### KP-002: BOT TOKEN В РЕПОЗИТОРИИ (исправлено 2026-06-24)
 
-**Описание:** Bot token в SQL-файле (строка 288-294).
+**Описание:** Bot token был захардкожен в SQL-файле.
 
 **Влияние:** Риск утечки credentials при публикации.
 
-**Статус:** Открыто.
+**Статус:** ✅ Fixed.
 
-**Решение:** Перенести в environment variables.
+**Решение:**
+1. Реальный токен заменён на placeholder в SQL-файле
+2. Добавлена документация в DEPLOYMENT_GUIDE.md
+3. Добавлено предупреждение в README.md
+
+**Архитектура:** Токен хранится в таблице `bot_credentials` (БД), placeholder в SQL заменяется при деплое.
 
 ---
 
