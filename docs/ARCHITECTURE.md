@@ -19,46 +19,56 @@ HR Assistant построен по принципу **event-driven architecture*
 
 ## Архитектурная диаграмма
 
-![Архитектура HR Assistant](screenshots/raw/report_v2_-000.png)
+```mermaid
+graph TB
+    subgraph External["Внешние системы"]
+        TG[Telegram Bot API<br/>Webhook + Inline Keyboard]
+        OAI[OpenAI API<br/>GPT-4o-mini, GPT-4, TTS,<br/>GPT-image-1, Sora-2]
+    end
 
-*Архитектура системы: Telegram Bot → n8n Workflows → PostgreSQL → OpenAI API*
+    subgraph N8N["n8n Workflows"]
+        INTAKE[HR Intake<br/>Webhook]
+        PROC[Processing Worker<br/>Schedule: 10s]
+        DELIV[Delivery Worker<br/>Schedule: 10s]
+        VIDEO[HR Generate Video<br/>Manual/Trigger]
+        WD1[Watchdog<br/>candidate_inputs<br/>Schedule: 5m]
+        WD2[Watchdog<br/>outbox<br/>Schedule: 10m]
+    end
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Telegram Bot API                        │
-│                  (Webhook + Inline Keyboard)                 │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     n8n Workflows                            │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  HR Intake   │──│ Processing   │──│  Delivery    │      │
-│  │  (Webhook)   │  │   Worker     │  │   Worker     │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│         │                  │                  │              │
-│         └──────────────────┼──────────────────┘              │
-│                            ▼                                 │
-│                   ┌──────────────┐                           │
-│                   │  PostgreSQL  │                           │
-│                   │   Database   │                           │
-│                   └──────────────┘                           │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ HR Generate  │  │   Watchdog   │  │   Watchdog   │      │
-│  │    Video     │  │  (inputs)    │  │  (outbox)    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      OpenAI API                              │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
-│  │  GPT-4   │ │ GPT-4o   │ │  TTS     │ │  Sora-2  │       │
-│  │          │ │  mini    │ │          │ │          │       │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
-└─────────────────────────────────────────────────────────────┘
+    subgraph DB["PostgreSQL Database"]
+        IE[intake_events]
+        CI[candidate_inputs]
+        CAND[candidates]
+        VAC[vacancies]
+        MATCH[matches]
+        OUT[outbox]
+        LOGS[processing_logs]
+    end
+
+    TG -->|message/voice/doc/photo| INTAKE
+    INTAKE -->|insert| IE
+    INTAKE -->|insert| CI
+    
+    PROC -->|claim prepared| CI
+    PROC -->|extract data| OAI
+    PROC -->|insert| CAND
+    PROC -->|match| VAC
+    PROC -->|insert| MATCH
+    PROC -->|insert| OUT
+    
+    DELIV -->|claim pending| OUT
+    DELIV -->|TTS/visual| OAI
+    DELIV -->|send| TG
+    
+    VIDEO -->|generate| OAI
+    VIDEO -->|send| TG
+    
+    WD1 -->|reset stuck| CI
+    WD2 -->|reset stuck| OUT
+
+    style External fill:#e1f5ff
+    style N8N fill:#fff4e1
+    style DB fill:#f0f0f0
 ```
 
 ---
@@ -79,9 +89,19 @@ HR Assistant построен по принципу **event-driven architecture*
 
 **Узлы:** 43
 
+![Workflow HR Intake](screenshots/raw/report_v2_-016.png)
+
+*Workflow приёма входных данных (HR Intake)*
+
 **Поток данных:**
-```
-Telegram Message → Webhook → Classification → Normalization → DB Insert
+```mermaid
+graph LR
+    TG[Telegram Message] --> WEB[Webhook]
+    WEB --> CLASS[Classification]
+    CLASS --> NORM[Normalization]
+    NORM --> DB1[intake_events]
+    NORM --> DB2[candidate_inputs]
+    DB2 -->|status: prepared| QUEUE[Queue]
 ```
 
 ---
@@ -97,14 +117,27 @@ Telegram Message → Webhook → Classification → Normalization → DB Insert
 - Извлечение данных с помощью GPT-4o-mini
 - Валидация JSON-структуры
 - Создание записи кандидата в `candidates`
-- Matching с вакансиями (GPT-4)
+- Matching с вакансиями (GPT-4o-mini)
 - Подготовка ответа в `outbox`
 
 **Узлы:** 47
 
+![Workflow Processing Worker](screenshots/raw/report_v2_-017.png)
+
+*Workflow обработки кандидата (Processing Worker)*
+
 **Поток данных:**
-```
-DB Query → OpenAI (Extract) → JSON Validate → DB Insert (candidates) → OpenAI (Match) → DB Insert (outbox)
+```mermaid
+graph LR
+    DB1[candidate_inputs<br/>status: prepared] --> CLAIM[Claim<br/>FOR UPDATE SKIP LOCKED]
+    CLAIM --> EXT[Extract Data<br/>GPT-4o-mini]
+    EXT --> VAL[Validate JSON]
+    VAL -->|valid| INS1[Insert candidates]
+    INS1 --> MATCH[Match Vacancies<br/>GPT-4o-mini]
+    MATCH --> INS2[Insert matches]
+    INS2 --> INS3[Insert outbox<br/>status: pending]
+    VAL -->|invalid| REPAIR[JSON Repair]
+    REPAIR --> VAL
 ```
 
 **Обработка ошибок:**
@@ -129,9 +162,22 @@ DB Query → OpenAI (Extract) → JSON Validate → DB Insert (candidates) → O
 
 **Узлы:** 21
 
+![Workflow Delivery Worker](screenshots/raw/report_v2_-018.png)
+
+*Workflow доставки результата (Delivery Worker)*
+
 **Поток данных:**
-```
-DB Query → TTS Generation → Visual Generation → Telegram Send → DB Update
+```mermaid
+graph LR
+    DB1[outbox<br/>status: pending] --> CLAIM[Claim<br/>FOR UPDATE SKIP LOCKED]
+    CLAIM --> TTS{tts_required?}
+    TTS -->|yes| GEN1[Generate TTS<br/>OpenAI]
+    TTS -->|no| VIS{visual_required?}
+    GEN1 --> VIS
+    VIS -->|yes| GEN2[Generate Visual<br/>GPT-image-1]
+    VIS -->|no| SEND[Send Telegram]
+    GEN2 --> SEND
+    SEND --> UPD[Update status<br/>sent/error]
 ```
 
 ---
@@ -148,6 +194,10 @@ DB Query → TTS Generation → Visual Generation → Telegram Send → DB Updat
 - Отправка результата в Telegram
 
 **Узлы:** 15
+
+![Workflow Generate Video](screenshots/raw/report_v2_-019.png)
+
+*Workflow генерации видео (on-demand)*
 
 ---
 
@@ -186,90 +236,6 @@ DB Query → TTS Generation → Visual Generation → Telegram Send → DB Updat
 ![ER-диаграмма базы данных HR Assistant](screenshots/raw/report_v2_-001.png)
 
 *ER-диаграмма базы данных HR Assistant*
-
-```
-┌─────────────────┐
-│  intake_events   │
-│  ─────────────── │
-│  id (PK)         │
-│  execution_id    │
-│  source          │
-│  input_type      │
-│  telegram_chat_id│
-│  telegram_user_id│
-│  received_at     │
-│  status          │
-└────────┬─────────┘
-         │
-         │ 1:1
-         ▼
-┌─────────────────────┐
-│  candidate_inputs   │
-│  ────────────────── │
-│  id (PK)            │
-│  intake_event_id(FK)│
-│  input_type         │
-│  normalized_text    │
-│  processing_status  │
-└────────┬─────────────┘
-         │
-         │ 1:1
-         ▼
-┌─────────────────────┐      ┌─────────────────────┐
-│    candidates       │      │ candidate_contacts  │
-│  ────────────────── │      │  ────────────────── │
-│  id (PK)            │──1:N─│  id (PK)            │
-│  full_name          │      │  candidate_id (FK)  │
-│  city               │      │  contact_type       │
-│  desired_position   │      │  contact_value      │
-│  experience_years   │      └─────────────────────┘
-│  skills             │
-│  salary_expectation │
-│  source_input_id(FK)│
-└────────┬─────────────┘
-         │
-         │ N:M
-         ▼
-┌─────────────────────┐      ┌─────────────────────┐
-│      matches        │      │     vacancies       │
-│  ────────────────── │      │  ────────────────── │
-│  id (PK)            │      │  id (PK)            │
-│  candidate_id (FK)  │      │  title              │
-│  vacancy_id (FK)    │      │  description        │
-│  score              │      │  requirements       │
-│  decision           │      │  salary_min         │
-│  reason             │      │  salary_max         │
-│  created_at         │      │  status             │
-└─────────────────────┘      └─────────────────────┘
-         │
-         │ 1:1
-         ▼
-┌─────────────────────┐
-│  final_decisions    │
-│  ────────────────── │
-│  id (PK)            │
-│  candidate_id (FK)  │
-│  best_match_id (FK)│
-│  has_match          │
-│  decision_reason    │
-└─────────────────────┘
-         │
-         │ 1:1
-         ▼
-┌─────────────────────┐
-│      outbox         │
-│  ────────────────── │
-│  id (PK)            │
-│  intake_event_id(FK)│
-│  candidate_id (FK)  │
-│  channel            │
-│  recipient          │
-│  message_type       │
-│  body               │
-│  metadata (jsonb)   │
-│  status             │
-└─────────────────────┘
-```
 
 ---
 
@@ -311,41 +277,35 @@ DB Query → TTS Generation → Visual Generation → Telegram Send → DB Updat
 
 ### Общий pipeline обработки
 
-```
-Пользователь (Telegram)
-    │
-    ▼
-HR Intake
-    │
-    ├─ Классификация типа (text/voice/document/image/callback)
-    ├─ Нормализация данных
-    └─ Запись в БД (intake_events, candidate_inputs)
-    │
-    ▼
-PostgreSQL (candidate_inputs: status='prepared')
-    │
-    ▼
-HR Processing Worker
-    │
-    ├─ Извлечение данных (GPT-4o-mini)
-    ├─ Валидация JSON
-    ├─ Создание кандидата (candidates)
-    ├─ Matching с вакансиями (GPT-4)
-    └─ Подготовка ответа (outbox)
-    │
-    ▼
-PostgreSQL (outbox: status='pending')
-    │
-    ▼
-HR Delivery Worker
-    │
-    ├─ Генерация TTS (OpenAI TTS)
-    ├─ Генерация визуалов (GPT-image-1)
-    ├─ Отправка в Telegram
-    └─ Обновление статуса (outbox: status='sent')
-    │
-    ▼
-Telegram (ответ пользователю)
+```mermaid
+sequenceDiagram
+    participant User as Пользователь
+    participant TG as Telegram
+    participant Intake as HR Intake
+    participant DB as PostgreSQL
+    participant Proc as Processing Worker
+    participant OAI as OpenAI API
+    participant Deliv as Delivery Worker
+
+    User->>TG: Отправляет резюме
+    TG->>Intake: Webhook
+    Intake->>DB: intake_events, candidate_inputs
+    Note over DB: status: prepared
+    
+    Proc->>DB: Claim prepared
+    Proc->>OAI: Extract data (GPT-4o-mini)
+    OAI-->>Proc: Candidate JSON
+    Proc->>DB: candidates
+    Proc->>OAI: Match vacancies
+    OAI-->>Proc: Match result
+    Proc->>DB: matches, outbox
+    Note over DB: status: pending
+    
+    Deliv->>DB: Claim pending
+    Deliv->>OAI: Generate TTS/Visual
+    OAI-->>Deliv: Media
+    Deliv->>TG: Send message
+    TG-->>User: Результат matching
 ```
 
 ---
@@ -354,78 +314,54 @@ Telegram (ответ пользователю)
 
 #### Текст
 
-```
-Telegram Message (text)
-    │
-    ▼
-HR Intake
-    │
-    ├─ Классификация: text
-    ├─ Нормализация: text → normalized_text
-    └─ Запись: candidate_inputs
-    │
-    ▼
-Processing (стандартный pipeline)
+```mermaid
+graph LR
+    TG[Telegram<br/>text] --> INTAKE[HR Intake]
+    INTAKE --> CLASS{Classification}
+    CLASS -->|text| NORM[Normalization]
+    NORM --> DB[candidate_inputs<br/>status: prepared]
 ```
 
 ---
 
 #### Голосовое сообщение
 
-```
-Telegram Message (voice)
-    │
-    ▼
-HR Intake
-    │
-    ├─ Загрузка аудио (Telegram API)
-    ├─ STT (OpenAI Whisper)
-    ├─ Классификация: voice
-    ├─ Нормализация: text → normalized_text
-    └─ Запись: candidate_inputs
-    │
-    ▼
-Processing (стандартный pipeline)
+```mermaid
+graph LR
+    TG[Telegram<br/>voice] --> INTAKE[HR Intake]
+    INTAKE --> DOWN[Download Audio]
+    DOWN --> STT[OpenAI Whisper<br/>STT]
+    STT --> CLASS{Classification}
+    CLASS -->|voice| NORM[Normalization]
+    NORM --> DB[candidate_inputs<br/>status: prepared]
 ```
 
 ---
 
 #### Документ (PDF/DOCX)
 
-```
-Telegram Message (document)
-    │
-    ▼
-HR Intake
-    │
-    ├─ Загрузка файла (Telegram API)
-    ├─ Извлечение текста (PDF/DOCX parser)
-    ├─ Классификация: document
-    ├─ Нормализация: text → normalized_text
-    └─ Запись: candidate_inputs
-    │
-    ▼
-Processing (стандартный pipeline)
+```mermaid
+graph LR
+    TG[Telegram<br/>document] --> INTAKE[HR Intake]
+    INTAKE --> DOWN[Download File]
+    DOWN --> PARSE[PDF/DOCX<br/>Parser]
+    PARSE --> CLASS{Classification}
+    CLASS -->|document| NORM[Normalization]
+    NORM --> DB[candidate_inputs<br/>status: prepared]
 ```
 
 ---
 
 #### Изображение
 
-```
-Telegram Message (photo)
-    │
-    ▼
-HR Intake
-    │
-    ├─ Загрузка изображения (Telegram API)
-    ├─ OCR (GPT-4 Vision или Tesseract)
-    ├─ Классификация: image
-    ├─ Нормализация: text → normalized_text
-    └─ Запись: candidate_inputs
-    │
-    ▼
-Processing (стандартный pipeline)
+```mermaid
+graph LR
+    TG[Telegram<br/>photo] --> INTAKE[HR Intake]
+    INTAKE --> DOWN[Download Image]
+    DOWN --> OCR[GPT-4 Vision<br/>or Tesseract]
+    OCR --> CLASS{Classification}
+    CLASS -->|image| NORM[Normalization]
+    NORM --> DB[candidate_inputs<br/>status: prepared]
 ```
 
 ---
@@ -461,11 +397,11 @@ curl -X POST "https://api.telegram.org/bot<token>/setWebhook" \
 
 | Модель | Назначение | Параметры |
 |--------|-----------|-----------|
-| **GPT-4o-mini** | Извлечение данных кандидата | Temperature: 0, Response format: JSON Schema |
-| **GPT-4** | Matching кандидата с вакансиями | Temperature: 0 |
+| **GPT-4o-mini** | Извлечение данных кандидата, Matching | Temperature: 0, Response format: JSON Schema |
+| **GPT-4o-mini** | Ремонт невалидного JSON | Temperature: 0, Response format: JSON Schema |
+| **TTS-1** | Генерация голосовых сообщений | Voice: alloy, Language: Russian |
 | **GPT-image-1** | Генерация визуальных материалов | Size: 1024x1024 |
 | **Sora-2** | Генерация видео | Size: 720x1280, Duration: 4 sec |
-| **TTS** | Генерация голосовых сообщений | Language: Russian |
 
 ---
 
@@ -498,10 +434,24 @@ curl -X POST "https://api.telegram.org/bot<token>/setWebhook" \
 ### Fallback сценарии
 
 **Processing Worker:**
-1. Попытка извлечь данные (GPT-4o-mini)
-2. При ошибке → JSON repair
-3. При ошибке → fallback на невалидный JSON
-4. При ошибке → processing error (сообщение пользователю)
+```mermaid
+graph TD
+    START[Извлечение данных] --> EXT{GPT-4o-mini<br/>Extract}
+    EXT -->|success| VAL{Валидация JSON}
+    EXT -->|error| ERR1[Processing Error]
+    
+    VAL -->|valid| MATCH[Matching]
+    VAL -->|invalid| REPAIR{JSON Repair}
+    
+    REPAIR -->|success| VAL
+    REPAIR -->|fail| ERR2[Fallback:<br/>Invalid JSON]
+    
+    MATCH --> SAVE[Save Results]
+    ERR1 --> LOG[Log Error]
+    ERR2 --> LOG
+    SAVE --> END[Success]
+    LOG --> END[Error Status]
+```
 
 **Delivery Worker:**
 1. Попытка отправить сообщение
@@ -642,4 +592,4 @@ HR Assistant использует гибридную архитектуру хр
 ---
 
 **Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-23
+**Последнее обновление:** 2026-06-24
