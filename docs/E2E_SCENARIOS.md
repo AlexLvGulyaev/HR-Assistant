@@ -18,7 +18,7 @@
 
 Кандидат открывает Telegram-бота и отправляет текстовое описание опыта работы.
 
-![Текстовое резюме в Telegram](screenshots/raw/report_v2_-005.png)
+![Текстовое резюме в Telegram](screenshots/raw/report_v2_-002.png)
 
 *Пример текстового резюме, отправленного кандидатом*
 
@@ -46,7 +46,7 @@
 
 HR Intake Workflow принимает сообщение, классифицирует тип (text), нормализует текст и создаёт запись в `candidate_inputs`.
 
-![Нормализованный текст (JSON)](screenshots/raw/report_v2_-009.png)
+![Нормализованный текст (JSON)](screenshots/raw/report_v2_-007.png)
 
 *Нормализованные данные в формате JSON*
 
