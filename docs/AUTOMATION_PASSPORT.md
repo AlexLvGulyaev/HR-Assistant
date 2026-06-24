@@ -13,7 +13,7 @@
 | **Версия** | 2.0 |
 | **Статус** | Production-ready |
 | **Дата запуска** | 2026-04-29 |
-| **Дата паспорта** | 2026-06-23 |
+| **Дата паспорта** | 2026-06-24 |
 
 ---
 
@@ -60,7 +60,7 @@
 ## Владельцы и ответственность
 
 | Роль | Ответственный | Обязанности |
-|------|--------------|--------------|
+|------|--------------|-------------|
 | **Product Owner** | [Имя] | Бизнес-требования, приоритеты, ROI |
 | **Technical Owner** | [Имя] | Архитектура, инфраструктура, обновления |
 | **Operations** | [Имя] | Мониторинг, инциденты, поддержка |
@@ -88,19 +88,59 @@
 |-----------|--------|-----------|
 | **n8n** | 1.0+ | Workflow automation |
 | **PostgreSQL** | 14+ | База данных |
-| **OpenAI API** | GPT-4o-mini, GPT-4, TTS, DALL-E 3 | AI-модели |
+| **OpenAI API** | GPT-4o-mini, gpt-4o-mini-tts, gpt-image-1, sora-2 | AI-модели |
 | **Telegram Bot API** | — | Входной канал |
 
 ### Workflow
 
-| Workflow | Назначение | Критичность |
-|----------|-----------|-------------|
-| **HR Intake** | Приём входящих сообщений | High |
-| **HR Processing Worker** | Извлечение данных, matching | High |
-| **HR Delivery Worker** | Доставка ответов | High |
-| **HR Generate Video** | Генерация видео | Medium |
-| **HR Queue Watchdog - candidate_inputs** | Сброс зависших обработок | High |
-| **HR Queue Watchdog - outbox** | Сброс зависших сообщений | High |
+| Workflow | Узлы | Назначение | Критичность |
+|----------|------|-----------|-------------|
+| **HR Intake** | 43 | Приём входящих сообщений | High |
+| **HR Processing Worker** | 47 | Извлечение данных, matching | High |
+| **HR Delivery Worker** | 21 | Доставка ответов | High |
+| **HR Generate Video** | 15 | Генерация видео | Medium |
+| **HR Queue Watchdog - candidate_inputs** | 2 | Сброс зависших обработок | High |
+| **HR Queue Watchdog - outbox** | 2 | Сброс зависших сообщений | High |
+| **PEm05_ error_handler** | 5 | Централизованная обработка ошибок | High |
+
+---
+
+## База данных
+
+### Таблицы
+
+| Таблица | Назначение | Критичность |
+|---------|-----------|-------------|
+| `intake_events` | Входящие события из Telegram | High |
+| `candidate_inputs` | Нормализованные входные данные | High |
+| `candidates` | Профили кандидатов | High |
+| `candidate_contacts` | Контакты кандидатов | Medium |
+| `vacancies` | Вакансии | High |
+| `matches` | Результаты matching | High |
+| `final_decisions` | Итоговые решения | Medium |
+| `outbox` | Исходящие сообщения | High |
+| `processing_logs` | Журнал обработки | Medium |
+| `generated_assets` | Сгенерированные материалы | Low |
+| `bot_credentials` | Учётные данные ботов | High |
+
+**Всего таблиц:** 11
+
+---
+
+## AI-модели
+
+### Используемые модели
+
+| Модель | Назначение | Workflow | Параметры |
+|--------|-----------|----------|-----------|
+| **GPT-4o-mini** | Извлечение данных кандидата | Processing Worker | Temperature: 0, JSON Schema |
+| **GPT-4o-mini** | Ремонт невалидного JSON | Processing Worker | Temperature: 0, JSON Schema |
+| **GPT-4o-mini** | Matching кандидата с вакансиями | Processing Worker | Temperature: 0, JSON Schema |
+| **gpt-4o-mini-tts** | Генерация голосовых сообщений | Delivery Worker | Voice: alloy, Format: mp3 |
+| **gpt-image-1** | Генерация визуальных материалов | Delivery Worker | Size: 1024x1024 |
+| **sora-2** | Генерация видео | Generate Video | Size: 720x1280, Duration: 4 sec |
+
+**Важно:** Все операции используют GPT-4o-mini, а не GPT-4.
 
 ---
 
@@ -140,7 +180,7 @@
 
 | Сервис | Назначение | Критичность |
 |--------|-----------|-------------|
-| **OpenAI API** | Извлечение данных, matching, TTS, генерация | High |
+| **OpenAI API** | Извлечение данных, matching, TTS, генерация визуалов/видео | High |
 
 ---
 
@@ -181,19 +221,21 @@
 | Категория | Стоимость | Комментарий |
 |-----------|-----------|-------------|
 | **Infrastructure** | ~$50 | VPS (4 cores, 8 GB RAM) |
-| **OpenAI API** | ~$80 | 1000 резюме/месяц |
+| **OpenAI API** | ~$6 | 1000 резюме/месяц (GPT-4o-mini) |
 | **Telegram Bot API** | $0 | Бесплатно |
 | **PostgreSQL** | $0 | Self-hosted |
 | **n8n** | $0 | Self-hosted |
-| **Итого** | **~$130/месяц** | |
+| **Итого** | **~$56/месяц** | |
+
+**Примечание:** Стоимость OpenAI API пересчитана на основе GPT-4o-mini (~$0.003-0.006 за резюме).
 
 ### При масштабировании
 
 | Масштаб | Резюме/месяц | OpenAI API | Infrastructure | Итого |
 |---------|-------------|-----------|---------------|-------|
-| Small | 1000 | $80 | $50 | $130 |
-| Medium | 5000 | $400 | $100 | $500 |
-| Large | 10000 | $800 | $200 | $1000 |
+| Small | 1000 | $6 | $50 | $56 |
+| Medium | 5000 | $30 | $100 | $130 |
+| Large | 10000 | $60 | $200 | $260 |
 
 ---
 
@@ -355,6 +397,7 @@ curl -X GET "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo"
 
 | Дата | Версия | Изменения |
 |------|--------|-----------|
+| 2026-06-24 | 2.0.1 | Исправлены модели (GPT-4o-mini вместо GPT-4), добавлен error_handler workflow, пересчитана стоимость |
 | 2026-04-29 | 2.0 | Production-ready |
 | 2026-04-29 | 1.0 | Development |
 
@@ -380,4 +423,4 @@ curl -X GET "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo"
 ---
 
 **Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-23
+**Последнее обновление:** 2026-06-24

@@ -1,6 +1,6 @@
 # Known Issues: HR Assistant
 
-**Last Updated:** 2026-06-23
+**Last Updated:** 2026-06-24
 
 ---
 
@@ -108,57 +108,42 @@ VALUES (...)
 
 **Приоритет:** ⚠️ Medium
 
-**Статус:** Open
+**Статус:** ✅ Fixed
 
 **Дата выявления:** 2026-06-23
 
+**Дата исправления:** 2026-06-24
+
 **Описание:**
 
-Файл `schema_hr_assistant.sql` содержит реальный bot token в INSERT-запросе (строка 288-294).
+Файл `schema_hr_assistant.sql` содержал реальный bot token в INSERT-запросе (строка 288-294).
 
-**Технические детали:**
+**Исправление:**
+
+1. ✅ Заменён реальный токен на placeholder: `REPLACE_ME_WITH_YOUR_BOT_TOKEN`
+2. ✅ Добавлена документация в `DEPLOYMENT_GUIDE.md` (архитектура хранения токена, инструкция по обновлению)
+3. ✅ Добавлено предупреждение в `README.md` о необходимости замены токена перед запуском
+
+**Текущее состояние:**
 
 ```sql
 INSERT INTO bot_credentials (bot_code, bot_token, description)
 VALUES (
     'hr_assistant',
-    'REAL_BOT_TOKEN_HERE',  -- Реальный токен
+    'REPLACE_ME_WITH_YOUR_BOT_TOKEN',  -- ✅ Placeholder
     'HR assistant Telegram bot'
 )
-ON CONFLICT (bot_code)
-DO UPDATE SET bot_token = EXCLUDED.bot_token;
 ```
 
-**Архитектура:**
-
-Таблица `bot_credentials` — это осознанная архитектура для хранения токена:
-- HR Delivery Worker читает токен из БД
-- Позволяет менять токен без перезапуска n8n
-- Упрощает ротацию токенов
-
-**Последствия:**
-
-1. **Риск утечки credentials** при публикации в GitHub
-2. **Несоответствие best practices** безопасности
-
-**Решение:**
-
-1. Заменить реальный токен на placeholder для GitHub-публикации:
-   ```sql
-   VALUES (
-       'hr_assistant',
-       'REPLACE_ME_WITH_ACTUAL_BOT_TOKEN',  -- Placeholder
-       'HR assistant Telegram bot'
-   )
-   ```
-2. Документировать процесс обновления токена в DEPLOYMENT_GUIDE.md
-3. При первом запуске:update токена через SQL или через БД-интерфейс
+**Документация:**
+- `README.md` — предупреждение о замене токена
+- `DEPLOYMENT_GUIDE.md` — архитектура хранения токена, инструкция по обновлению
 
 **Требуется:**
 
-- [ ] Заменить токен на placeholder в SQL-файле
-- [ ] Документировать процесс обновления токена
-- [ ] Добавить скрипт для первоначальной настройки токена
+- [x] Заменить токен на placeholder в SQL-файле
+- [x] Документировать процесс обновления токена
+- [x] Добавить предупреждение в README.md
 
 ---
 
@@ -226,7 +211,7 @@ DO UPDATE SET bot_token = EXCLUDED.bot_token;
 | ID | Приоритет | Статус | Дата |
 |----|-----------|--------|------|
 | KP-001 | 🔴 Critical | Open | 2026-06-23 |
-| KP-002 | ⚠️ Medium | Open | 2026-06-23 |
+| KP-002 | ⚠️ Medium | Fixed | 2026-06-24 |
 | KP-003 | ⚠️ Medium | Open | 2026-06-23 |
 | KP-004 | ℹ️ Low | Fixed | 2026-06-23 |
 
