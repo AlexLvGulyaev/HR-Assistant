@@ -110,7 +110,24 @@
 
 ---
 
+---
+
+## Prompt Evaluation Screenshots
+
+| ID | File | Caption |
+|----|------|---------|
+| IMG-020 | `prompt_evaluation/screenshots/workflow.png` | Workflow HRA Prompt Evaluation Experiment |
+
+**Usage:**
+- [docs/prompt_evaluation/WORKFLOW_IMPLEMENTATION.md](../prompt_evaluation/WORKFLOW_IMPLEMENTATION.md)
+
+---
+
 ## Corrections History
+
+**2026-06-25:**
+- Добавлена секция Prompt Evaluation Screenshots
+- IMG-020: Workflow HRA Prompt Evaluation Experiment
 
 **2026-06-24:**
 - Исправлена полная таблица соответствия после проверки всех изображений

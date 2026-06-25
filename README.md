@@ -26,6 +26,7 @@
 
 - **[Архитектура](docs/ARCHITECTURE.md)** — компоненты, потоки данных, ER-диаграмма
 - **[AI-компоненты](docs/AI_QUALIFICATION.md)** — промпты, модели, параметры, стоимость
+- **[Prompt Evaluation](docs/prompt_evaluation/README.md)** — подсистема A/B-тестирования промптов
 - **[Интеграции](docs/INTEGRATION_DIAGRAM.md)** — Telegram, OpenAI, PostgreSQL
 - **[Развёртывание](docs/DEPLOYMENT_GUIDE.md)** — пошаговая инструкция деплоя
 - **[Паспорт автоматизации](docs/AUTOMATION_PASSPORT.md)** — TCO, метрики, инциденты

@@ -1,6 +1,6 @@
 # HR Assistant Database
 
-**Last Updated:** 2026-06-23
+**Last Updated:** 2026-06-25
 
 ---
 
@@ -8,13 +8,17 @@
 
 **Database:** PostgreSQL 16
 
-**Schema File:** `schema_hr_assistant.sql`
+**Schema Files:**
+- `schema_hr_assistant.sql` — основная схема БД (боевой контур)
+- `02-prompt-evaluation.sql` — схема evaluation-контура для A/B-тестирования промптов
+- `03-seed-eval-dataset-v1.sql` — сидирование датасета HRA-EVAL-V1
+- `04-create-experiment-v1.sql` — создание эксперимента HRA-EXP-V1
 
 ---
 
 ## Tables
 
-### Core Tables
+### Core Tables (Боевой контур)
 
 #### 1. intake_events
 
@@ -238,6 +242,136 @@
 
 ---
 
+## Prompt Evaluation Tables (Eval-контур)
+
+> **ВАЖНО:** Eval-контур полностью изолирован от боевого.
+> Таблицы eval_* не связаны с таблицами боевого контура.
+
+### 1. eval_prompt_datasets
+
+**Назначение:** Версии датасетов для A/B-тестирования промптов.
+
+**Поля:**
+- `id` (UUID, PK)
+- `dataset_code` (TEXT, UNIQUE) — код датасета (например, HRA-EVAL-V1)
+- `name` (TEXT) — название
+- `description` (TEXT) — описание
+- `status` (TEXT) — статус (draft, active, archived)
+- `created_at` (TIMESTAMPTZ)
+
+**CHECK-ограничения:**
+- `status IN ('draft', 'active', 'archived')`
+
+---
+
+### 2. eval_prompt_cases
+
+**Назначение:** Тестовые кейсы (кандидаты) для evaluation.
+
+**Поля:**
+- `id` (UUID, PK)
+- `dataset_id` (UUID, FK → eval_prompt_datasets)
+- `case_code` (TEXT, UNIQUE) — код кейса (например, HRA-EVAL-000001)
+- `case_type` (TEXT) — тип (obvious_match, obvious_no_match, borderline)
+- `candidate_json` (JSONB) — данные кандидата
+- `notes` (TEXT)
+- `created_at` (TIMESTAMPTZ)
+
+**CHECK-ограничения:**
+- `case_type IN ('obvious_match', 'obvious_no_match', 'borderline')`
+
+---
+
+### 3. eval_prompt_case_vacancies
+
+**Назначение:** Вакансии внутри тестового кейса с эталонной разметкой.
+
+**Поля:**
+- `id` (UUID, PK)
+- `case_id` (UUID, FK → eval_prompt_cases)
+- `vacancy_json` (JSONB) — данные вакансии
+- `reference_score` (NUMERIC) — эталонный score (0-100)
+- `reference_decision` (TEXT) — эталонное решение (match, no_match)
+- `reference_reason` (TEXT) — эталонное обоснование
+- `created_at` (TIMESTAMPTZ)
+
+**CHECK-ограничения:**
+- `reference_score >= 0 AND reference_score <= 100`
+- `reference_decision IS NULL OR reference_decision IN ('match', 'no_match')`
+
+---
+
+### 4. eval_prompt_experiments
+
+**Назначение:** Определения экспериментов A/B-тестирования.
+
+**Поля:**
+- `id` (UUID, PK)
+- `dataset_id` (UUID, FK → eval_prompt_datasets)
+- `experiment_code` (TEXT, UNIQUE) — код эксперимента
+- `prompt_a_text` (TEXT) — текст промпта A
+- `prompt_b_text` (TEXT) — текст промпта B
+- `judge_prompt_text` (TEXT) — промпт для judge-модели
+- `model_a` (TEXT) — модель A (например, gpt-4o-mini)
+- `model_b` (TEXT) — модель B
+- `model_judge` (TEXT) — модель judge (например, gpt-4o)
+- `temperature_a` (NUMERIC, DEFAULT 0) — температура A
+- `temperature_b` (NUMERIC, DEFAULT 0) — температура B
+- `temperature_judge` (NUMERIC, DEFAULT 0) — температура judge
+- `primary_metric` (TEXT, DEFAULT 'mean_absolute_score_error')
+- `guard_metric` (TEXT, DEFAULT 'latency_ms')
+- `mde` (TEXT) — Minimum Detectable Effect
+- `status` (TEXT) — статус (draft, active, completed, archived)
+- `created_at` (TIMESTAMPTZ)
+
+**CHECK-ограничения:**
+- `status IN ('draft', 'active', 'completed', 'archived')`
+- `temperature_a >= 0 AND temperature_a <= 2`
+- `temperature_b >= 0 AND temperature_b <= 2`
+- `temperature_judge >= 0 AND temperature_judge <= 2`
+
+---
+
+### 5. eval_prompt_runs
+
+**Назначение:** Запуски экспериментов (judge, A, B).
+
+**Поля:**
+- `id` (UUID, PK)
+- `experiment_id` (UUID, FK → eval_prompt_experiments)
+- `run_type` (TEXT) — тип запуска (judge, A, B)
+- `status` (TEXT) — статус (pending, running, completed, failed)
+- `started_at` (TIMESTAMPTZ)
+- `completed_at` (TIMESTAMPTZ)
+- `created_at` (TIMESTAMPTZ)
+
+**CHECK-ограничения:**
+- `run_type IN ('judge', 'A', 'B')`
+- `status IN ('pending', 'running', 'completed', 'failed')`
+
+---
+
+### 6. eval_prompt_results
+
+**Назначение:** Результаты выполнения по парам candidate × vacancy.
+
+**Поля:**
+- `id` (UUID, PK)
+- `run_id` (UUID, FK → eval_prompt_runs)
+- `case_vacancy_id` (UUID, FK → eval_prompt_case_vacancies)
+- `score` (NUMERIC) — score от модели (0-100)
+- `decision` (TEXT) — решение модели (match, no_match)
+- `latency_ms` (INTEGER) — время выполнения
+- `raw_response_json` (JSONB) — полный ответ модели
+- `error_message` (TEXT) — сообщение об ошибке
+- `created_at` (TIMESTAMPTZ)
+
+**CHECK-ограничения:**
+- `score >= 0 AND score <= 100`
+- `decision IS NULL OR decision IN ('match', 'no_match')`
+
+---
+
 ## Functions
 
 ### log_processing_event()
@@ -288,6 +422,22 @@ SELECT log_processing_event(
 | processing_logs | idx_processing_logs_execution_id | B-tree |
 | outbox | idx_outbox_status | B-tree |
 
+### Prompt Evaluation Indexes
+
+| Таблица | Индекс | Тип |
+|---------|--------|-----|
+| eval_prompt_datasets | idx_eval_prompt_datasets_status | B-tree |
+| eval_prompt_cases | idx_eval_prompt_cases_dataset_id | B-tree |
+| eval_prompt_cases | idx_eval_prompt_cases_case_type | B-tree |
+| eval_prompt_case_vacancies | idx_eval_prompt_case_vacancies_case_id | B-tree |
+| eval_prompt_experiments | idx_eval_prompt_experiments_dataset_id | B-tree |
+| eval_prompt_experiments | idx_eval_prompt_experiments_status | B-tree |
+| eval_prompt_runs | idx_eval_prompt_runs_experiment_id | B-tree |
+| eval_prompt_runs | idx_eval_prompt_runs_status | B-tree |
+| eval_prompt_results | idx_eval_prompt_results_run_id | B-tree |
+| eval_prompt_results | idx_eval_prompt_results_case_vacancy_id | B-tree |
+| eval_prompt_results | idx_eval_prompt_results_decision | B-tree |
+
 ---
 
 ## Migrations
@@ -299,6 +449,65 @@ SELECT log_processing_event(
 - **v1.1** (дата TBD): Добавлено поле `metadata` в `outbox`
 - **v1.2** (дата TBD): Добавлено поле `event_type` в `intake_events`
 - **v1.3** (дата TBD): Добавлено поле `error_text` в `outbox`
+- **v2.0** (2026-06-24): Добавлен evaluation-контур (02-prompt-evaluation.sql) ✅ **Применено на production**
+
+---
+
+## Prompt Evaluation Schema
+
+**Файл:** `02-prompt-evaluation.sql`
+
+**Назначение:** Отдельный контур для A/B-тестирования matching prompt.
+
+**Предназначен для:**
+- Урока 4 по Prompt Engineering
+- Регрессионной проверки matching prompt
+
+**Таблицы:**
+| Таблица | Назначение |
+|---------|------------|
+| eval_prompt_datasets | Версии датасетов тестовых кейсов |
+| eval_prompt_cases | Тестовые кейсы (кандидаты) |
+| eval_prompt_case_vacancies | Вакансии внутри кейса с reference-разметкой |
+| eval_prompt_experiments | Определения экспериментов A/B-тестирования |
+| eval_prompt_runs | Запуски экспериментов (judge, A, B) |
+| eval_prompt_results | Результаты выполнения по парам candidate × vacancy |
+
+**ВАЖНО:**
+- Eval-контур полностью изолирован от боевого.
+- Не использует таблицы candidates, vacancies, matches, outbox.
+- Все таблицы имеют префикс `eval_prompt_`.
+
+---
+
+## Prompt Evaluation Experiments
+
+### HRA-EXP-V1
+
+**Файл:** `04-create-experiment-v1.sql`
+
+**Назначение:** Создание эксперимента для сравнения production matching prompt с experimental prompt.
+
+**Параметры эксперимента:**
+- **Experiment Code:** HRA-EXP-V1
+- **Dataset:** HRA-EVAL-V1 (30 candidates × 3 vacancies = 90 pairs)
+- **Prompt A:** Production matching prompt (gpt-4o-mini)
+- **Prompt B:** Experimental matching prompt (gpt-4o-mini)
+- **Judge:** Reference scoring prompt (gpt-4.1)
+
+**Метрики:**
+- **Primary:** Mean Absolute Score Error (MAE)
+- **Guard:** Average Latency (ms)
+- **Secondary:** Decision Accuracy
+
+**Критерии принятия:**
+- MAE improvement ≥ 20%
+- Latency growth ≤ 30%
+
+**Документация:**
+- [Judge Prompt](../shared/prompts/judge-matching-prompt-v1.md)
+- [Experimental Prompt B](../shared/prompts/experimental-matching-prompt-v1.md)
+- [Workflow Documentation](../docs/PROMPT_EVALUATION_WORKFLOW.md)
 
 ---
 
@@ -308,11 +517,15 @@ SELECT log_processing_event(
 # Подключение к БД
 psql -U hr_user -d hr_assistant
 
-# Применение схемы
+# Применение основной схемы (боевой контур)
 \i schema_hr_assistant.sql
+
+# Применение evaluation-схемы (eval-контур)
+\i 02-prompt-evaluation.sql
 
 # Или из командной строки
 psql -U hr_user -d hr_assistant -f schema_hr_assistant.sql
+psql -U hr_user -d hr_assistant -f 02-prompt-evaluation.sql
 ```
 
 ---
