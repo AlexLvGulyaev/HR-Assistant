@@ -26,11 +26,14 @@
 
 - **[Архитектура](docs/ARCHITECTURE.md)** — компоненты, потоки данных, ER-диаграмма
 - **[AI-компоненты](docs/AI_QUALIFICATION.md)** — промпты, модели, параметры, стоимость
+- **[Prompt Engineering Guide](docs/PROMPT_ENGINEERING_GUIDE.md)** — система промптов и безопасное изменение
 - **[Prompt Evaluation](docs/prompt_evaluation/README.md)** — подсистема A/B-тестирования промптов
 - **[Интеграции](docs/INTEGRATION_DIAGRAM.md)** — Telegram, OpenAI, PostgreSQL
 - **[Развёртывание](docs/DEPLOYMENT_GUIDE.md)** — пошаговая инструкция деплоя
 - **[Паспорт автоматизации](docs/AUTOMATION_PASSPORT.md)** — TCO, метрики, инциденты
 - **[Инструкция поддержки](docs/SUPPORT_RUNBOOK.md)** — диагностика, известные проблемы
+- **[Success Metrics](docs/SUCCESS_METRICS.md)** — все метрики успеха проекта
+- **[Handoff Checklist](docs/PROJECT_HANDOFF_CHECKLIST.md)** — чеклист передачи проекта новому инженеру
 
 ### Состояние проекта
 
