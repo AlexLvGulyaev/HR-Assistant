@@ -1,12 +1,12 @@
-# HRA Prompt Evaluation Experiment Workflow
+# Проектирование workflow эксперимента HRA Prompt Evaluation
 
-**Version:** 1.0
-**Created:** 2026-06-25
-**Status:** Design
+**Версия:** 1.0
+**Создан:** 2026-06-25
+**Статус:** Design
 
 ---
 
-## Overview
+## Обзор
 
 Workflow для проведения A/B-тестирования matching prompt в HR Assistant.
 
@@ -20,98 +20,98 @@ Workflow для проведения A/B-тестирования matching promp
 
 ---
 
-## Experiment Design
+## Дизайн эксперимента
 
-### Models
+### Модели
 
-| Run | Model | Temperature | Purpose |
+| Run | Model | Temperature | Назначение |
 |-----|-------|-------------|---------|
 | **Judge** | gpt-4.1-2025-04-14 | 0 | Reference scoring |
 | **Prompt A** | gpt-4o-mini-2024-07-18 | 0 | Production prompt |
 | **Prompt B** | gpt-4o-mini-2024-07-18 | 0 | Experimental prompt |
 
-### Dataset
+### Датасет
 
-**Code:** HRA-EVAL-V1
-**Size:** 30 candidates × 3 vacancies = 90 pairs
-**Types:**
-- 10 obvious_match cases
-- 10 obvious_no_match cases
-- 10 borderline cases
+**Код:** HRA-EVAL-V1
+**Размер:** 30 кандидатов × 3 вакансии = 90 пар
+**Типы:**
+- 10 obvious_match кейсов
+- 10 obvious_no_match кейсов
+- 10 borderline кейсов
 
-### Metrics
+### Метрики
 
-| Metric | Type | Description | Formula |
+| Метрика | Тип | Описание | Формула |
 |--------|------|-------------|---------|
 | **MAE** | Primary | Mean Absolute Score Error | `AVG(ABS(model.score - reference_score))` |
-| **Latency** | Guard | Average response time | `AVG(latency_ms)` |
-| **Decision Accuracy** | Secondary | Match/no_match accuracy | `COUNT(model.decision = reference_decision) / COUNT(*)` |
+| **Latency** | Guard | Среднее время ответа | `AVG(latency_ms)` |
+| **Decision Accuracy** | Secondary | Точность match/no_match | `COUNT(model.decision = reference_decision) / COUNT(*)` |
 
-### Acceptance Criteria
+### Критерии принятия
 
 **Primary Metric:**
-- MAE improvement ≥ 20%: `MAE_B ≤ 0.8 × MAE_A`
+- Улучшение MAE ≥ 20%: `MAE_B ≤ 0.8 × MAE_A`
 
 **Guard Metric:**
-- Latency growth ≤ 30%: `Latency_B ≤ 1.3 × Latency_A`
+- Рост Latency ≤ 30%: `Latency_B ≤ 1.3 × Latency_A`
 
-**Final Decision:**
-- Accept Prompt B if **BOTH** conditions are met
-- Reject Prompt B if **ANY** condition fails
+**Финальное решение:**
+- Принять Prompt B, если **ОБА** условия выполнены
+- Отклонить Prompt B, если **ЛЮБОЕ** условие не выполнено
 
 ---
 
-## Workflow Steps
+## Шаги workflow
 
-### Phase 0: Prerequisites
+### Phase 0: Предварительные требования
 
-**Check:**
-- [ ] Dataset HRA-EVAL-V1 exists
-- [ ] 90 pairs in eval_prompt_case_vacancies
-- [ ] Experiment HRA-EXP-V1 created
-- [ ] All prompts defined
+**Проверка:**
+- [ ] Датасет HRA-EVAL-V1 существует
+- [ ] 90 пар в eval_prompt_case_vacancies
+- [ ] Эксперимент HRA-EXP-V1 создан
+- [ ] Все промпты определены
 
 **SQL:**
 ```sql
--- Check dataset
+-- Проверка датасета
 SELECT COUNT(*) FROM eval_prompt_cases c
 JOIN eval_prompt_datasets d ON c.dataset_id = d.id
 WHERE d.dataset_code = 'HRA-EVAL-V1';
--- Expected: 30
+-- Ожидается: 30
 
--- Check pairs
+-- Проверка пар
 SELECT COUNT(*) FROM eval_prompt_case_vacancies cv
 JOIN eval_prompt_cases c ON cv.case_id = c.id
 JOIN eval_prompt_datasets d ON c.dataset_id = d.id
 WHERE d.dataset_code = 'HRA-EVAL-V1';
--- Expected: 90
+-- Ожидается: 90
 
--- Check experiment
+-- Проверка эксперимента
 SELECT * FROM eval_prompt_experiments e
 JOIN eval_prompt_datasets d ON e.dataset_id = d.id
 WHERE d.dataset_code = 'HRA-EVAL-V1';
--- Expected: 1 row
+-- Ожидается: 1 строка
 ```
 
 ---
 
 ### Phase 1: Judge Run
 
-**Purpose:** Fill reference_score, reference_decision, reference_reason for all pairs
+**Назначение:** Заполнить reference_score, reference_decision, reference_reason для всех пар
 
-**Steps:**
-1. Create Judge Run record
-2. For each pair (candidate × vacancy):
-   - Call gpt-4.1 with judge prompt
-   - Parse response JSON
-   - Extract score, decision, reason
-   - Calculate latency
-   - Update reference fields in eval_prompt_case_vacancies
-3. Mark Judge Run as completed
+**Шаги:**
+1. Создать запись Judge Run
+2. Для каждой пары (кандидат × вакансия):
+   - Вызвать gpt-4.1 с judge prompt
+   - Разобрать JSON-ответ
+   - Извлечь score, decision, reason
+   - Рассчитать latency
+   - Обновить reference-поля в eval_prompt_case_vacancies
+3. Пометить Judge Run как завершённый
 
 **SQL:**
 ```sql
--- Create Judge Run
+-- Создать Judge Run
 INSERT INTO eval_prompt_runs (
     id,
     experiment_id,
@@ -131,7 +131,7 @@ FROM eval_prompt_experiments e
 JOIN eval_prompt_datasets d ON e.dataset_id = d.id
 WHERE d.dataset_code = 'HRA-EVAL-V1';
 
--- Get run_id
+-- Получить run_id
 SELECT id FROM eval_prompt_runs
 WHERE run_type = 'judge'
   AND status = 'running'
@@ -199,9 +199,9 @@ return pairs.map(pair => {
 });
 ```
 
-**Update reference fields:**
+**Обновление reference-полей:**
 ```sql
--- Update reference fields after Judge call
+-- Обновить reference-поля после вызова Judge
 UPDATE eval_prompt_case_vacancies
 SET
     reference_score = {{ $json.parsed.score }},
@@ -210,7 +210,7 @@ SET
 WHERE id = '{{ $json.case_vacancy_id }}';
 ```
 
-**Mark Judge Run completed:**
+**Пометить Judge Run завершённым:**
 ```sql
 UPDATE eval_prompt_runs
 SET
@@ -223,20 +223,20 @@ WHERE id = '{{ $json.run_id }}';
 
 ### Phase 2: Prompt A Run
 
-**Purpose:** Run production prompt on all pairs
+**Назначение:** Запустить production prompt на всех парах
 
-**Steps:**
-1. Create Prompt A Run record
-2. For each pair:
-   - Call gpt-4o-mini with Prompt A
-   - Parse response JSON
-   - Insert result into eval_prompt_results
-   - Record latency
-3. Mark Prompt A Run as completed
+**Шаги:**
+1. Создать запись Prompt A Run
+2. Для каждой пары:
+   - Вызвать gpt-4o-mini с Prompt A
+   - Разобрать JSON-ответ
+   - Вставить результат в eval_prompt_results
+   - Записать latency
+3. Пометить Prompt A Run как завершённый
 
 **SQL:**
 ```sql
--- Create Prompt A Run
+-- Создать Prompt A Run
 INSERT INTO eval_prompt_runs (
     id,
     experiment_id,
@@ -257,9 +257,9 @@ JOIN eval_prompt_datasets d ON e.dataset_id = d.id
 WHERE d.dataset_code = 'HRA-EVAL-V1';
 ```
 
-**Insert results:**
+**Вставка результатов:**
 ```sql
--- Insert result for each pair
+-- Вставить результат для каждой пары
 INSERT INTO eval_prompt_results (
     id,
     run_id,
@@ -286,20 +286,20 @@ VALUES (
 
 ### Phase 3: Prompt B Run
 
-**Purpose:** Run experimental prompt on all pairs
+**Назначение:** Запустить experimental prompt на всех парах
 
-**Steps:**
-Same as Phase 2, but with Prompt B
+**Шаги:**
+Те же, что и для Phase 2, но с Prompt B
 
 ---
 
 ### Phase 4: Calculate Metrics
 
-**Purpose:** Calculate MAE, Latency, Decision Accuracy for both prompts
+**Назначение:** Рассчитать MAE, Latency, Decision Accuracy для обоих промптов
 
 **SQL:**
 ```sql
--- Calculate MAE for Prompt A
+-- Рассчитать MAE для Prompt A
 WITH mae_a AS (
     SELECT
         AVG(ABS(r.score - cv.reference_score)) AS mae_a
@@ -309,7 +309,7 @@ WITH mae_a AS (
     WHERE run.run_type = 'A'
 ),
 
--- Calculate MAE for Prompt B
+-- Рассчитать MAE для Prompt B
 mae_b AS (
     SELECT
         AVG(ABS(r.score - cv.reference_score)) AS mae_b
@@ -319,7 +319,7 @@ mae_b AS (
     WHERE run.run_type = 'B'
 ),
 
--- Calculate Latency for Prompt A
+-- Рассчитать Latency для Prompt A
 latency_a AS (
     SELECT
         AVG(r.latency_ms) AS latency_a
@@ -328,7 +328,7 @@ latency_a AS (
     WHERE run.run_type = 'A'
 ),
 
--- Calculate Latency for Prompt B
+-- Рассчитать Latency для Prompt B
 latency_b AS (
     SELECT
         AVG(r.latency_ms) AS latency_b
@@ -337,7 +337,7 @@ latency_b AS (
     WHERE run.run_type = 'B'
 ),
 
--- Calculate Decision Accuracy for Prompt A
+-- Рассчитать Decision Accuracy для Prompt A
 accuracy_a AS (
     SELECT
         COUNT(*) FILTER (WHERE r.decision = cv.reference_decision)::NUMERIC / COUNT(*) AS accuracy_a
@@ -347,7 +347,7 @@ accuracy_a AS (
     WHERE run.run_type = 'A'
 ),
 
--- Calculate Decision Accuracy for Prompt B
+-- Рассчитать Decision Accuracy для Prompt B
 accuracy_b AS (
     SELECT
         COUNT(*) FILTER (WHERE r.decision = cv.reference_decision)::NUMERIC / COUNT(*) AS accuracy_b
@@ -373,26 +373,26 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 
 ### Phase 5: Generate Report
 
-**Purpose:** Create comprehensive experiment report
+**Назначение:** Создать комплексный отчёт об эксперименте
 
-**Report Contents:**
-1. Experiment metadata (code, dataset, models)
-2. Metrics summary (MAE, Latency, Accuracy)
-3. Acceptance criteria check
-4. Final decision
-5. Detailed statistics
+**Содержимое отчёта:**
+1. Метаданные эксперимента (код, датасет, модели)
+2. Сводка метрик (MAE, Latency, Accuracy)
+3. Проверка критериев принятия
+4. Финальное решение
+5. Детальная статистика
 
-**Report Template:**
+#### Заголовок
+
 ```markdown
 # HRA Prompt Evaluation Report
 
 **Experiment Code:** HRA-EXP-V1
 **Dataset:** HRA-EVAL-V1
 **Date:** {{ date }}
+```
 
----
-
-## Models
+#### Модели
 
 | Run | Model | Temperature |
 |-----|-------|-------------|
@@ -400,61 +400,51 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 | Prompt A | gpt-4o-mini-2024-07-18 | 0 |
 | Prompt B | gpt-4o-mini-2024-07-18 | 0 |
 
----
+#### Датасет
 
-## Dataset
-
-- **Total pairs:** 90
+- **Всего пар:** 90
 - **Obvious match:** 30
 - **Obvious no_match:** 30
 - **Borderline:** 30
 
----
-
-## Results
-
-### Primary Metric: Mean Absolute Score Error
+#### Primary Metric: Mean Absolute Score Error
 
 | Metric | Prompt A | Prompt B |
 |--------|----------|----------|
 | **MAE** | {{ mae_a }} | {{ mae_b }} |
 | **Improvement** | - | {{ mae_improvement }} |
 
-### Guard Metric: Average Latency
+#### Guard Metric: Average Latency
 
 | Metric | Prompt A | Prompt B |
 |--------|----------|----------|
 | **Latency (ms)** | {{ latency_a }} | {{ latency_b }} |
 | **Growth** | - | {{ latency_growth }} |
 
-### Secondary Metric: Decision Accuracy
+#### Secondary Metric: Decision Accuracy
 
 | Metric | Prompt A | Prompt B |
 |--------|----------|----------|
 | **Accuracy** | {{ accuracy_a }} | {{ accuracy_b }} |
 
----
-
-## Acceptance Criteria
+#### Acceptance Criteria
 
 | Criterion | Threshold | Actual | Status |
 |-----------|-----------|--------|--------|
 | MAE improvement | ≥ 20% | {{ mae_improvement }} | {{ status }} |
 | Latency growth | ≤ 30% | {{ latency_growth }} | {{ status }} |
 
----
+#### Final Decision
 
-## Final Decision
-
+```markdown
 {{ final_decision }}
 
 **Reason:** {{ reason }}
+```
 
----
+#### Detailed Statistics
 
-## Detailed Statistics
-
-### Score Distribution
+##### Score Distribution
 
 | Statistic | Judge | Prompt A | Prompt B |
 |-----------|-------|----------|----------|
@@ -463,7 +453,7 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 | Min | {{ judge_min }} | {{ a_min }} | {{ b_min }} |
 | Max | {{ judge_max }} | {{ a_max }} | {{ b_max }} |
 
-### Error Analysis
+##### Error Analysis
 
 | Category | Prompt A Error | Prompt B Error |
 |----------|----------------|----------------|
@@ -471,7 +461,6 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 | skills_score | {{ a_skills_error }} | {{ b_skills_error }} |
 | experience_score | {{ a_exp_error }} | {{ b_exp_error }} |
 | conditions_score | {{ a_cond_error }} | {{ b_cond_error }} |
-```
 
 ---
 
@@ -522,12 +511,11 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 |------|---------|
 | `04-create-experiment-v1.sql` | Create experiment record |
 | [`docs/prompt_evaluation/PROMPTS.md`](./PROMPTS.md) | Полные тексты промптов |
-| `PROMPT_EVALUATION_WORKFLOW.md` | This document |
 
 ---
 
 ## References
 
-- Project Decision: [task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md](../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md)
-- Dataset: HRA-EVAL-V1 (30 candidates × 3 vacancies)
-- Production Prompt A: From HR Processing Worker workflow
+- [Database Schema](../../database/README.md)
+- [Workflow Implementation](./WORKFLOW_IMPLEMENTATION.md)
+- [Промпты](./PROMPTS.md)
