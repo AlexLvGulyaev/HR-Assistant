@@ -71,7 +71,6 @@ Matching prompt — ключевой компонент HR Assistant, отвеч
 | **Назначение** | Reference scoring (surrogate ground truth) |
 | **Файл промпта** | [`database/04-create-experiment-v1.sql`](../../database/04-create-experiment-v1.sql) — встроен в SQL |
 
-**Источник:** [`task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md`](../../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md), строки 86-94
 
 ### Prompt A (Production)
 
@@ -82,7 +81,6 @@ Matching prompt — ключевой компонент HR Assistant, отвеч
 | **Длина промпта** | 480 символов |
 | **Тип** | Production matching prompt |
 
-**Источник:** [`task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md`](../../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md), строки 48-63
 
 ### Prompt B (Experimental)
 
@@ -120,7 +118,7 @@ Phase 5: Generate Report
     └── Output ACCEPT or REJECT decision
 ```
 
-**Источник:** [`docs/PROMPT_EVALUATION_WORKFLOW.md`](../PROMPT_EVALUATION_WORKFLOW.md)
+**Источник:** [`docs/prompt_evaluation/WORKFLOW_DESIGN.md`](./WORKFLOW_DESIGN.md)
 
 ---
 
@@ -144,7 +142,6 @@ Phase 5: Generate Report
 | `obvious_no_match` | 10 | 30 |
 | `borderline` | 10 | 30 |
 
-**Источник:** [`task_history/2026-06-24_task-hra-eval-dataset-v1.md`](../../task_history/2026-06-24_task-hra-eval-dataset-v1.md), строки 208-215
 
 ### Используемые вакансии
 
@@ -154,7 +151,6 @@ Phase 5: Generate Report
 | `3f11544a-458c-4c1b-b853-702286378cec` | Специалист по разметке данных | 60k-120k |
 | `43c55b9c-367e-4b40-9261-212c204b1872` | Системный аналитик | 150k-220k |
 
-**Источник:** [`task_history/2026-06-24_task-hra-eval-dataset-v1.md`](../../task_history/2026-06-24_task-hra-eval-dataset-v1.md), строки 218-224
 
 ### Характеристики типов кейсов
 
@@ -170,7 +166,6 @@ Phase 5: Generate Report
 - Системный аналитик → Системный аналитик (точное совпадение)
 - AI Engineer → Prompt Engineer (родственная позиция)
 
-**Источник:** [`task_history/2026-06-24_task-hra-eval-dataset-v1.md`](../../task_history/2026-06-24_task-hra-eval-dataset-v1.md), строки 262-276
 
 #### obvious_no_match (10 кейсов)
 
@@ -183,7 +178,6 @@ Phase 5: Generate Report
 - Java Developer → Системный аналитик (разные роли)
 - UI/UX Designer → Prompt Engineer (разные области)
 
-**Источник:** [`task_history/2026-06-24_task-hra-eval-dataset-v1.md`](../../task_history/2026-06-24_task-hra-eval-dataset-v1.md), строки 278-289
 
 #### borderline (10 кейсов)
 
@@ -197,7 +191,6 @@ Phase 5: Generate Report
 - Business Analyst → Системный аналитик (родственная позиция, нет SQL)
 - Junior Prompt Engineer → Prompt Engineer (опыт маленький, зарплата высокая)
 
-**Источник:** [`task_history/2026-06-24_task-hra-eval-dataset-v1.md`](../../task_history/2026-06-24_task-hra-eval-dataset-v1.md), строки 291-304
 
 ---
 
@@ -252,7 +245,7 @@ Phase 5: Generate Report
 2. **eval_prompt_results** — 90 записей:
    - Та же структура, что и для Prompt A
 
-**Источник:** [`docs/HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md`](../HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md), строки 105-248
+**Источник:** [`docs/prompt_evaluation/WORKFLOW_IMPLEMENTATION.md`](./WORKFLOW_IMPLEMENTATION.md)
 
 ### Обновляемые поля
 
@@ -297,7 +290,6 @@ MAE_B = AVG(ABS(b.score - cv.reference_score))
 
 **Интерпретация:** Чем ниже — тем лучше. Среднее отклонение от оценки Judge.
 
-**Источник:** [`task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md`](../../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md), строки 136-179
 
 ### Guard Metric: Average Latency
 
@@ -321,7 +313,6 @@ LATENCY_B = AVG(b.latency_ms)
 
 **Интерпретация:** Чем ниже — тем лучше. Среднее время ответа на вызов.
 
-**Источник:** [`task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md`](../../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md), строки 181-209
 
 ### Secondary Metric: Decision Accuracy
 
@@ -333,7 +324,6 @@ Decision Accuracy = COUNT(model.decision = reference_decision) / COUNT(*)
 
 **Назначение:** Только для дополнительной аналитики. Не используется для принятия решения.
 
-**Источник:** [`task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md`](../../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md), строки 268-290
 
 ### Minimum Detectable Effect (MDE)
 
@@ -355,7 +345,6 @@ MAE_improvement = (MAE_A - MAE_B) / MAE_A
 MAE_improvement >= 0.20 (20%)
 ```
 
-**Источник:** [`task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md`](../../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md), строки 211-232
 
 ### Критерии принятия
 
@@ -373,7 +362,6 @@ ACCEPT PROMPT B: если MAE_improvement >= 20% И Latency_growth <= 30%
 REJECT PROMPT B: если любое условие не выполнено
 ```
 
-**Источник:** [`task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md`](../../task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md), строки 234-264
 
 ---
 
@@ -394,7 +382,7 @@ REJECT PROMPT B: если любое условие не выполнено
 | Phase 4 | 1 | Calculate Metrics |
 | Phase 5 | 2 | Generate Report |
 
-**Источник:** [`docs/HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md`](../HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md), строки 32-60
+**Источник:** [`docs/prompt_evaluation/WORKFLOW_IMPLEMENTATION.md`](./WORKFLOW_IMPLEMENTATION.md)
 
 ### Типы узлов
 
@@ -407,7 +395,6 @@ REJECT PROMPT B: если любое условие не выполнено
 | IF | 1 |
 | Split In Batches | 2 |
 
-**Источник:** [`task_history/2026-06-25_task-hra-prompt-evaluation-workflow-build-report.md`](../../task_history/2026-06-25_task-hra-prompt-evaluation-workflow-build-report.md), строки 44-55
 
 ### Цикл обработки
 
@@ -424,7 +411,6 @@ Split In Batches (batch size: 1)
                       → Split In Batches (return)
 ```
 
-**Источник:** [`task_history/2026-06-25_task-hra-workflow-parameterization-report.md`](../../task_history/2026-06-25_task-hra-workflow-parameterization-report.md), строки 184-235
 
 ### Пакетная обработка
 
@@ -434,7 +420,7 @@ Split In Batches (batch size: 1)
 - **Prompt A Run:** ~3 мин (90 пар × ~2 сек)
 - **Prompt B Run:** ~3 мин (90 пар × ~2 сек)
 
-**Источник:** [`docs/HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md`](../HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md), строки 349-365
+**Источник:** [`docs/prompt_evaluation/WORKFLOW_IMPLEMENTATION.md`](./WORKFLOW_IMPLEMENTATION.md)
 
 ### Расчёт метрик
 
@@ -493,7 +479,7 @@ SELECT
 FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 ```
 
-**Источник:** [`docs/HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md`](../HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md), строки 190-248
+**Источник:** [`docs/prompt_evaluation/WORKFLOW_IMPLEMENTATION.md`](./WORKFLOW_IMPLEMENTATION.md)
 
 ### Генерация финального отчёта
 
@@ -508,7 +494,7 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 6. Финальное решение (ACCEPT/REJECT)
 7. Детальная статистика
 
-**Источник:** [`docs/PROMPT_EVALUATION_WORKFLOW.md`](../PROMPT_EVALUATION_WORKFLOW.md), строки 374-475
+**Источник:** [`docs/prompt_evaluation/WORKFLOW_DESIGN.md`](./WORKFLOW_DESIGN.md)
 
 ---
 
@@ -523,7 +509,6 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 - Подтверждение SQL-запросов
 - Валидация генерации отчёта
 
-**Источник:** [`task_history/2026-06-25_task-hra-create-smoke-eval-dataset-and-experiment.md`](../../task_history/2026-06-25_task-hra-create-smoke-eval-dataset-and-experiment.md)
 
 ### Конфигурация Smoke
 
@@ -533,7 +518,6 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 | **Код эксперимента** | `HRA-EXP-SMOKE` |
 | **Пар** | 1 |
 
-**Источник:** [`task_history/2026-06-25_smoke-experiment-results.md`](../../task_history/2026-06-25_smoke-experiment-results.md)
 
 ### Найденные дефекты
 
@@ -543,7 +527,6 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 | **Дефект 2** | OpenAI temperature — строка вместо числа | `Number(experimentData.temperature_X ?? 0)` |
 | **Дефект 3** | latency_ms = timestamp вместо duration | Явный расчёт через `request_started_at` |
 
-**Источник:** [`task_history/2026-06-25_task-hra-workflow-runtime-type-fixes.md`](../../task_history/2026-06-25_task-hra-workflow-runtime-type-fixes.md), строки 297-415
 
 ### Результаты Smoke
 
@@ -568,7 +551,6 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 
 **Решение Smoke:** ✅ Все критерии пройдены
 
-**Источник:** [`task_history/2026-06-25_smoke-experiment-results.md`](../../task_history/2026-06-25_smoke-experiment-results.md)
 
 ---
 
@@ -663,22 +645,8 @@ REJECT PROMPT B
 
 | Файл | Назначение |
 |------|---------|
-| `docs/PROMPT_EVALUATION_WORKFLOW.md` | Документ проектирования workflow |
-| `docs/HRA_PROMPT_EVALUATION_WORKFLOW_IMPLEMENTATION.md` | Детали реализации |
-
-### Файлы истории задач
-
-| Файл | Назначение |
-|------|---------|
-| `task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md` | Решение по метрикам |
-| `task_history/2026-06-24_task-hra-eval-dataset-v1.md` | Отчёт о создании датасета |
-| `task_history/2026-06-25_task-hra-prompt-evaluation-workflow-build.md` | Сборка workflow |
-| `task_history/2026-06-25_task-hra-prompt-evaluation-workflow-build-report.md` | Отчёт о сборке |
-| `task_history/2026-06-25_task-hra-workflow-parameterization-report.md` | Параметризация |
-| `task_history/2026-06-25_task-hra-workflow-runtime-type-fixes.md` | Исправления runtime |
-| `task_history/2026-06-25_task-hra-prompt-evaluation-workflow-fix-known-defects.md` | Исправление дефектов |
-| `task_history/2026-06-25_task-hra-create-smoke-eval-dataset-and-experiment.md` | Настройка smoke |
-| `task_history/2026-06-25_smoke-experiment-results.md` | Результаты smoke |
+| `docs/prompt_evaluation/WORKFLOW_DESIGN.md` | Документ проектирования workflow |
+| `docs/prompt_evaluation/WORKFLOW_IMPLEMENTATION.md` | Детали реализации |
 
 ---
 

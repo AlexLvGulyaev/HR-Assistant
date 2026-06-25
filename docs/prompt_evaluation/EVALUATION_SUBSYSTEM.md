@@ -29,55 +29,38 @@ Prompt Evaluation — это **изолированная подсистема**
 
 ## Место в архитектуре проекта
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Production HR Assistant                      │
-│                                                                 │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐      │
-│  │  Candidates │     │   Vacancies │     │   Matches   │      │
-│  │   (input)   │────▶│  Matching   │────▶│  (output)   │      │
-│  └─────────────┘     └─────────────┘     └─────────────┘      │
-│                              │                                  │
-│                              ▼                                  │
-│                     ┌─────────────────┐                        │
-│                     │  Prompt A       │                        │
-│                     │  (Production)   │                        │
-│                     └─────────────────┘                        │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              │ Не влияет
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  Prompt Evaluation Subsystem                    │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                    Experiment Flow                          ││
-│  │                                                             ││
-│  │  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────────┐ ││
-│  │  │  Judge  │──▶│Prompt A │──▶│Prompt B │──▶│   Metrics   │ ││
-│  │  │(gpt-4.1)│   │(gpt-4o) │   │(gpt-4o) │   │ Calculation │ ││
-│  │  └─────────┘   └─────────┘   └─────────┘   └─────────────┘ ││
-│  │       │             │             │               │         ││
-│  │       ▼             ▼             ▼               ▼         ││
-│  │  ┌───────────────────────────────────────────────────────┐ ││
-│  │  │              Evaluation Database                     │ ││
-│  │  │                                                      │ ││
-│  │  │  eval_prompt_datasets                               │ ││
-│  │  │  eval_prompt_experiments                            │ ││
-│  │  │  eval_prompt_cases                                  │ ││
-│  │  │  eval_prompt_case_vacancies                         │ ││
-│  │  │  eval_prompt_runs                                   │ ││
-│  │  │  eval_prompt_results                                │ ││
-│  │  └───────────────────────────────────────────────────────┘ ││
-│  └─────────────────────────────────────────────────────────────┘│
-│                                                                 │
-│                          ▼                                      │
-│                  ┌─────────────────┐                            │
-│                  │  ACCEPT/REJECT  │                            │
-│                  └─────────────────┘                            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Production["Production HR Assistant"]
+        C[Candidates] --> M[Matching]
+        V[Vacancies] --> M
+        M --> Out[Matches]
+        M --> PA[Prompt A<br/>gpt-4o-mini]
+    end
+    
+    subgraph Evaluation["Prompt Evaluation Subsystem"]
+        DS[Dataset<br/>HRA-EVAL-V1]
+        DS --> Cases[30 Cases<br/>× 3 Vacancies]
+        
+        Cases --> Judge[Judge Run<br/>gpt-4.1]
+        Cases --> A[Prompt A Run<br/>gpt-4o-mini]
+        Cases --> B[Prompt B Run<br/>gpt-4o-mini]
+        
+        Judge --> Ref[Reference Scores]
+        A --> ResA[Results A]
+        B --> ResB[Results B]
+        
+        Ref --> Metrics[Metrics Calculation]
+        ResA --> Metrics
+        ResB --> Metrics
+        
+        Metrics --> Decision{ACCEPT/REJECT}
+    end
+    
+    Decision -.->|"Decision"| PA
+    
+    style Production fill:#e1f5fe
+    style Evaluation fill:#fff3e0
 ```
 
 ---
@@ -153,45 +136,39 @@ Prompt Evaluation — это **изолированная подсистема**
 
 ## Жизненный цикл эксперимента
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Experiment Lifecycle                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  1. CREATE DATASET                                              │
-│     └── Определить состав кандидатов и вакансий                  │
-│     └── Разметить по типам (obvious_match, no_match, borderline)│
-│     └── Загрузить в eval_prompt_cases                           │
-│                                                                 │
-│  2. CREATE EXPERIMENT                                           │
-│     └── Определить Prompt A, Prompt B, Judge                     │
-│     └── Зафиксировать модели и temperatures                      │
-│     └── Зафиксировать метрики и критерии                         │
-│                                                                 │
-│  3. RUN JUDGE                                                   │
-│     └── Вызвать gpt-4.1 для каждой пары                         │
-│     └── Сохранить reference_score, reference_decision            │
-│     └── Создать surrogate ground truth                          │
-│                                                                 │
-│  4. RUN PROMPT A                                                │
-│     └── Вызвать gpt-4o-mini с production prompt                  │
-│     └── Сохранить score, decision, latency                      │
-│                                                                 │
-│  5. RUN PROMPT B                                                │
-│     └── Вызвать gpt-4o-mini с experimental prompt                │
-│     └── Сохранить score, decision, latency                      │
-│                                                                 │
-│  6. CALCULATE METRICS                                           │
-│     └── MAE_A, MAE_B                                            │
-│     └── Accuracy_A, Accuracy_B                                   │
-│     └── Latency_A, Latency_B                                     │
-│                                                                 │
-│  7. MAKE DECISION                                               │
-│     └── Проверить критерии принятия                              │
-│     └── ACCEPT или REJECT Prompt B                               │
-│     └── Задокументировать результат                              │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A[1. CREATE DATASET] --> B[Определить состав кандидатов и вакансий]
+    B --> C[Разметить по типам<br/>obvious_match, no_match, borderline]
+    C --> D[Загрузить в eval_prompt_cases]
+    
+    D --> E[2. CREATE EXPERIMENT]
+    E --> F[Определить Prompt A, Prompt B, Judge]
+    F --> G[Зафиксировать модели и temperatures]
+    G --> H[Зафиксировать метрики и критерии]
+    
+    H --> I[3. RUN JUDGE]
+    I --> J[Вызвать gpt-4.1 для каждой пары]
+    J --> K[Сохранить reference_score, reference_decision]
+    K --> L[Создать surrogate ground truth]
+    
+    L --> M[4. RUN PROMPT A]
+    M --> N[Вызвать gpt-4o-mini с production prompt]
+    N --> O[Сохранить score, decision, latency]
+    
+    O --> P[5. RUN PROMPT B]
+    P --> Q[Вызвать gpt-4o-mini с experimental prompt]
+    Q --> R[Сохранить score, decision, latency]
+    
+    R --> S[6. CALCULATE METRICS]
+    S --> T[MAE_A, MAE_B]
+    T --> U[Accuracy_A, Accuracy_B]
+    U --> V[Latency_A, Latency_B]
+    
+    V --> W[7. MAKE DECISION]
+    W --> X{Проверить критерии}
+    X --> Y[ACCEPT или REJECT Prompt B]
+    Y --> Z[Задокументировать результат]
 ```
 
 ---
@@ -200,15 +177,28 @@ Prompt Evaluation — это **изолированная подсистема**
 
 ### Изоляция данных
 
-```
-Production Tables          Evaluation Tables
-─────────────────         ──────────────────
-candidates                 eval_prompt_cases
-vacancies                  eval_prompt_case_vacancies
-matches                    eval_prompt_results
-outbox                     eval_prompt_runs
-                           eval_prompt_experiments
-                           eval_prompt_datasets
+```mermaid
+flowchart LR
+    subgraph Production["Production Tables"]
+        P1[candidates]
+        P2[vacancies]
+        P3[matches]
+        P4[outbox]
+    end
+    
+    subgraph Evaluation["Evaluation Tables"]
+        E1[eval_prompt_cases]
+        E2[eval_prompt_case_vacancies]
+        E3[eval_prompt_results]
+        E4[eval_prompt_runs]
+        E5[eval_prompt_experiments]
+        E6[eval_prompt_datasets]
+    end
+    
+    E1 -.->|"Нет данных"| P1
+    
+    style Production fill:#e3f2fd
+    style Evaluation fill:#fff8e1
 ```
 
 **Правило:** Никакие данные не переходят из evaluation в production.
