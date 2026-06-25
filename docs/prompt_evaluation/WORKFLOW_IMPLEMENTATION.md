@@ -376,7 +376,9 @@ FROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;
 
 ### Report Format
 
-Workflow генерирует отчёт в формате Markdown:
+Workflow генерирует отчёт в формате Markdown со следующей структурой:
+
+#### Заголовок
 
 ```markdown
 # HRA Prompt Evaluation Report
@@ -384,10 +386,9 @@ Workflow генерирует отчёт в формате Markdown:
 **Experiment Code:** HRA-EXP-V1
 **Dataset:** HRA-EVAL-V1
 **Date:** 2026-06-25T...
+```
 
----
-
-## Models
+#### Модели
 
 | Run | Model | Temperature |
 |-----|-------|-------------|
@@ -395,48 +396,39 @@ Workflow генерирует отчёт в формате Markdown:
 | Prompt A | gpt-4o-mini-2024-07-18 | 0 |
 | Prompt B | gpt-4o-mini-2024-07-18 | 0 |
 
----
-
-## Results
-
-### Primary Metric: Mean Absolute Score Error
+#### Primary Metric: Mean Absolute Score Error
 
 | Metric | Prompt A | Prompt B |
 |--------|----------|----------|
 | **MAE** | X.XXXX | X.XXXX |
 | **Improvement** | - | X.XXXX |
 
-### Guard Metric: Average Latency
+#### Guard Metric: Average Latency
 
 | Metric | Prompt A | Prompt B |
 |--------|----------|----------|
 | **Latency (ms)** | XXX.XX | XXX.XX |
 | **Growth** | - | X.XXXX |
 
-### Secondary Metric: Decision Accuracy
+#### Secondary Metric: Decision Accuracy
 
 | Metric | Prompt A | Prompt B |
 |--------|----------|----------|
 | **Accuracy** | X.XXXX | X.XXXX |
 
----
-
-## Acceptance Criteria
+#### Acceptance Criteria
 
 | Criterion | Threshold | Actual | Status |
 |-----------|-----------|--------|--------|
 | MAE improvement | >= 20% | X.XXXX | ✅ PASS / ❌ FAIL |
 | Latency growth | <= 30% | X.XXXX | ✅ PASS / ❌ FAIL |
 
----
+#### Final Decision
 
-## Final Decision
-
+```markdown
 **ACCEPT PROMPT B** или **REJECT PROMPT B**
 
 **Reason:** [обоснование]
-
----
 ```
 
 ---
