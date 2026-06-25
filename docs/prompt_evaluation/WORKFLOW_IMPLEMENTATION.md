@@ -480,7 +480,7 @@ Workflow генерирует отчёт в формате Markdown:
 | File | Purpose |
 |------|---------|
 | `workflows/HRA Prompt Evaluation Experiment.json` | n8n workflow definition |
-| `docs/PROMPT_EVALUATION_WORKFLOW.md` | Workflow design document |
+| [`docs/prompt_evaluation/WORKFLOW_DESIGN.md`](./WORKFLOW_DESIGN.md) | Workflow design document |
 | `database/04-create-experiment-v1.sql` | Experiment creation SQL |
 | [`docs/prompt_evaluation/PROMPTS.md`](./PROMPTS.md) | Полные тексты промптов |
 
@@ -488,6 +488,6 @@ Workflow генерирует отчёт в формате Markdown:
 
 ## References
 
-- [Project Decision](task_history/2026-06-24_decision-hra-prompt-evaluation-metrics.md)
-- [Dataset V1](task_history/2026-06-24_task-hra-eval-dataset-v1.md)
-- [Database Schema](database/README.md)
+- [Database Schema](../../database/README.md)
+- [Workflow Design](./WORKFLOW_DESIGN.md)
+- [Промпты](./PROMPTS.md)
