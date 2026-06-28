@@ -18,6 +18,95 @@
 
 ---
 
+## [2.2.0] - 2026-06-28
+
+### Added
+
+#### Экспериментальный ML-контур
+
+- **Fine-tuning модуль** — добавлен каталог `finetuning/` с configs, scripts, data, runs, reports
+- **Experiment 002** — лучший результат LoRA обучения, значительное улучшение offline качества
+- **Runtime API** — добавлены `api/hra_qwen_api.py` и `api/hra_qwen_api_lora.py` для smoke validation
+- **EXPERIMENTAL_ML_PIPELINE.md** — документ об архитектурной цепочке экспериментального контура
+
+### Changed
+
+#### Prompt Evaluation
+
+- **Первый этап ML-контура** — Prompt Evaluation теперь формирует reference dataset для Fine-tuning
+- **Teacher Dataset** — reference dataset используется как основа для обучения LoRA
+
+### Architecture
+
+- **Экспериментальный ML-контур** — введён формальный пайплайн: Prompt Engineering → Prompt A/B Evaluation → Reference Dataset → Teacher Dataset → Fine-tuning (LoRA) → Offline Validation → Runtime Smoke Validation → Production Readiness
+- **Multi Provider Test workflow** — инженерный стенд для тестирования LLM-провайдеров, НЕ production workflow
+
+### Documentation
+
+- **finetuning/README.md** — актуализирован с результатами experiment_002
+- **prompt_evaluation/README.md** — добавлена связь с Fine-tuning
+- **PROJECT_STATE.md** — добавлен раздел о Fine-tuning и экспериментальном контуре
+- **README.md** — добавлена информация о Fine-tuning и архитектурной цепочке
+- **ARCHITECTURE.md** — добавлен раздел об экспериментальном ML-контуре
+- **MULTI_PROVIDER_ARCHITECTURE.md** — добавлен раздел "Production vs Test Architecture"
+
+### Fixed
+
+#### Fine-tuning
+
+- **Offline validation** — улучшено качество matching (Experiment 002)
+- **Runtime negative test** — выявлено, что модель не готова к production (пропускает negative cases)
+
+---
+
+## [2.1.0] - 2026-06-28
+
+### Fixed
+
+#### Multi-Provider LLM Architecture (исправлено)
+
+- **Broken connections** — исправлены ссылки на переименованные ноды в workflow
+- **Некорректная архитектура credentials** — реализована правильная схема с IF + прямые connections
+- **Дублирование бизнес-логики** — бизнес-логика не дублируется, только транспортный слой
+- **Missing error handling** — добавлены error outputs для RunPod-веток (3 вызова)
+- **Merge для взаимоисключающих веток** — удалены Merge-ноды, использованы прямые connections
+
+### Added
+
+#### Multi-Provider LLM Architecture
+
+- **Централизованная конфигурация провайдеров** — единая точка настройки LLM провайдеров через `$env.LLM_PROVIDER`
+- **Поддержка RunPod** — добавлен второй LLM провайдер (OpenAI-compatible endpoint)
+- **Условный structured output** — автоматическое отключение `json_schema` для провайдеров без поддержки
+- **Error handling** — оба провайдера (OpenAI и RunPod) используют общие обработчики ошибок
+- **Документация архитектуры** — `docs/MULTI_PROVIDER_ARCHITECTURE.md`
+- **Модуль конфигурации** — `workflows/llm-provider-config.js`
+- **Инструкция по модификации** — `docs/WORKFLOW_MODIFICATION_GUIDE.md`
+
+### Changed
+
+#### HR Processing Worker
+
+- **Параметризация LLM** — URL, model вынесены в конфигурацию `llm_config`
+- **Новая нода `Configure LLM Provider`** — централизованная конфигурация провайдера
+- **3 IF ноды** — выбор провайдера (openai/runpod) для каждого LLM вызова
+- **3 RunPod HTTP Request ноды** — для RunPod без credentials и response_format
+- **Модификация 3 Prepare Body нод** — условное добавление `response_format`
+- **Модификация 3 Parse нод** — использование `llm_provider` из конфигурации
+- **OpenAI ноды переименованы** — добавлен суффикс `(OpenAI)`
+- **RunPod ноды созданы** — добавлен суффикс `(RunPod)`, подключены error outputs
+- **Удалены Merge ноды** — для взаимоисключающих веток Merge не нужен
+
+### Architecture
+
+- **Direct connection pattern** — оба провайдера подключаются напрямую к Parse (без Merge)
+- **Mutually exclusive branches** — IF node гарантирует, что только одна ветка активна
+- **Shared error handling** — OpenAI и RunPod используют общие обработчики ошибок
+- **Production-ready** — error outputs подключены для всех провайдеров
+- **Open/Closed Principle** — архитектура открыта для расширения новыми провайдерами
+
+---
+
 ## [2.0.0] - 2026-04-29
 
 ### Fixed

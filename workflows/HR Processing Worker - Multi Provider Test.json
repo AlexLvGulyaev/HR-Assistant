@@ -1,5 +1,5 @@
 {
-  "name": "HR Processing Worker",
+  "name": "HR Processing Worker - Multi Provider Test",
   "nodes": [
     {
       "parameters": {
@@ -15,10 +15,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        29328,
-        9248
+        -2960,
+        304
       ],
-      "id": "60e33ab1-fc6e-49e4-83da-63b8c703e596",
+      "id": "a7544ae2-f547-4e0e-80a8-e0583c79bf19",
       "name": "Schedule Trigger: process pending inputs"
     },
     {
@@ -30,10 +30,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        29504,
-        9248
+        -2784,
+        304
       ],
-      "id": "22d09bec-87d9-4acc-baaa-c90be5e68760",
+      "id": "d754939e-5227-4d9a-94f3-a355ac765572",
       "name": "PG: claim pending candidate_inputs",
       "credentials": {
         "postgres": {
@@ -70,29 +70,29 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        29680,
-        9248
+        -2608,
+        304
       ],
-      "id": "c3cfca9e-6cd0-48f0-8c69-371563507ed4",
+      "id": "6a9bc6f0-06fd-413f-858f-694dc3c8126c",
       "name": "IF: has pending input?"
     },
     {
       "parameters": {
-        "jsCode": "const text = String(\n  $json.normalized_text ||\n  $json.original_text ||\n  $json.text ||\n  ''\n);\n\nreturn [\n  {\n    json: {\n      ...$json,\n      openai_body: {\n        model: 'gpt-4o-mini',\n        temperature: 0,\n        messages: [\n          {\n            role: 'system',\n            content:\n              'Ты — HR-ассистент для извлечения структурированных данных из резюме. Извлекай только явно присутствующие данные. Не выдумывай отсутствующие сведения.'\n          },\n          {\n            role: 'user',\n            content:\n              'Извлеки данные кандидата из текста резюме:\\n\\n' +\n              text\n          }\n        ],\n        response_format: {\n          type: 'json_schema',\n          json_schema: {\n            name: 'candidate_profile',\n            strict: true,\n            schema: {\n              type: 'object',\n              additionalProperties: false,\n              properties: {\n                full_name: {\n                  type: ['string', 'null']\n                },\n                city: {\n                  type: ['string', 'null']\n                },\n                desired_position: {\n                  type: ['string', 'null']\n                },\n                experience_years: {\n                  type: ['number', 'null']\n                },\n                skills: {\n                  type: 'array',\n                  items: {\n                    type: 'string'\n                  }\n                },\n                salary_expectation: {\n                  type: ['number', 'null']\n                },\n                email: {\n                  type: ['string', 'null']\n                },\n                phone: {\n                  type: ['string', 'null']\n                },\n                summary: {\n                  type: ['string', 'null']\n                }\n              },\n              required: [\n                'full_name',\n                'city',\n                'desired_position',\n                'experience_years',\n                'skills',\n                'salary_expectation',\n                'email',\n                'phone',\n                'summary'\n              ]\n            }\n          }\n        }\n      }\n    }\n  }\n];"
+        "jsCode": "const text = String(\n  $json.normalized_text ||\n  $json.original_text ||\n  $json.text ||\n  ''\n);\n\n// Get LLM provider configuration\nconst llmConfig =\n  $('Configure LLM Provider').first().json.llm_config || {\n    llm_provider: 'openai',\n    llm_url: 'https://api.openai.com/v1/chat/completions',\n    llm_model: 'gpt-4o-mini',\n    llm_supports_structured_output: true\n  };\n\n// Define JSON schema for structured output\nconst candidateSchema = {\n  type: 'object',\n  additionalProperties: false,\n  properties: {\n    full_name: { type: ['string', 'null'] },\n    city: { type: ['string', 'null'] },\n    desired_position: { type: ['string', 'null'] },\n    experience_years: { type: ['number', 'null'] },\n    skills: { type: 'array', items: { type: 'string' } },\n    salary_expectation: { type: ['number', 'null'] },\n    email: { type: ['string', 'null'] },\n    phone: { type: ['string', 'null'] },\n    summary: { type: ['string', 'null'] }\n  },\n  required: [\n    'full_name',\n    'city',\n    'desired_position',\n    'experience_years',\n    'skills',\n    'salary_expectation',\n    'email',\n    'phone',\n    'summary'\n  ]\n};\n\n// Build request body\nconst openai_body = {\n  model: llmConfig.llm_model,\n  temperature: 0,\n  messages: [\n    {\n      role: 'system',\n      content: 'Ты — HR-ассистент для извлечения структурированных данных из резюме. Извлекай только явно присутствующие данные. Не выдумывай отсутствующие сведения.'\n    },\n    {\n      role: 'user',\n      content: 'Извлеки данные кандидата из текста резюме:\\n\\n' + text\n    }\n  ]\n};\n\n// Add response_format only if provider supports it\nif (llmConfig.llm_supports_structured_output) {\n  openai_body.response_format = {\n    type: 'json_schema',\n    json_schema: {\n      name: 'candidate_profile',\n      strict: true,\n      schema: candidateSchema\n    }\n  };\n}\n\nreturn [{\n  json: {\n    ...$json,\n    llm_config: llmConfig,\n    openai_body: openai_body\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        29920,
-        9248
+        -2144,
+        304
       ],
-      "id": "997e04f6-7c1d-414d-b513-df8d8771f263",
+      "id": "9cf3385c-07bf-4db8-8763-653bed7923d7",
       "name": "Prepare OpenAI Body: Extract candidate JSON"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.openai.com/v1/chat/completions",
+        "url": "={{ $json.llm_config.llm_url }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -112,11 +112,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        30160,
-        9248
+        -1648,
+        304
       ],
-      "id": "c1959993-6804-4108-9d44-5ae1d942124b",
-      "name": "LLM: OpenAI Extract candidate JSON",
+      "id": "a81b9d75-913d-4e23-acb3-35760c40c8a0",
+      "name": "LLM: Extract candidate JSON (OpenAI)",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
@@ -130,15 +130,15 @@
     },
     {
       "parameters": {
-        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw) {\n  if (!raw || typeof raw !== 'string') {\n    return null;\n  }\n\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst ctx = $('Prepare OpenAI Body: Extract candidate JSON').first().json;\nconst raw = extractRaw($json);\nconst candidate = parseJson(raw);\n\nconst requiredFields = [\n  'full_name',\n  'city',\n  'desired_position',\n  'experience_years',\n  'skills',\n  'salary_expectation',\n  'email',\n  'phone',\n  'summary'\n];\n\nconst hasObject = candidate && typeof candidate === 'object' && !Array.isArray(candidate);\n\nconst hasAllFields = hasObject && requiredFields.every(field =>\n  Object.prototype.hasOwnProperty.call(candidate, field)\n);\n\nconst validTypes =\n  hasObject &&\n  Array.isArray(candidate.skills) &&\n  (candidate.experience_years === null || typeof candidate.experience_years === 'number') &&\n  (candidate.salary_expectation === null || typeof candidate.salary_expectation === 'number');\n\nconst isValid = Boolean(hasObject && hasAllFields && validTypes);\n\nreturn [\n  {\n    json: {\n      ...ctx,\n      llm_provider: 'openai',\n      llm_raw_candidate_response: raw,\n      candidate: isValid ? candidate : null,\n      candidate_json_valid: isValid,\n      candidate_json_error: isValid ? null : 'Invalid candidate JSON structure from OpenAI'\n    }\n  }\n];"
+        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw) {\n  if (!raw || typeof raw !== 'string') {\n    return null;\n  }\n\n  try {\n    return JSON.parse(raw);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst ctx = $('Prepare OpenAI Body: Extract candidate JSON').first().json;\nconst raw = extractRaw($json);\nconst candidate = parseJson(raw);\n\nconst requiredFields = [\n  'full_name',\n  'city',\n  'desired_position',\n  'experience_years',\n  'skills',\n  'salary_expectation',\n  'email',\n  'phone',\n  'summary'\n];\n\nconst hasObject = candidate && typeof candidate === 'object' && !Array.isArray(candidate);\n\nconst hasAllFields = hasObject && requiredFields.every(field =>\n  Object.prototype.hasOwnProperty.call(candidate, field)\n);\n\nconst validTypes =\n  hasObject &&\n  Array.isArray(candidate.skills) &&\n  (candidate.experience_years === null || typeof candidate.experience_years === 'number') &&\n  (candidate.salary_expectation === null || typeof candidate.salary_expectation === 'number');\n\nconst isValid = Boolean(hasObject && hasAllFields && validTypes);\n\nreturn [\n  {\n    json: {\n      ...ctx,\n      llm_provider: ctx.llm_config?.llm_provider || 'openai',\n      llm_raw_candidate_response: raw,\n      candidate: isValid ? candidate : null,\n      candidate_json_valid: isValid,\n      candidate_json_error: isValid ? null : 'Invalid candidate JSON structure'\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        30416,
-        9248
+        -1392,
+        304
       ],
-      "id": "ced2ed25-44c6-4e54-b64b-15791f27ecc5",
+      "id": "b29fc55c-1bf0-499d-9881-77acfa024e5d",
       "name": "Parse OpenAI Candidate JSON"
     },
     {
@@ -169,29 +169,29 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        30832,
-        9248
+        -976,
+        304
       ],
-      "id": "c4ff53f7-b2e0-4e39-9bc6-92739b47745f",
+      "id": "0cb1b73a-8de2-4b2f-8705-9695100f65a0",
       "name": "IF: candidate JSON valid?"
     },
     {
       "parameters": {
-        "jsCode": "const resumeText = String(\n  $json.normalized_text ||\n  $json.original_text ||\n  $json.text ||\n  ''\n);\n\nconst rawBadResponse = String($json.llm_raw_candidate_response || '');\n\nreturn [{\n  json: {\n    ...$json,\n    openai_body: {\n      model: 'gpt-4o-mini',\n      temperature: 0,\n      messages: [\n        {\n          role: 'system',\n          content: 'Ты исправляешь JSON-ответ HR-ассистента. Нельзя добавлять данные, которых нет в исходном резюме.'\n        },\n        {\n          role: 'user',\n          content:\n            'Исходный текст резюме:\\n' +\n            resumeText +\n            '\\n\\nНекорректный ответ модели:\\n' +\n            rawBadResponse +\n            '\\n\\nИсправь ответ по строгой JSON-схеме.'\n        }\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'candidate_profile_repair',\n          strict: true,\n          schema: {\n            type: 'object',\n            additionalProperties: false,\n            properties: {\n              full_name: { type: ['string', 'null'] },\n              city: { type: ['string', 'null'] },\n              desired_position: { type: ['string', 'null'] },\n              experience_years: { type: ['number', 'null'] },\n              skills: { type: 'array', items: { type: 'string' } },\n              salary_expectation: { type: ['number', 'null'] },\n              email: { type: ['string', 'null'] },\n              phone: { type: ['string', 'null'] },\n              summary: { type: ['string', 'null'] }\n            },\n            required: [\n              'full_name',\n              'city',\n              'desired_position',\n              'experience_years',\n              'skills',\n              'salary_expectation',\n              'email',\n              'phone',\n              'summary'\n            ]\n          }\n        }\n      }\n    }\n  }\n}];"
+        "jsCode": "const resumeText = String(\n  $json.normalized_text ||\n  $json.original_text ||\n  $json.text ||\n  ''\n);\n\nconst rawBadResponse = String($json.llm_raw_candidate_response || '');\n\n// Get LLM provider configuration\nconst llmConfig =\n  $('Configure LLM Provider').first().json.llm_config || {\n    llm_provider: 'openai',\n    llm_url: 'https://api.openai.com/v1/chat/completions',\n    llm_model: 'gpt-4o-mini',\n    llm_supports_structured_output: true\n  };\n\n// Define JSON schema\nconst repairSchema = {\n  type: 'object',\n  additionalProperties: false,\n  properties: {\n    full_name: { type: ['string', 'null'] },\n    city: { type: ['string', 'null'] },\n    desired_position: { type: ['string', 'null'] },\n    experience_years: { type: ['number', 'null'] },\n    skills: { type: 'array', items: { type: 'string' } },\n    salary_expectation: { type: ['number', 'null'] },\n    email: { type: ['string', 'null'] },\n    phone: { type: ['string', 'null'] },\n    summary: { type: ['string', 'null'] }\n  },\n  required: [\n    'full_name',\n    'city',\n    'desired_position',\n    'experience_years',\n    'skills',\n    'salary_expectation',\n    'email',\n    'phone',\n    'summary'\n  ]\n};\n\n// Build request body\nconst openai_body = {\n  model: llmConfig.llm_model,\n  temperature: 0,\n  messages: [\n    {\n      role: 'system',\n      content: 'Ты исправляешь JSON-ответ HR-ассистента. Нельзя добавлять данные, которых нет в исходном резюме.'\n    },\n    {\n      role: 'user',\n      content:\n        'Исходный текст резюме:\\n' +\n        resumeText +\n        '\\n\\nНекорректный ответ модели:\\n' +\n        rawBadResponse +\n        '\\n\\nИсправь ответ по строгой JSON-схеме.'\n    }\n  ]\n};\n\n// Add response_format only if provider supports it\nif (llmConfig.llm_supports_structured_output) {\n  openai_body.response_format = {\n    type: 'json_schema',\n    json_schema: {\n      name: 'candidate_profile_repair',\n      strict: true,\n      schema: repairSchema\n    }\n  };\n}\n\nreturn [{\n  json: {\n    ...$json,\n    llm_config: llmConfig,\n    openai_body: openai_body\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31328,
-        9376
+        -576,
+        432
       ],
-      "id": "6bfce2f4-b399-47f5-8787-4df468a4b6ab",
+      "id": "b4aba33e-e88e-47e2-ab9a-0779c0988c41",
       "name": "Prepare OpenAI Body: Repair candidate JSON"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.openai.com/v1/chat/completions",
+        "url": "={{ $json.llm_config.llm_url }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -211,11 +211,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        31568,
-        9376
+        -160,
+        432
       ],
-      "id": "fcd11f0e-261f-491b-bd7d-9e3ca6b224e5",
-      "name": "LLM: OpenAI Repair candidate JSON",
+      "id": "5ea13f40-7157-4aec-b9b6-7a2ba6aa8e1c",
+      "name": "LLM: Repair candidate JSON (OpenAI)",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
@@ -229,15 +229,15 @@
     },
     {
       "parameters": {
-        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content\n    || itemJson.message?.content\n    || itemJson.text\n    || itemJson.output\n    || '';\n}\n\nfunction parseJson(raw) {\n  if (!raw || typeof raw !== 'string') {\n    return null;\n  }\n\n  let cleaned = raw.trim();\n\n  cleaned = cleaned\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return null;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return null;\n    }\n  }\n}\n\nconst ctx = $('Parse OpenAI Candidate JSON').first().json;\n\nconst raw = extractRaw($json);\nconst candidate = parseJson(raw);\n\nconst requiredFields = [\n  'full_name',\n  'city',\n  'desired_position',\n  'experience_years',\n  'skills',\n  'salary_expectation',\n  'email',\n  'phone',\n  'summary'\n];\n\nconst hasObject =\n  candidate &&\n  typeof candidate === 'object' &&\n  !Array.isArray(candidate);\n\nconst hasAllFields =\n  hasObject &&\n  requiredFields.every(field =>\n    Object.prototype.hasOwnProperty.call(candidate, field)\n  );\n\nconst validTypes =\n  hasObject &&\n  (candidate.skills === null || Array.isArray(candidate.skills)) &&\n  (candidate.experience_years === null || typeof candidate.experience_years === 'number') &&\n  (candidate.salary_expectation === null || typeof candidate.salary_expectation === 'number');\n\nconst isValid = Boolean(hasObject && hasAllFields && validTypes);\n\nreturn [\n  {\n    json: {\n      ...ctx,\n      llm_provider: 'openai',\n      llm_raw_candidate_repair_response: raw,\n      candidate: isValid ? candidate : null,\n      candidate_json_valid: isValid,\n      candidate_json_error: isValid\n        ? null\n        : 'Invalid candidate JSON after OpenAI repair'\n    }\n  }\n];"
+        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content\n    || itemJson.message?.content\n    || itemJson.text\n    || itemJson.output\n    || '';\n}\n\nfunction parseJson(raw) {\n  if (!raw || typeof raw !== 'string') {\n    return null;\n  }\n\n  let cleaned = raw.trim();\n\n  cleaned = cleaned\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return null;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return null;\n    }\n  }\n}\n\nconst ctx = $('Parse OpenAI Candidate JSON').first().json;\n\nconst raw = extractRaw($json);\nconst candidate = parseJson(raw);\n\nconst requiredFields = [\n  'full_name',\n  'city',\n  'desired_position',\n  'experience_years',\n  'skills',\n  'salary_expectation',\n  'email',\n  'phone',\n  'summary'\n];\n\nconst hasObject =\n  candidate &&\n  typeof candidate === 'object' &&\n  !Array.isArray(candidate);\n\nconst hasAllFields =\n  hasObject &&\n  requiredFields.every(field =>\n    Object.prototype.hasOwnProperty.call(candidate, field)\n  );\n\nconst validTypes =\n  hasObject &&\n  (candidate.skills === null || Array.isArray(candidate.skills)) &&\n  (candidate.experience_years === null || typeof candidate.experience_years === 'number') &&\n  (candidate.salary_expectation === null || typeof candidate.salary_expectation === 'number');\n\nconst isValid = Boolean(hasObject && hasAllFields && validTypes);\n\nreturn [\n  {\n    json: {\n      ...ctx,\n      llm_provider: ctx.llm_config?.llm_provider || 'openai',\n      llm_raw_candidate_repair_response: raw,\n      candidate: isValid ? candidate : null,\n      candidate_json_valid: isValid,\n      candidate_json_error: isValid\n        ? null\n        : 'Invalid candidate JSON after repair'\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31808,
-        9376
+        80,
+        432
       ],
-      "id": "fa820cd4-937d-4abe-b179-ac9e42a36163",
+      "id": "bd9fd5d7-c218-4b58-8421-232577c8d66f",
       "name": "Parse OpenAI Repair Candidate JSON"
     },
     {
@@ -268,10 +268,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        32048,
-        9376
+        320,
+        432
       ],
-      "id": "262726d3-a8c5-4019-9030-66525d0de255",
+      "id": "5ef1d403-e548-41b6-be6c-ced7ce020f62",
       "name": "IF: repaired JSON valid?"
     },
     {
@@ -281,10 +281,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31328,
-        9136
+        -576,
+        192
       ],
-      "id": "d3655348-e13f-48b5-a2b9-fb484178b651",
+      "id": "6d3ebd82-671f-47e4-8b35-2049452fa52f",
       "name": "Validate candidate content"
     },
     {
@@ -315,10 +315,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        31568,
-        9136
+        -160,
+        192
       ],
-      "id": "047aaf34-ced8-4c3f-9e4e-696e639c09d8",
+      "id": "f884cc38-46d7-44e1-9dcc-9ceb30db59b2",
       "name": "IF: candidate meaningful?"
     },
     {
@@ -328,10 +328,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31808,
-        8944
+        80,
+        0
       ],
-      "id": "c513e927-31ea-4028-8b8a-5f4c4ba12a2d",
+      "id": "b310d8e5-2c25-4679-91de-78570c848fb5",
       "name": "Build TG invalid resume response"
     },
     {
@@ -341,10 +341,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        32288,
-        9504
+        560,
+        560
       ],
-      "id": "bd3463b4-a074-44bf-a43f-e398a57760c6",
+      "id": "3b2b74af-b7e0-4970-9802-a929f57f9158",
       "name": "Build TG error response"
     },
     {
@@ -354,10 +354,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31808,
-        9168
+        80,
+        224
       ],
-      "id": "21645f79-2575-4ff6-9520-16e2878afce5",
+      "id": "da7d8f30-9acc-4a8e-9bf2-ada139b7a757",
       "name": "Normalize candidate contacts"
     },
     {
@@ -369,10 +369,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        32048,
-        9168
+        320,
+        224
       ],
-      "id": "e9bf5b8d-c24e-4e09-8f65-4a7cee151ea9",
+      "id": "cd8e6064-9c8d-4592-b6af-dbaec9c85add",
       "name": "PG: find existing candidate",
       "alwaysOutputData": true,
       "credentials": {
@@ -389,10 +389,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        32288,
-        9168
+        560,
+        224
       ],
-      "id": "aa4666ae-c9c7-4feb-b12b-4f7ad8818874",
+      "id": "1ca2a6b8-0ed5-4434-a777-2071abc2b548",
       "name": "Build context after dedup search"
     },
     {
@@ -423,10 +423,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        32528,
-        9168
+        800,
+        224
       ],
-      "id": "f8d5971d-b9a4-41c5-883f-b0d920fe5d80",
+      "id": "30f41234-8128-4ee6-a810-1ce1e682172b",
       "name": "Candidate already exists?"
     },
     {
@@ -436,10 +436,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        32768,
-        9024
+        1040,
+        80
       ],
-      "id": "ed045626-346d-44bc-9e3b-805aec7e3920",
+      "id": "81186032-caa5-4f8a-a21e-9e8b7530138b",
       "name": "Use existing candidate"
     },
     {
@@ -451,10 +451,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        32768,
-        9296
+        1040,
+        352
       ],
-      "id": "688ab709-f18c-4be7-a757-b44cb11bef54",
+      "id": "43e5398c-df74-4bdb-a446-77edb0f94e09",
       "name": "PG: insert candidates",
       "credentials": {
         "postgres": {
@@ -470,10 +470,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33008,
-        9296
+        1280,
+        352
       ],
-      "id": "466bd22b-a40c-4c97-9b9d-af6cdb4ed635",
+      "id": "52a87813-1360-4c09-afd2-4a47df88dd48",
       "name": "Build context after candidates"
     },
     {
@@ -485,10 +485,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        33248,
-        9296
+        1440,
+        352
       ],
-      "id": "fdce7af2-d30a-48db-b840-d7f266450e83",
+      "id": "7149e305-a8d1-43b5-9922-f2fa5d15b945",
       "name": "PG: insert candidate_contacts",
       "credentials": {
         "postgres": {
@@ -504,10 +504,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33488,
-        9296
+        1680,
+        352
       ],
-      "id": "64d6292e-6971-4d32-84a3-0db21e1bd970",
+      "id": "51780a02-2d14-4b65-bc68-89170ea6f596",
       "name": "Build context after contacts"
     },
     {
@@ -519,10 +519,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        33728,
-        9168
+        1920,
+        224
       ],
-      "id": "b3627652-6391-42da-a686-850919150b5e",
+      "id": "ea923bb0-be1a-4539-adbc-b1a96467859e",
       "name": "PG: get open vacancies",
       "credentials": {
         "postgres": {
@@ -534,21 +534,21 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const candidate = $json.candidate || {};\nconst vacancy = $json.vacancy || {};\n\nreturn {\n  json: {\n    ...$json,\n    openai_body: {\n      model: 'gpt-4o-mini',\n      temperature: 0,\n      messages: [\n        {\n          role: 'system',\n          content:\n`Ты HR matching assistant.\n\nСравни кандидата и вакансию по критериям:\n\n1. Должность / роль — 30 баллов\n2. Навыки — 35 баллов\n3. Опыт — 20 баллов\n4. Город / формат / зарплатные ожидания — 15 баллов\n\nИтоговый score должен быть от 0 до 100.\n\nПравила:\n- score >= 60 → decision = \"match\"\n- score < 60 → decision = \"no_match\"\n- не выдумывай навыки и опыт\n- если данных недостаточно, снижай score\n- reason должен кратко объяснять, почему выставлен такой score\n\nВерни строго JSON по схеме.`\n        },\n        {\n          role: 'user',\n          content:\n            'Кандидат:\\n' +\n            JSON.stringify(candidate, null, 2) +\n            '\\n\\nВакансия:\\n' +\n            JSON.stringify(vacancy, null, 2)\n        }\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'vacancy_match_result',\n          strict: true,\n          schema: {\n            type: 'object',\n            additionalProperties: false,\n            properties: {\n              vacancy_id: { type: ['string', 'null'] },\n              title: { type: ['string', 'null'] },\n              role_score: { type: 'number' },\n              skills_score: { type: 'number' },\n              experience_score: { type: 'number' },\n              conditions_score: { type: 'number' },\n              score: { type: 'number' },\n              decision: {\n                type: 'string',\n                enum: ['match', 'no_match']\n              },\n              reason: { type: 'string' }\n            },\n            required: [\n              'vacancy_id',\n              'title',\n              'role_score',\n              'skills_score',\n              'experience_score',\n              'conditions_score',\n              'score',\n              'decision',\n              'reason'\n            ]\n          }\n        }\n      }\n    }\n  }\n};"
+        "jsCode": "const candidate = $json.candidate || {};\nconst vacancy = $json.vacancy || {};\n\n// Get LLM provider configuration\nconst llmConfig =\n  $('Configure LLM Provider').first().json.llm_config || {\n    llm_provider: 'openai',\n    llm_url: 'https://api.openai.com/v1/chat/completions',\n    llm_model: 'gpt-4o-mini',\n    llm_supports_structured_output: true\n  };\n\n// Define JSON schema\nconst matchSchema = {\n  type: 'object',\n  additionalProperties: false,\n  properties: {\n    vacancy_id: { type: ['string', 'null'] },\n    title: { type: ['string', 'null'] },\n    role_score: { type: 'number' },\n    skills_score: { type: 'number' },\n    experience_score: { type: 'number' },\n    conditions_score: { type: 'number' },\n    score: { type: 'number' },\n    decision: {\n      type: 'string',\n      enum: ['match', 'no_match']\n    },\n    reason: { type: 'string' }\n  },\n  required: [\n    'vacancy_id',\n    'title',\n    'role_score',\n    'skills_score',\n    'experience_score',\n    'conditions_score',\n    'score',\n    'decision',\n    'reason'\n  ]\n};\n\n// Build request body\nconst openai_body = {\n  model: llmConfig.llm_model,\n  temperature: 0,\n  messages: [\n    {\n      role: 'system',\n      content: `Ты HR matching assistant.\n\nСравни кандидата и вакансию по критериям:\n\n1. Должность / роль — 30 баллов\n2. Навыки — 35 баллов\n3. Опыт — 20 баллов\n4. Город / формат / зарплатные ожидания — 15 баллов\n\nИтоговый score должен быть от 0 до 100.\n\nПравила:\n- score >= 60 → decision = \"match\"\n- score < 60 → decision = \"no_match\"\n- не выдумывай навыки и опыт\n- если данных недостаточно, снижай score\n- reason должен кратко объяснять, почему выставлен такой score\n\nВерни строго JSON по схеме.`\n    },\n    {\n      role: 'user',\n      content:\n        'Кандидат:\\n' +\n        JSON.stringify(candidate, null, 2) +\n        '\\n\\nВакансия:\\n' +\n        JSON.stringify(vacancy, null, 2)\n    }\n  ]\n};\n\n// Add response_format only if provider supports it\nif (llmConfig.llm_supports_structured_output) {\n  openai_body.response_format = {\n    type: 'json_schema',\n    json_schema: {\n      name: 'vacancy_match_result',\n      strict: true,\n      schema: matchSchema\n    }\n  };\n}\n\nreturn {\n  json: {\n    ...$json,\n    llm_config: llmConfig,\n    openai_body: openai_body\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33968,
-        9168
+        2112,
+        224
       ],
-      "id": "530b7b58-910d-46ff-adc5-64924710bd8a",
+      "id": "c4b355c2-bfc1-403a-a70c-279d0d5284cd",
       "name": "Prepare OpenAI Body: Match candidate vacancy"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.openai.com/v1/chat/completions",
+        "url": "={{ $json.llm_config.llm_url }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -570,11 +570,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        34208,
-        9168
+        2528,
+        224
       ],
-      "id": "9bef185e-b33a-4c74-b30c-45df23b64294",
-      "name": "LLM: OpenAI match candidate vacancy",
+      "id": "2a40103d-768c-41b2-a966-1d74a9a9c116",
+      "name": "LLM: Match candidate vacancy (OpenAI)",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
@@ -588,15 +588,15 @@
     },
     {
       "parameters": {
-        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw, fallback) {\n  if (!raw || typeof raw !== 'string') {\n    return fallback;\n  }\n\n  let cleaned = raw.trim()\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return fallback;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return fallback;\n    }\n  }\n}\n\nfunction clamp(value, min, max) {\n  return Math.max(min, Math.min(max, Number(value || 0)));\n}\n\nconst sourceItems = $('Prepare OpenAI Body: Match candidate vacancy').all();\n\nreturn items.map((item, index) => {\n  const source = sourceItems[index]?.json || {};\n  const raw = extractRaw(item.json);\n\n  const fallback = {\n    vacancy_id: source.vacancy?.id || null,\n    title: source.vacancy?.title || '',\n    role_score: 0,\n    skills_score: 0,\n    experience_score: 0,\n    conditions_score: 0,\n    score: 0,\n    decision: 'no_match',\n    reason: 'Не удалось разобрать ответ модели'\n  };\n\n  const parsed = parseJson(raw, fallback);\n\n  const roleScore = clamp(parsed.role_score, 0, 30);\n  const skillsScore = clamp(parsed.skills_score, 0, 35);\n  const experienceScore = clamp(parsed.experience_score, 0, 20);\n  const conditionsScore = clamp(parsed.conditions_score, 0, 15);\n\n  const calculatedScore =\n    roleScore +\n    skillsScore +\n    experienceScore +\n    conditionsScore;\n\n  const modelScore = clamp(parsed.score, 0, 100);\n  const score = calculatedScore > 0 ? calculatedScore : modelScore;\n\n  return {\n    json: {\n      ...source,\n      llm_provider: 'openai',\n      llm_raw_match_response: raw,\n      match_result: {\n        vacancy_id: parsed.vacancy_id || source.vacancy?.id || null,\n        title: parsed.title || source.vacancy?.title || '',\n        role_score: roleScore,\n        skills_score: skillsScore,\n        experience_score: experienceScore,\n        conditions_score: conditionsScore,\n        score,\n        decision: score >= 60 ? 'match' : 'no_match',\n        reason: parsed.reason || ''\n      }\n    }\n  };\n});"
+        "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw, fallback) {\n  if (!raw || typeof raw !== 'string') {\n    return fallback;\n  }\n\n  let cleaned = raw.trim()\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return fallback;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return fallback;\n    }\n  }\n}\n\nfunction clamp(value, min, max) {\n  return Math.max(min, Math.min(max, Number(value || 0)));\n}\n\nconst sourceItems = $('Prepare OpenAI Body: Match candidate vacancy').all();\n\nreturn items.map((item, index) => {\n  const source = sourceItems[index]?.json || {};\n  const raw = extractRaw(item.json);\n\n  const fallback = {\n    vacancy_id: source.vacancy?.id || null,\n    title: source.vacancy?.title || '',\n    role_score: 0,\n    skills_score: 0,\n    experience_score: 0,\n    conditions_score: 0,\n    score: 0,\n    decision: 'no_match',\n    reason: 'Не удалось разобрать ответ модели'\n  };\n\n  const parsed = parseJson(raw, fallback);\n\n  const roleScore = clamp(parsed.role_score, 0, 30);\n  const skillsScore = clamp(parsed.skills_score, 0, 35);\n  const experienceScore = clamp(parsed.experience_score, 0, 20);\n  const conditionsScore = clamp(parsed.conditions_score, 0, 15);\n\n  const calculatedScore =\n    roleScore +\n    skillsScore +\n    experienceScore +\n    conditionsScore;\n\n  const modelScore = clamp(parsed.score, 0, 100);\n  const score = calculatedScore > 0 ? calculatedScore : modelScore;\n\n  return {\n    json: {\n      ...source,\n      llm_provider: source.llm_config?.llm_provider || 'openai',\n      llm_raw_match_response: raw,\n      match_result: {\n        vacancy_id: parsed.vacancy_id || source.vacancy?.id || null,\n        title: parsed.title || source.vacancy?.title || '',\n        role_score: roleScore,\n        skills_score: skillsScore,\n        experience_score: experienceScore,\n        conditions_score: conditionsScore,\n        score,\n        decision: score >= 60 ? 'match' : 'no_match',\n        reason: parsed.reason || ''\n      }\n    }\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34448,
-        9168
+        2816,
+        224
       ],
-      "id": "73341a44-c814-4839-a1ed-75ab2c2e7194",
+      "id": "85121ce4-ea73-434c-a738-e420bf12b419",
       "name": "Parse match JSON"
     },
     {
@@ -608,10 +608,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        34688,
-        9168
+        3056,
+        224
       ],
-      "id": "f766da2b-d125-4687-94d5-ccf3b7eabe9c",
+      "id": "35ce8dbb-347a-4e97-a9cb-1a7fc81cd9b4",
       "name": "PG: insert matches",
       "credentials": {
         "postgres": {
@@ -627,10 +627,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34928,
-        9168
+        3296,
+        224
       ],
-      "id": "ae837190-1d86-4a5a-9d0e-8d1ffef58926",
+      "id": "b3b42eda-14d1-49ed-a7c2-3890a32921c3",
       "name": "Build context after matches"
     },
     {
@@ -640,10 +640,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35168,
-        9168
+        3536,
+        224
       ],
-      "id": "428e81a8-0f42-450b-af35-403fdc19f004",
+      "id": "ca8c9571-9205-4e39-a47a-64d756c50ee1",
       "name": "Select best match"
     },
     {
@@ -655,10 +655,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        35408,
-        9168
+        3776,
+        224
       ],
-      "id": "03c1b620-483f-4486-90ae-87d4b8efb2f0",
+      "id": "9144e66d-f32e-427c-b5b4-4634b6c1387b",
       "name": "PG: insert final_decisions",
       "credentials": {
         "postgres": {
@@ -674,10 +674,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35648,
-        9168
+        4016,
+        224
       ],
-      "id": "24bfa619-a345-433a-a75d-5eaa79c2081d",
+      "id": "1c242f41-c53a-49a4-9241-1dcc09961e0e",
       "name": "Build context after final_decision"
     },
     {
@@ -687,10 +687,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35888,
-        9168
+        4256,
+        224
       ],
-      "id": "94aee3c2-3ac3-44c5-8448-e2c2569b215a",
+      "id": "ba74a4d1-eb74-4653-889c-8d220d4e85e6",
       "name": "Build TG response"
     },
     {
@@ -702,10 +702,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        30736,
-        9888
+        -1072,
+        944
       ],
-      "id": "088db8fa-670f-4ecb-b574-f691b8d89c58",
+      "id": "7ec12362-18d5-42c4-a948-87a0afbbaf90",
       "name": "PG: insert outbox pending result",
       "credentials": {
         "postgres": {
@@ -723,10 +723,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        30976,
-        9888
+        -832,
+        944
       ],
-      "id": "ded2e722-c087-42ff-b66a-4846ac0a316b",
+      "id": "41c106f8-e19e-47d9-91df-a89e93cd1b91",
       "name": "PG: mark candidate_input done",
       "credentials": {
         "postgres": {
@@ -744,10 +744,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        30736,
-        9408
+        -1072,
+        464
       ],
-      "id": "f53cb25b-7978-4031-8b8f-d6bc8a721a57",
+      "id": "510651a7-9c10-4805-b876-519007c75b4b",
       "name": "PG: insert outbox pending invalid",
       "credentials": {
         "postgres": {
@@ -765,10 +765,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        30976,
-        9408
+        -832,
+        464
       ],
-      "id": "ae65698e-eeb2-4543-b91e-a87f07116473",
+      "id": "c77335ca-c42f-4e6e-af88-cbe6d7952076",
       "name": "PG: mark candidate_input error invalid",
       "credentials": {
         "postgres": {
@@ -786,10 +786,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        30736,
-        9568
+        -1072,
+        624
       ],
-      "id": "138ae9f7-fcb7-4b1c-9e4a-efad287c8142",
+      "id": "85b429b4-b43f-4a2c-b5ff-99f7603358bd",
       "name": "PG: insert outbox pending JSON error",
       "credentials": {
         "postgres": {
@@ -807,10 +807,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        32528,
-        9504
+        800,
+        560
       ],
-      "id": "3e4f2d43-1d35-41cf-b903-d321057833a1",
+      "id": "bb589884-631f-4cb0-8716-3a20d314327a",
       "name": "PG: mark candidate_input error JSON",
       "credentials": {
         "postgres": {
@@ -826,10 +826,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        29920,
-        9056
+        -2352,
+        112
       ],
-      "id": "3f8d3cd7-36ac-498b-b2b0-6ef9f611f1fb",
+      "id": "37281343-ac65-4553-b41d-d59d345baea1",
       "name": "Build TG processing status"
     },
     {
@@ -841,10 +841,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        30160,
-        9056
+        -2144,
+        112
       ],
-      "id": "ed36de13-3cdf-4038-af50-4e5c599b6883",
+      "id": "7ca0cd95-fc51-4d21-b5ef-5f510b5c3e81",
       "name": "PG: insert outbox pending processing",
       "credentials": {
         "postgres": {
@@ -860,10 +860,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        30160,
-        9744
+        -1648,
+        800
       ],
-      "id": "f1641364-e4d3-4569-83a4-d5703b869982",
+      "id": "9936af69-7349-4892-a29e-f632d499fdbf",
       "name": "Build processing error context: Extract"
     },
     {
@@ -873,10 +873,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31568,
-        9776
+        -160,
+        832
       ],
-      "id": "bfed5a08-c551-4b48-a581-1100f4e3542f",
+      "id": "eeacc8c8-dc4f-492a-90e6-5c5ac48c9352",
       "name": "Build processing error context: Repair"
     },
     {
@@ -886,10 +886,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34208,
-        9536
+        2528,
+        592
       ],
-      "id": "18511ddb-8ddf-4f0a-b3dc-a887d6307899",
+      "id": "0e851690-ddad-4b89-a945-25424204335d",
       "name": "Build processing error context: Match"
     },
     {
@@ -901,10 +901,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        32528,
-        9776
+        800,
+        832
       ],
-      "id": "9f7a8d84-c5f2-45a7-84a7-82cd7eb23e05",
+      "id": "c2f7a076-cc27-4e30-9230-643899c4e7a1",
       "name": "PG: mark candidate_input error + log",
       "credentials": {
         "postgres": {
@@ -922,10 +922,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        32768,
-        9776
+        1040,
+        832
       ],
-      "id": "e9ddc8bd-cad7-482c-85d7-52226ce25bbd",
+      "id": "651d2f28-afdd-48d7-9c6c-fa477ac0ce6c",
       "name": "PG: insert outbox pending processing error",
       "credentials": {
         "postgres": {
@@ -933,6 +933,213 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Configure LLM Provider\n// Provider selection: openai (default) | runpod\n// Set via environment variable LLM_PROVIDER\n\nconst provider = 'runpod';\n\nconst configs = {\n  openai: {\n    llm_provider: 'openai',\n    llm_url: 'https://api.openai.com/v1/chat/completions',\n    llm_model: 'gpt-4o-mini',\n    llm_supports_structured_output: true,\n    llm_auth_credential_id: null\n  },\n  runpod: {\n    llm_provider: 'runpod',\n    llm_url: 'https://khu0q820y5ssqu-8000.proxy.runpod.net/v1/chat/completions',\n    llm_model: 'hra-qwen',\n    llm_supports_structured_output: true,\n    llm_auth_credential_id: null\n  }\n};\n\nconst config = configs[provider];\n\nif (!config) {\n  throw new Error(`Unknown LLM provider: ${provider}. Supported: openai, runpod`);\n}\n\nreturn [{\n  json: {\n    ...$json,\n    llm_config: config\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2352,
+        304
+      ],
+      "id": "4a1f46d2-e8e8-4f69-a392-82b653e86549",
+      "name": "Configure LLM Provider"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "provider-check-c1959993-6804-4108-9d44-5ae1d942124b",
+              "leftValue": "={{ $json.llm_config.llm_provider }}",
+              "rightValue": "openai",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1904,
+        304
+      ],
+      "id": "d1709d9f-e831-42e8-b02b-6b2f9a47a183",
+      "name": "IF: Provider for Extract candidate JSON?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.llm_config.llm_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1648,
+        464
+      ],
+      "id": "0a2204fa-dc0f-4741-92f2-58cf5c2e2c01",
+      "name": "LLM: Extract candidate JSON (RunPod)",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "provider-check-fcd11f0e-261f-491b-bd7d-9e3ca6b224e5",
+              "leftValue": "={{ $json.llm_config.llm_provider }}",
+              "rightValue": "openai",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -416,
+        432
+      ],
+      "id": "7a89876c-dc7e-4f2b-9f76-737d9ee82e13",
+      "name": "IF: Provider for Repair candidate JSON?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.llm_config.llm_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        592
+      ],
+      "id": "b0546806-4692-40ea-b406-d2f45659484c",
+      "name": "LLM: Repair candidate JSON (RunPod)",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "provider-check-9bef185e-b33a-4c74-b30c-45df23b64294",
+              "leftValue": "={{ $json.llm_config.llm_provider }}",
+              "rightValue": "openai",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2272,
+        224
+      ],
+      "id": "7f4512d4-0e9b-4e98-a68c-f8ced7cfcb79",
+      "name": "IF: Provider for Match candidate vacancy?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.llm_config.llm_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2528,
+        384
+      ],
+      "id": "17c111ab-fd73-4b1e-b56f-20d24f99613a",
+      "name": "LLM: Match candidate vacancy (RunPod)",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
     }
   ],
   "pinData": {},
@@ -963,7 +1170,7 @@
       "main": [
         [
           {
-            "node": "Prepare OpenAI Body: Extract candidate JSON",
+            "node": "Configure LLM Provider",
             "type": "main",
             "index": 0
           },
@@ -979,25 +1186,7 @@
       "main": [
         [
           {
-            "node": "LLM: OpenAI Extract candidate JSON",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "LLM: OpenAI Extract candidate JSON": {
-      "main": [
-        [
-          {
-            "node": "Parse OpenAI Candidate JSON",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Build processing error context: Extract",
+            "node": "IF: Provider for Extract candidate JSON?",
             "type": "main",
             "index": 0
           }
@@ -1037,25 +1226,7 @@
       "main": [
         [
           {
-            "node": "LLM: OpenAI Repair candidate JSON",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "LLM: OpenAI Repair candidate JSON": {
-      "main": [
-        [
-          {
-            "node": "Parse OpenAI Repair Candidate JSON",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Build processing error context: Repair",
+            "node": "IF: Provider for Repair candidate JSON?",
             "type": "main",
             "index": 0
           }
@@ -1285,25 +1456,7 @@
       "main": [
         [
           {
-            "node": "LLM: OpenAI match candidate vacancy",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "LLM: OpenAI match candidate vacancy": {
-      "main": [
-        [
-          {
-            "node": "Parse match JSON",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Build processing error context: Match",
+            "node": "IF: Provider for Match candidate vacancy?",
             "type": "main",
             "index": 0
           }
@@ -1456,21 +1609,184 @@
           }
         ]
       ]
+    },
+    "Configure LLM Provider": {
+      "main": [
+        [
+          {
+            "node": "Prepare OpenAI Body: Extract candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Extract candidate JSON (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse OpenAI Candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "LLM: Repair candidate JSON (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse OpenAI Repair Candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Repair",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Match candidate vacancy (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse match JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Provider for Extract candidate JSON?": {
+      "main": [
+        [
+          {
+            "node": "LLM: Extract candidate JSON (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LLM: Extract candidate JSON (RunPod)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Extract candidate JSON (RunPod)": {
+      "main": [
+        [
+          {
+            "node": "Parse OpenAI Candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Provider for Repair candidate JSON?": {
+      "main": [
+        [
+          {
+            "node": "LLM: Repair candidate JSON (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LLM: Repair candidate JSON (RunPod)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Repair candidate JSON (RunPod)": {
+      "main": [
+        [
+          {
+            "node": "Parse OpenAI Repair Candidate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Repair",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Provider for Match candidate vacancy?": {
+      "main": [
+        [
+          {
+            "node": "LLM: Match candidate vacancy (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LLM: Match candidate vacancy (RunPod)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Match candidate vacancy (RunPod)": {
+      "main": [
+        [
+          {
+            "node": "Parse match JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build processing error context: Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "timeSavedMode": "fixed",
-    "errorWorkflow": "1X2n7ogsTWUwNL3l",
-    "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "binaryMode": "separate"
   },
-  "versionId": "2d608c93-6cb7-4fc3-a152-a354c8cc5969",
+  "versionId": "047dc6e7-d407-483c-8a77-1c8c8408f175",
   "meta": {
     "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
   },
-  "id": "nDQqNQj9nql7GBwl",
+  "id": "moEgtiz2ZtkmodWb",
   "tags": []
 }

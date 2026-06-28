@@ -1,0 +1,112 @@
+# Конфигурация эксперимента 001
+# HR Assistant LoRA Finetuning
+
+experiment:
+  id: "experiment_001"
+  name: "HRA LoRA v1 - Base"
+  description: "Первоначальное LoRA finetuning на датасете HRA candidate-vacancy matching"
+
+model:
+  id: "Qwen/Qwen2.5-1.5B-Instruct"
+  revision: null  # Использовать default/main revision
+  trust_remote_code: false
+
+dataset:
+  id: "HRA-EXP-V1"
+  description: "90 эталонных HRA кейсов, стратифицированное разбиение"
+
+  split:
+    train: 72
+    validation: 9
+    test: 9
+
+  stratification:
+    groups:
+      - name: "obvious_match"
+        description: "Явное совпадение"
+        count: 30
+      - name: "borderline"
+        description: "Пограничный случай"
+        count: 30
+      - name: "obvious_no_match"
+        description: "Явное несовпадение"
+        count: 30
+
+  files:
+    train: "data/train.jsonl"
+    validation: "data/validation.jsonl"
+    test: "data/test.jsonl"
+
+method:
+  type: "lora"
+  # Будущее: "qlora" для квантованной версии
+
+  # Предварительные гиперпараметры — требуют тюнинга
+  lora:
+    r: 8
+    alpha: 32
+    dropout: 0.1
+    target_modules:
+      - "q_proj"
+      - "v_proj"
+      - "k_proj"
+      - "o_proj"
+    bias: "none"
+
+  # Предварительные гиперпараметры обучения — требуют тюнинга
+  training:
+    learning_rate: 1.0e-4  # Черновик: требует тюнинга
+    batch_size: 4          # Черновик: зависит от GPU памяти
+    gradient_accumulation_steps: 4  # Черновик: эффективный batch = 16
+    num_epochs: 3         # Черновик: начать консервативно
+    warmup_steps: 100
+    weight_decay: 0.01
+    max_grad_norm: 1.0
+
+    # Валидация
+    eval_steps: 50
+    save_steps: 50
+    save_total_limit: 3
+
+output:
+  dir: "runs/experiment_001"
+  logging_dir: "runs/experiment_001/logs"
+
+  # Именование чекпоинтов
+  save_strategy: "steps"
+  save_total_limit: 3
+
+evaluation:
+  # Валидация: выбор лучшей эпохи
+  validation_metric: "loss"
+  validation_mode: "min"  # Чем ниже loss, тем лучше
+
+  # Тест: финальная оценка
+  test_metrics:
+    - "exact_match_accuracy"
+    - "score_correlation"
+    - "decision_accuracy"
+    - "json_validity_rate"
+
+comparison:
+  # Модели для сравнения
+  baseline_models:
+    - name: "base_qwen"
+      type: "base"
+      description: "Qwen/Qwen2.5-1.5B-Instruct (zero-shot)"
+    - name: "qwen_lora"
+      type: "adapter"
+      description: "Qwen + LoRA адаптер (этот эксперимент)"
+    - name: "gpt_baseline"
+      type: "api"
+      description: "Эталонная GPT модель (GPT-4o-mini или аналогичная)"
+
+# Метаданные
+metadata:
+  created: "2026-06-28"
+  author: "HRA Team"
+  status: "draft"
+  notes:
+    - "Гиперпараметры предварительные"
+    - "Требуется подготовка датасета перед обучением"
+    - "Test set используется только для финальной оценки"

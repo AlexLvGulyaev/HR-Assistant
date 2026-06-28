@@ -100,6 +100,72 @@ graph LR
 
 ---
 
+## Экспериментальный ML-контур
+
+HR Assistant развивает архитектуру ML-пайплайна для постоянного улучшения качества matching:
+
+```mermaid
+graph TD
+    PE[Prompt Engineering] --> AB[Prompt A/B Evaluation]
+    AB --> RD[Reference Dataset]
+    RD --> TD[Teacher Dataset]
+    TD --> FT[Fine-tuning LoRA]
+    FT --> OV[Offline Validation]
+    OV --> RS[Runtime Smoke Validation]
+    RS --> PR{Production Ready?}
+    PR -->|No| PE
+    PR -->|Yes| PROD[Production]
+```
+
+### Уровни контура
+
+| Уровень | Назначение | Документация |
+|---------|-----------|--------------|
+| **Prompt Evaluation** | A/B-тестирование промптов, формирование reference dataset | [docs/prompt_evaluation/](docs/prompt_evaluation/) |
+| **Fine-tuning** | Обучение LoRA-адаптеров на teacher dataset | [finetuning/README.md](finetuning/README.md) |
+| **Runtime Smoke Validation** | Тестирование LoRA-моделей в runtime | [docs/MULTI_PROVIDER_ARCHITECTURE.md](docs/MULTI_PROVIDER_ARCHITECTURE.md) |
+
+### Текущий статус
+
+- **Prompt Evaluation:** Активный, HRA-EXP-V1 завершён
+- **Fine-tuning:** Экспериментальный, experiment_002 — лучший результат
+- **Runtime Validation:** Инженерный стенд (Multi Provider Test workflow)
+- **Production Ready:** **Нет** — модель не прошла negative smoke test
+
+**Подробно:** [Архитектура экспериментального контура](docs/ARCHITECTURE.md#экспериментальный-ml-контур)
+
+---
+
+## Fine-tuning (LoRA)
+
+Модуль Fine-tuning позволяет обучать LoRA-адаптеры для улучшения качества matching:
+
+### Назначение
+
+- **Teacher Dataset:** Формируется из reference dataset (Judge оценки)
+- **Обучение:** LoRA на Qwen/Qwen2.5-1.5B-Instruct
+- **Валидация:** Offline validation на отложенном тесте
+- **Тестирование:** Runtime smoke validation через Multi Provider Test workflow
+
+### Результаты experiment_002
+
+| Метрика | Base Qwen | Qwen + LoRA | GPT-4o-mini (baseline) |
+|---------|-----------|-------------|------------------------|
+| Offline Quality | ✅ Улучшение | ✅ Значительное улучшение | Reference |
+| Runtime Test | ✅ Базовый | ❌ **Failed negative test** | N/A |
+
+**Вывод:** LoRA улучшает offline качество, но модель не готова к production (пропускает negative cases).
+
+### Следующий цикл
+
+**Приоритет:** Расширение teacher dataset (hard negative examples)
+
+**Не приоритет:** Изменение архитектуры модели
+
+**Подробно:** [finetuning/README.md](finetuning/README.md)
+
+---
+
 ## Быстрый старт
 
 ### Требования
@@ -150,9 +216,27 @@ psql -U hr_user -d hr_assistant -f database/schema_hr_assistant.sql
 
 ## Состояние проекта
 
-**Статус:** Production-ready (v2.0)
+**Статус:** Production-ready (v2.1) + Experimental ML-контур
 **Покрытие документации:** 100%
 **Известные проблемы:** 1 (KP-001: metadata gap)
+
+### Production-контур
+
+| Компонент | Статус |
+|-----------|--------|
+| Workflow | ✅ Active |
+| Database | ✅ Deployed |
+| Integration | ✅ Live |
+| Documentation | ✅ Complete |
+
+### Экспериментальный ML-контур
+
+| Компонент | Статус |
+|-----------|--------|
+| Prompt Evaluation | ✅ Active (HRA-EXP-V1) |
+| Fine-tuning | ⚠️ Experimental (experiment_002 best) |
+| Runtime Validation | ⚠️ Engineering test only |
+| LoRA Production | ❌ Not ready (failed negative test) |
 
 **Подробно:** [PROJECT_STATE](docs/PROJECT_STATE.md)
 
@@ -175,9 +259,17 @@ hr-assistant/
 │   ├── AUTOMATION_PASSPORT.md       # Паспорт автоматизации
 │   ├── INTEGRATION_DIAGRAM.md       # Интеграции
 │   ├── CHANGE_LOG.md                # Журнал изменений
+│   ├── prompt_evaluation/           # Документация Prompt Evaluation
 │   └── screenshots/                 # Иллюстрации
 ├── workflows/                       # Workflow n8n
 ├── database/                         # Схемы БД
+├── finetuning/                      # Модуль Fine-tuning (LoRA)
+│   ├── configs/                     # Конфигурации экспериментов
+│   ├── scripts/                     # Скрипты обучения
+│   ├── data/                        # Teacher dataset
+│   ├── runs/                        # Результаты экспериментов
+│   └── reports/                     # Отчёты
+├── api/                             # Runtime API (Qwen)
 └── task_history/                    # История задач
 ```
 

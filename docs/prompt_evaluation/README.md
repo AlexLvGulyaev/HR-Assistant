@@ -6,7 +6,28 @@
 
 ## Назначение
 
-Prompt Evaluation — это изолированная подсистема для исследования качества промптов и принятия инженерных решений о замене production-промптов.
+Prompt Evaluation — это **первый этап ML-контура** HR Assistant.
+
+**Ключевые функции:**
+
+1. **A/B-тестирование промптов** — сравнение качества Prompt A vs Prompt B
+2. **Формирование reference dataset** — создание эталонного датасета с Judge-оценками
+
+**Связь с Fine-tuning:**
+
+Reference Dataset, сформированный на этом этапе, становится основой для Teacher Dataset, который используется для обучения LoRA-адаптеров.
+
+```
+Prompt Engineering → Prompt A/B Evaluation → Reference Dataset
+                                                            ↓
+                                                     Teacher Dataset
+                                                            ↓
+                                                       Fine-tuning LoRA
+```
+
+**Без Prompt Evaluation нет Teacher Dataset.**
+
+**Без Teacher Dataset нет Fine-tuning.**
 
 **Ключевые возможности:**
 

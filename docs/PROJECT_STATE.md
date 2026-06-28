@@ -1,7 +1,7 @@
 # Project State: HR Assistant
 
-**Last Updated:** 2026-06-24
-**Status:** Production-ready (v2.0)
+**Last Updated:** 2026-06-28
+**Status:** Production-ready (v2.1) + Experimental ML-контур
 **Case ID:** hr-assistant
 
 ---
@@ -16,9 +16,36 @@
 - Matching: сравнение профиля кандидата с вакансиями
 - Мультимедийный вывод: текст + голос (TTS) + визуальные материалы
 
+**Экспериментальный ML-контур:**
+- Prompt Evaluation: A/B-тестирование промптов, формирование reference dataset
+- Fine-tuning: LoRA-адаптеры для улучшения matching
+- Runtime Smoke Validation: инженерный стенд для тестирования моделей
+
 ---
 
 ## Current Status
+
+### Production-контур
+
+| Компонент | Статус | Готовность | Комментарий |
+|-----------|--------|------------|-------------|
+| Workflow | Active | ✅ 100% | Все workflow импортированы и работают |
+| Database | Deployed | ✅ 100% | Схема развернута, миграции применены |
+| Integration | Live | ✅ 95% | Telegram bot работает, критическое расхождение с metadata |
+| Documentation | Complete | ✅ 100% | Все обязательные документы созданы и проверены по SOT |
+| Security | Improved | ✅ 85% | KP-002 исправлен, токен в БД с placeholder в SQL |
+
+### Экспериментальный ML-контур
+
+| Компонент | Статус | Готовность | Комментарий |
+|-----------|--------|------------|-------------|
+| Prompt Evaluation | Active | ✅ 100% | HRA-EXP-V1 завершён, сформирован reference dataset |
+| Fine-tuning Infrastructure | Experimental | ✅ 90% | Каталог finetuning/, configs, scripts, runs |
+| Fine-tuning Experiment 002 | Completed | ⚠️ 70% | Лучший результат offline, но failed negative test |
+| Runtime Smoke Validation | Engineering Test | ✅ 100% | Multi Provider Test workflow для smoke validation |
+| LoRA Model Production | Not Ready | ❌ 0% | Модель не готова к production |
+
+**Ключевой вывод:** LoRA улучшает offline качество, но модель не прошла runtime negative smoke test. Следующий цикл должен быть направлен на расширение teacher dataset за счёт hard negative примеров.
 
 ### Production Readiness
 
@@ -122,6 +149,18 @@
 
 ---
 
+### Fine-tuning Documents
+
+| Документ | Статус | Источник | Приоритет |
+|----------|--------|----------|-----------|
+| **finetuning/README.md** | ✅ Создан | HRA Decision | 🔴 Высокий |
+| **finetuning/TECHNICAL_FOUNDATION.md** | ✅ Создан | HRA Decision | 🟡 Средний |
+| **finetuning/runs/experiment_002/README.md** | ✅ Создан | Auto-generated | 🟡 Средний |
+| **api/hra_qwen_api.py** | ✅ Создан | HRA Decision | 🟡 Средний |
+| **api/hra_qwen_api_lora.py** | ✅ Создан | HRA Decision | 🟡 Средний |
+
+---
+
 ### HRA-Specific Documents
 
 | Документ | Статус | Источник | Приоритет |
@@ -199,10 +238,13 @@
 | OpenAI API | ✅ Высокий | GPT-4, GPT-4o-mini, GPT-image-1, Sora-2, TTS |
 | Telegram Bot API | ✅ Высокий | Webhook, inline keyboard, мультимедиа |
 | Docker Compose | ✅ Средний | Production-развертывание с Traefik |
+| **Prompt Evaluation** | ✅ Высокий | A/B-тестирование, Judge methodology, reproducibility |
+| **LoRA Fine-tuning** | ⚠️ Средний | Experiment 002 завершён, не production-ready |
+| **Multi-Provider Runtime** | ⚠️ Средний | Инженерный стенд для smoke validation |
 
 ### Дефициты компетенций
 
-1. **A/B-тестирование** — не реализовано
+1. **Hard Negative Examples** — teacher dataset требует расширения
 2. **Мониторинг и аналитика** — отсутствуют дашборды
 3. **Security audit** — не проводился
 
@@ -221,6 +263,20 @@
 ---
 
 ## Next Steps
+
+### Phase 0: Fine-tuning Cycle 2 (приоритет: критический)
+
+**Цель:** Довести LoRA-модель до production-readiness
+
+**Задачи:**
+- [ ] Расширить teacher dataset (hard negative examples)
+- [ ] Провести experiment_003
+- [ ] Пройти runtime smoke validation
+- [ ] Документировать результаты
+
+**Срок:** 2-3 дня
+
+---
 
 ### Phase 1: Документация (приоритет: высокий)
 
@@ -324,6 +380,11 @@
 
 | Дата | Статус | Изменение |
 |------|--------|-----------|
+| 2026-06-28 | Fine-tuning Experiment 002 | Лучший результат offline, failed negative smoke test, не production-ready |
+| 2026-06-28 | Multi-Provider Architecture | Добавлен инженерный стенд для smoke validation LLM-провайдеров |
+| 2026-06-28 | Runtime API | Добавлены hra_qwen_api.py и hra_qwen_api_lora.py для LoRA-моделей |
+| 2026-06-27 | Fine-tuning Infrastructure | Создан каталог finetuning/, configs, scripts, runs, reports |
+| 2026-06-27 | Prompt Evaluation V2 | Обновлённый эксперимент HRA-EXP-V1, расширенная база данных |
 | 2026-06-24 | Documentation SOT Audit | Аудит документации по паттерну SOT, исправлено 27 нарушений в 3 документах |
 | 2026-06-24 | Security Improved | KP-002 исправлен (bot token заменён на placeholder) |
 | 2026-06-23 | Documentation Complete | Созданы все обязательные документы документационного пакета (17 документов) |

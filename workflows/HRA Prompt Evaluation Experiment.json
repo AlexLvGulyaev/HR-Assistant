@@ -3,26 +3,26 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "ea13bac5-730d-4507-83fc-24656c39be95",
+      "id": "1e4711cc-1726-4c48-8530-5f0fde744afe",
       "name": "Start",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        6096,
-        -256
+        10544,
+        2432
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Run Configuration\n// Change these values to run different experiments\nreturn [{\n  json: {\n    experiment_code: 'HRA-EXP-V1',\n    dataset_code: 'HRA-EVAL-V1',\n    expected_pairs: 90\n  }\n}];"
+        "jsCode": "// Run Configuration\n// Change these values to run different experiments\nreturn [{\n  json: {\n    experiment_code: 'HRA-EXP-V2',\n    dataset_code: 'HRA-EVAL-V2',\n    expected_pairs: 90\n  }\n}];"
       },
-      "id": "run-config-node",
+      "id": "7ad1e582-2670-450d-8ee7-0b7c77f9f315",
       "name": "Run Config",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        6200,
-        -256
+        10704,
+        2432
       ]
     },
     {
@@ -31,13 +31,13 @@
         "query": "SELECT \n    e.id AS experiment_id,\n    e.experiment_code,\n    e.prompt_a_text,\n    e.prompt_b_text,\n    e.judge_prompt_text,\n    e.model_a,\n    e.model_b,\n    e.model_judge,\n    e.temperature_a,\n    e.temperature_b,\n    e.temperature_judge,\n    d.dataset_code,\n    COUNT(cv.id) AS total_pairs\nFROM eval_prompt_experiments e\nJOIN eval_prompt_datasets d ON e.dataset_id = d.id\nLEFT JOIN eval_prompt_cases c ON c.dataset_id = d.id\nLEFT JOIN eval_prompt_case_vacancies cv ON cv.case_id = c.id\nWHERE e.experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  AND d.dataset_code = '{{ $('Run Config').first().json.dataset_code }}'\nGROUP BY e.id, e.experiment_code, e.prompt_a_text, e.prompt_b_text, \n         e.judge_prompt_text, e.model_a, e.model_b, e.model_judge,\n         e.temperature_a, e.temperature_b, e.temperature_judge, d.dataset_code;",
         "options": {}
       },
-      "id": "a40cb5ca-c2a1-4c32-b498-f7e06609c0fa",
+      "id": "b732d217-61b5-4812-b118-e0abd5f6dbfb",
       "name": "PG: Check Experiment",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6304,
-        -256
+        10848,
+        2432
       ],
       "credentials": {
         "postgres": {
@@ -80,26 +80,26 @@
         },
         "options": {}
       },
-      "id": "54063aa0-83ec-49db-993f-b173bb8fb66e",
+      "id": "57a2f33c-ef3c-4fab-a1ce-1bffd7dcb683",
       "name": "IF: Experiment Ready",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        6496,
-        -256
+        11040,
+        2432
       ]
     },
     {
       "parameters": {
         "jsCode": "const config = $('Run Config').first().json;\nreturn [{\n  json: {\n    error: 'Experiment validation failed',\n    message: `Experiment ${config.experiment_code} not found or dataset ${config.dataset_code} has incorrect number of pairs`,\n    expected_pairs: config.expected_pairs,\n    actual_pairs: $('PG: Check Experiment').first()?.json?.total_pairs || 0\n  }\n}];"
       },
-      "id": "36a6f368-8cde-48c1-8af9-bb6417ffb9e1",
+      "id": "21a3ba61-ab70-40ff-b312-956c0151c7c6",
       "name": "Error: Experiment Not Ready",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        6704,
-        -432
+        11248,
+        2256
       ]
     },
     {
@@ -108,13 +108,13 @@
         "query": "INSERT INTO eval_prompt_runs (\n    id,\n    experiment_id,\n    run_type,\n    status,\n    started_at,\n    created_at\n)\nSELECT\n    gen_random_uuid(),\n    e.id,\n    'judge',\n    'running',\n    now(),\n    now()\nFROM eval_prompt_experiments e\nJOIN eval_prompt_datasets d ON e.dataset_id = d.id\nWHERE e.experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  AND d.dataset_code = '{{ $('Run Config').first().json.dataset_code }}'\nRETURNING id AS run_id, experiment_id;",
         "options": {}
       },
-      "id": "b5311075-c101-467f-a38c-816ea2357a55",
+      "id": "70e7d3b8-6f3d-4f62-b199-4350fedede99",
       "name": "PG: Create Judge Run",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6704,
-        -256
+        11248,
+        2432
       ],
       "credentials": {
         "postgres": {
@@ -129,13 +129,13 @@
         "query": "SELECT \n    cv.id AS case_vacancy_id,\n    cv.vacancy_json,\n    c.candidate_json,\n    cv.reference_score,\n    cv.reference_decision\nFROM eval_prompt_case_vacancies cv\nJOIN eval_prompt_cases c ON cv.case_id = c.id\nJOIN eval_prompt_datasets d ON c.dataset_id = d.id\nWHERE d.dataset_code = '{{ $('Run Config').first().json.dataset_code }}'\n  AND cv.reference_score IS NULL\nORDER BY c.case_code, cv.id;",
         "options": {}
       },
-      "id": "a8c56b4c-4b16-4f1c-a30a-4362916a2b9c",
+      "id": "c0ce9388-73c0-4736-82e4-8b4a9dd353db",
       "name": "PG: Get Pairs Without Reference",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6896,
-        -256
+        11440,
+        2432
       ],
       "credentials": {
         "postgres": {
@@ -148,26 +148,26 @@
       "parameters": {
         "options": {}
       },
-      "id": "0373b72a-f567-444a-b714-7499818fdf0a",
+      "id": "eb0eeee0-69fe-421a-850c-65828bffa07f",
       "name": "Split In Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        7104,
-        -256
+        11648,
+        2432
       ]
     },
     {
       "parameters": {
         "jsCode": "const candidate = $json.candidate_json;\nconst vacancy = $json.vacancy_json;\nconst caseVacancyId = $json.case_vacancy_id;\n\nconst experimentData = $('PG: Check Experiment').first().json;\nconst judgePrompt = experimentData.judge_prompt_text;\n\nreturn [{\n  json: {\n    case_vacancy_id: caseVacancyId,\n    request_started_at: Date.now(),\n    candidate: candidate,\n    vacancy: vacancy,\n    openai_body: {\n      model: experimentData.model_judge || 'gpt-4.1-2025-04-14',\n      temperature: Number(experimentData.temperature_judge ?? 0),\n      messages: [\n        {\n          role: 'system',\n          content: judgePrompt\n        },\n        {\n          role: 'user',\n          content: 'Кандидат:\\n' + JSON.stringify(candidate, null, 2) + '\\n\\nВакансия:\\n' + JSON.stringify(vacancy, null, 2) + '\\n\\nПроведи детальную оценку соответствия кандидата вакансии по критериям:\\n1. Должность / роль (0-30 баллов)\\n2. Навыки (0-35 баллов)\\n3. Опыт (0-20 баллов)\\n4. Город / формат / зарплата (0-15 баллов)\\n\\nВерни JSON с оценками и обоснованием.'\n        }\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'judge_evaluation_result',\n          strict: true,\n          schema: {\n            type: 'object',\n            additionalProperties: false,\n            properties: {\n              vacancy_id: { type: ['string', 'null'] },\n              title: { type: ['string', 'null'] },\n              role_score: { type: 'number' },\n              skills_score: { type: 'number' },\n              experience_score: { type: 'number' },\n              conditions_score: { type: 'number' },\n              score: { type: 'number' },\n              decision: {\n                type: 'string',\n                enum: ['match', 'no_match']\n              },\n              reason: { type: 'string' }\n            },\n            required: ['vacancy_id', 'title', 'role_score', 'skills_score', \n                       'experience_score', 'conditions_score', 'score', \n                       'decision', 'reason']\n          }\n        }\n      }\n    }\n  }\n}];"
       },
-      "id": "1d23ad74-89ad-4b8f-bb3a-df0a70de2514",
+      "id": "dc3c73e6-45c5-4d25-a484-b41e75018d02",
       "name": "Prepare Judge Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        7296,
-        -256
+        11840,
+        2432
       ]
     },
     {
@@ -195,13 +195,13 @@
           }
         }
       },
-      "id": "9a89c23f-e6f6-4fc5-9bd8-f418d2233a9d",
+      "id": "08ba0012-1556-49b2-b2b9-52f72bc3399c",
       "name": "HTTP: Call Judge Model",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        7504,
-        -256
+        12048,
+        2432
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -214,28 +214,28 @@
       "parameters": {
         "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw, fallback) {\n  if (!raw || typeof raw !== 'string') {\n    return fallback;\n  }\n\n  let cleaned = raw.trim()\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return fallback;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return fallback;\n    }\n  }\n}\n\n// Get latency from explicit timestamp\nconst requestStartedAt = Number($('Prepare Judge Request').first().json.request_started_at);\nconst latencyMs = Number.isFinite(requestStartedAt) && requestStartedAt > 0\n  ? Date.now() - requestStartedAt\n  : 0;\n\nconst raw = extractRaw($json);\nconst parsed = parseJson(raw, {\n  vacancy_id: null,\n  title: '',\n  role_score: 0,\n  skills_score: 0,\n  experience_score: 0,\n  conditions_score: 0,\n  score: 0,\n  decision: 'no_match',\n  reason: 'Failed to parse response'\n});\n\nconst caseVacancyId = $('Prepare Judge Request').first().json.case_vacancy_id;\n\nreturn [{\n  json: {\n    case_vacancy_id: caseVacancyId,\n    reference_score: parsed.score,\n    reference_decision: parsed.decision,\n    reference_reason: parsed.reason,\n    raw_response: raw,\n    latency_ms: latencyMs,\n    parsed: parsed\n  }\n}];"
       },
-      "id": "c836cdd6-84ed-44a0-8c09-a91bf72eb9d9",
+      "id": "6fe89ab7-c629-4809-8d00-169e3a74a4a0",
       "name": "Parse Judge Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        7696,
-        -256
+        12240,
+        2432
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE eval_prompt_case_vacancies\nSET\n    reference_score = {{ $json.reference_score }},\n    reference_decision = '{{ $json.reference_decision }}',\n    reference_reason = '{{ ($json.reference_reason || \"\").replace(/'/g, \"''\") }}'\nWHERE id = '{{ $json.case_vacancy_id }}';",
+        "query": "UPDATE eval_prompt_case_vacancies\nSET\n    reference_score = {{ $json.reference_score }},\n    reference_decision = '{{ $json.reference_decision }}',\n    reference_reason = '{{ ($json.reference_reason || \"\").replace(/'/g, \"''\") }}',\n    reference_role_score = {{ $json.parsed.role_score }},\n    reference_skills_score = {{ $json.parsed.skills_score }},\n    reference_experience_score = {{ $json.parsed.experience_score }},\n    reference_conditions_score = {{ $json.parsed.conditions_score }},\n    reference_raw_response_json = '{{ JSON.stringify($json.parsed).replace(/'/g, \"''\") }}'::jsonb,\n    reference_model = '{{ $json.model || \"gpt-4.1-2025-04-14\" }}',\n    reference_latency_ms = {{ $json.latency_ms || \"NULL\" }},\n    reference_generated_at = NOW()\nWHERE id = '{{ $json.case_vacancy_id }}';",
         "options": {}
       },
-      "id": "dca8a1c5-7124-4055-96a2-bf90428973ed",
+      "id": "c9f98fcd-7329-4f53-a0e4-1fd79f97b651",
       "name": "PG: Update Reference Fields",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        7904,
-        -256
+        12448,
+        2432
       ],
       "credentials": {
         "postgres": {
@@ -248,13 +248,13 @@
       "parameters": {
         "jsCode": "// Return to Split In Batches for next iteration\nreturn [{\n  json: {\n    continue: true\n  }\n}];"
       },
-      "id": "ef69cad1-f5f3-4fec-b1d4-907546ab2712",
+      "id": "482ba51e-632d-4cf2-8290-6d862fcd0456",
       "name": "Loop: Continue Judge",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        8096,
-        -256
+        12640,
+        2432
       ]
     },
     {
@@ -263,13 +263,13 @@
         "query": "UPDATE eval_prompt_runs\nSET\n    status = 'completed',\n    completed_at = now()\nWHERE run_type = 'judge'\n  AND status = 'running'\n  AND experiment_id IN (\n    SELECT id FROM eval_prompt_experiments \n    WHERE experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  );",
         "options": {}
       },
-      "id": "498fd868-2061-4e7b-992b-18d87d884add",
+      "id": "8e65c01d-0887-4f32-b1f5-c35ebbc1efed",
       "name": "PG: Complete Judge Run",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6512,
-        -16
+        11056,
+        2672
       ],
       "credentials": {
         "postgres": {
@@ -284,13 +284,13 @@
         "query": "INSERT INTO eval_prompt_runs (\n    id,\n    experiment_id,\n    run_type,\n    status,\n    started_at,\n    created_at\n)\nSELECT\n    gen_random_uuid(),\n    e.id,\n    'A',\n    'running',\n    now(),\n    now()\nFROM eval_prompt_experiments e\nJOIN eval_prompt_datasets d ON e.dataset_id = d.id\nWHERE e.experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  AND d.dataset_code = '{{ $('Run Config').first().json.dataset_code }}'\nRETURNING id AS run_id, experiment_id;",
         "options": {}
       },
-      "id": "0fb7feb7-4836-4ca7-9774-c36609bbcfe8",
+      "id": "c20fb685-67ef-4b24-854d-57c53d23667e",
       "name": "PG: Create Prompt A Run",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6704,
-        -16
+        11248,
+        2672
       ],
       "credentials": {
         "postgres": {
@@ -305,13 +305,13 @@
         "query": "SELECT \n    r.id AS run_id,\n    cv.id AS case_vacancy_id,\n    cv.vacancy_json,\n    c.candidate_json,\n    cv.reference_score,\n    cv.reference_decision\nFROM eval_prompt_runs r\nJOIN eval_prompt_experiments e ON r.experiment_id = e.id\nJOIN eval_prompt_datasets d ON e.dataset_id = d.id\nJOIN eval_prompt_cases c ON c.dataset_id = d.id\nJOIN eval_prompt_case_vacancies cv ON cv.case_id = c.id\nWHERE e.experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  AND r.run_type = 'A'\n  AND r.status = 'running'\nORDER BY c.case_code, cv.id;",
         "options": {}
       },
-      "id": "fd9ade29-cde5-42bc-8246-e0bcb77839d8",
+      "id": "c090a020-a551-47b9-8b87-099dfdbb316c",
       "name": "PG: Get Pairs For Prompt A",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6912,
-        -16
+        11456,
+        2672
       ],
       "credentials": {
         "postgres": {
@@ -324,26 +324,26 @@
       "parameters": {
         "options": {}
       },
-      "id": "a47190e0-0b19-438c-916e-b4308a64825b",
+      "id": "70562f48-8716-4e43-990f-5c1a4e1603b9",
       "name": "Split In Batches: Prompt A",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        7104,
-        -16
+        11648,
+        2672
       ]
     },
     {
       "parameters": {
         "jsCode": "const candidate = $json.candidate_json;\nconst vacancy = $json.vacancy_json;\nconst caseVacancyId = $json.case_vacancy_id;\nconst runId = $json.run_id;\n\nconst experimentData = $('PG: Check Experiment').first().json;\nconst promptAText = experimentData.prompt_a_text;\n\nreturn [{\n  json: {\n    run_id: runId,\n    case_vacancy_id: caseVacancyId,\n    request_started_at: Date.now(),\n    candidate: candidate,\n    vacancy: vacancy,\n    openai_body: {\n      model: experimentData.model_a || 'gpt-4o-mini',\n      temperature: Number(experimentData.temperature_a ?? 0),\n      messages: [\n        {\n          role: 'system',\n          content: promptAText\n        },\n        {\n          role: 'user',\n          content: 'Кандидат:\\n' + JSON.stringify(candidate, null, 2) + '\\n\\nВакансия:\\n' + JSON.stringify(vacancy, null, 2)\n        }\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'vacancy_match_result',\n          strict: true,\n          schema: {\n            type: 'object',\n            additionalProperties: false,\n            properties: {\n              vacancy_id: { type: ['string', 'null'] },\n              title: { type: ['string', 'null'] },\n              role_score: { type: 'number' },\n              skills_score: { type: 'number' },\n              experience_score: { type: 'number' },\n              conditions_score: { type: 'number' },\n              score: { type: 'number' },\n              decision: {\n                type: 'string',\n                enum: ['match', 'no_match']\n              },\n              reason: { type: 'string' }\n            },\n            required: ['vacancy_id', 'title', 'role_score', 'skills_score', \n                       'experience_score', 'conditions_score', 'score', \n                       'decision', 'reason']\n          }\n        }\n      }\n    }\n  }\n}];"
       },
-      "id": "2666bf2d-2e61-45fc-bda6-100e55371c1f",
+      "id": "2ddc73ab-6b54-46d2-bedb-b5c0a876f383",
       "name": "Prepare Prompt A Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        7312,
-        -16
+        11856,
+        2672
       ]
     },
     {
@@ -371,13 +371,13 @@
           }
         }
       },
-      "id": "60b5f224-ebb8-41cc-b138-e38d0470d432",
+      "id": "e2c56271-7ce9-4641-ae81-54ea4d4a76ac",
       "name": "HTTP: Call Prompt A Model",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        7504,
-        -16
+        12048,
+        2672
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -390,13 +390,13 @@
       "parameters": {
         "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw, fallback) {\n  if (!raw || typeof raw !== 'string') {\n    return fallback;\n  }\n\n  let cleaned = raw.trim()\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return fallback;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return fallback;\n    }\n  }\n}\n\n// Get latency from explicit timestamp\nconst requestStartedAt = Number($('Prepare Prompt A Request').first().json.request_started_at);\nconst latencyMs = Number.isFinite(requestStartedAt) && requestStartedAt > 0\n  ? Date.now() - requestStartedAt\n  : 0;\n\nconst raw = extractRaw($json);\nconst parsed = parseJson(raw, {\n  vacancy_id: null,\n  title: '',\n  role_score: 0,\n  skills_score: 0,\n  experience_score: 0,\n  conditions_score: 0,\n  score: 0,\n  decision: 'no_match',\n  reason: 'Failed to parse response'\n});\n\nconst runId = $('Prepare Prompt A Request').first().json.run_id;\nconst caseVacancyId = $('Prepare Prompt A Request').first().json.case_vacancy_id;\n\nreturn [{\n  json: {\n    run_id: runId,\n    case_vacancy_id: caseVacancyId,\n    score: parsed.score,\n    decision: parsed.decision,\n    reason: parsed.reason,\n    latency_ms: latencyMs,\n    raw_response: raw,\n    parsed: parsed\n  }\n}];"
       },
-      "id": "ee18a91f-268d-4a8a-a80d-ab485fc1e5cd",
+      "id": "540b3ebd-0ddf-4c06-87b1-a44bdb9a9831",
       "name": "Parse Prompt A Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        7712,
-        -16
+        12256,
+        2672
       ]
     },
     {
@@ -405,13 +405,13 @@
         "query": "INSERT INTO eval_prompt_results (\n    id,\n    run_id,\n    case_vacancy_id,\n    score,\n    decision,\n    latency_ms,\n    raw_response_json,\n    created_at\n)\nVALUES (\n    gen_random_uuid(),\n    '{{ $json.run_id }}',\n    '{{ $json.case_vacancy_id }}',\n    {{ $json.score }},\n    '{{ $json.decision }}',\n    {{ $json.latency_ms }},\n    '{{ JSON.stringify($json.parsed).replace(/'/g, \"''\") }}'::jsonb,\n    now()\n);",
         "options": {}
       },
-      "id": "60709a39-1a8c-4efb-9f7c-9c8f88e05c47",
+      "id": "ea0ebbfa-3be4-43c1-bcec-3509ee352612",
       "name": "PG: Save Prompt A Result",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        7904,
-        -16
+        12448,
+        2672
       ],
       "credentials": {
         "postgres": {
@@ -424,13 +424,13 @@
       "parameters": {
         "jsCode": "// Return to Split In Batches for next iteration\nreturn [{\n  json: {\n    continue: true\n  }\n}];"
       },
-      "id": "ddb0b8ea-bf8d-4337-98fa-76f08932239f",
+      "id": "6a8cc450-48cb-462c-b286-6dff8f3f6a4c",
       "name": "Loop: Continue Prompt A",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        8112,
-        -16
+        12656,
+        2672
       ]
     },
     {
@@ -439,13 +439,13 @@
         "query": "UPDATE eval_prompt_runs\nSET\n    status = 'completed',\n    completed_at = now()\nWHERE run_type = 'A'\n  AND status = 'running'\n  AND experiment_id IN (\n    SELECT id FROM eval_prompt_experiments \n    WHERE experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  );",
         "options": {}
       },
-      "id": "04d7d5bd-32a0-4cd2-8daa-645dd132749a",
+      "id": "24b9bb23-1c2c-4fc2-b6b0-0b79e65554bb",
       "name": "PG: Complete Prompt A Run",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6512,
-        224
+        11056,
+        2912
       ],
       "credentials": {
         "postgres": {
@@ -460,13 +460,13 @@
         "query": "INSERT INTO eval_prompt_runs (\n    id,\n    experiment_id,\n    run_type,\n    status,\n    started_at,\n    created_at\n)\nSELECT\n    gen_random_uuid(),\n    e.id,\n    'B',\n    'running',\n    now(),\n    now()\nFROM eval_prompt_experiments e\nJOIN eval_prompt_datasets d ON e.dataset_id = d.id\nWHERE e.experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  AND d.dataset_code = '{{ $('Run Config').first().json.dataset_code }}'\nRETURNING id AS run_id, experiment_id;",
         "options": {}
       },
-      "id": "8d64c167-b606-431f-bace-481a49ffdfc5",
+      "id": "c434a2c9-b26e-47ff-b1a7-26f22e434d46",
       "name": "PG: Create Prompt B Run",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6720,
-        224
+        11264,
+        2912
       ],
       "credentials": {
         "postgres": {
@@ -481,13 +481,13 @@
         "query": "SELECT \n    r.id AS run_id,\n    cv.id AS case_vacancy_id,\n    cv.vacancy_json,\n    c.candidate_json,\n    cv.reference_score,\n    cv.reference_decision\nFROM eval_prompt_runs r\nJOIN eval_prompt_experiments e ON r.experiment_id = e.id\nJOIN eval_prompt_datasets d ON e.dataset_id = d.id\nJOIN eval_prompt_cases c ON c.dataset_id = d.id\nJOIN eval_prompt_case_vacancies cv ON cv.case_id = c.id\nWHERE e.experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  AND r.run_type = 'B'\n  AND r.status = 'running'\nORDER BY c.case_code, cv.id;",
         "options": {}
       },
-      "id": "a7a1f5e7-a501-4fdb-bc10-d01e5cb23aa9",
+      "id": "a4f30df7-c36b-4374-8447-f8c239cc213e",
       "name": "PG: Get Pairs For Prompt B",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6912,
-        224
+        11456,
+        2912
       ],
       "credentials": {
         "postgres": {
@@ -500,26 +500,26 @@
       "parameters": {
         "options": {}
       },
-      "id": "8fc02266-1b9d-4fd1-8af3-85107ab63881",
+      "id": "e7784e0a-38d4-4866-8d9a-9cbc361598d0",
       "name": "Split In Batches: Prompt B",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        7104,
-        224
+        11648,
+        2912
       ]
     },
     {
       "parameters": {
         "jsCode": "const candidate = $json.candidate_json;\nconst vacancy = $json.vacancy_json;\nconst caseVacancyId = $json.case_vacancy_id;\nconst runId = $json.run_id;\n\nconst experimentData = $('PG: Check Experiment').first().json;\nconst promptBText = experimentData.prompt_b_text;\n\nreturn [{\n  json: {\n    run_id: runId,\n    case_vacancy_id: caseVacancyId,\n    request_started_at: Date.now(),\n    candidate: candidate,\n    vacancy: vacancy,\n    openai_body: {\n      model: experimentData.model_b || 'gpt-4o-mini',\n      temperature: Number(experimentData.temperature_b ?? 0),\n      messages: [\n        {\n          role: 'system',\n          content: promptBText\n        },\n        {\n          role: 'user',\n          content: 'Кандидат:\\n' + JSON.stringify(candidate, null, 2) + '\\n\\nВакансия:\\n' + JSON.stringify(vacancy, null, 2)\n        }\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'vacancy_match_result',\n          strict: true,\n          schema: {\n            type: 'object',\n            additionalProperties: false,\n            properties: {\n              vacancy_id: { type: ['string', 'null'] },\n              title: { type: ['string', 'null'] },\n              role_score: { type: 'number' },\n              skills_score: { type: 'number' },\n              experience_score: { type: 'number' },\n              conditions_score: { type: 'number' },\n              score: { type: 'number' },\n              decision: {\n                type: 'string',\n                enum: ['match', 'no_match']\n              },\n              reason: { type: 'string' }\n            },\n            required: ['vacancy_id', 'title', 'role_score', 'skills_score', \n                       'experience_score', 'conditions_score', 'score', \n                       'decision', 'reason']\n          }\n        }\n      }\n    }\n  }\n}];"
       },
-      "id": "7fd193c2-ae0a-4ef2-a66e-08496782d4c1",
+      "id": "473c4f3d-61f3-49b7-8699-50bac333f543",
       "name": "Prepare Prompt B Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        7312,
-        224
+        11856,
+        2912
       ]
     },
     {
@@ -547,13 +547,13 @@
           }
         }
       },
-      "id": "9e60d8c3-1cb6-4fed-9611-7e5e0a88222b",
+      "id": "e219ae5d-84e5-41b5-8a28-0caf82499fc6",
       "name": "HTTP: Call Prompt B Model",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        7504,
-        224
+        12048,
+        2912
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -566,13 +566,13 @@
       "parameters": {
         "jsCode": "function extractRaw(itemJson) {\n  return itemJson.choices?.[0]?.message?.content || '';\n}\n\nfunction parseJson(raw, fallback) {\n  if (!raw || typeof raw !== 'string') {\n    return fallback;\n  }\n\n  let cleaned = raw.trim()\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (!match) return fallback;\n\n    try {\n      return JSON.parse(match[0]);\n    } catch (e2) {\n      return fallback;\n    }\n  }\n}\n\n// Get latency from explicit timestamp\nconst requestStartedAt = Number($('Prepare Prompt B Request').first().json.request_started_at);\nconst latencyMs = Number.isFinite(requestStartedAt) && requestStartedAt > 0\n  ? Date.now() - requestStartedAt\n  : 0;\n\nconst raw = extractRaw($json);\nconst parsed = parseJson(raw, {\n  vacancy_id: null,\n  title: '',\n  role_score: 0,\n  skills_score: 0,\n  experience_score: 0,\n  conditions_score: 0,\n  score: 0,\n  decision: 'no_match',\n  reason: 'Failed to parse response'\n});\n\nconst runId = $('Prepare Prompt B Request').first().json.run_id;\nconst caseVacancyId = $('Prepare Prompt B Request').first().json.case_vacancy_id;\n\nreturn [{\n  json: {\n    run_id: runId,\n    case_vacancy_id: caseVacancyId,\n    score: parsed.score,\n    decision: parsed.decision,\n    reason: parsed.reason,\n    latency_ms: latencyMs,\n    raw_response: raw,\n    parsed: parsed\n  }\n}];"
       },
-      "id": "fcad6a2b-dd66-4751-9fe9-f18f93b5957a",
+      "id": "13a0c2c1-c2af-47c5-ad61-48ab0932ca7f",
       "name": "Parse Prompt B Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        7712,
-        224
+        12256,
+        2912
       ]
     },
     {
@@ -581,13 +581,13 @@
         "query": "INSERT INTO eval_prompt_results (\n    id,\n    run_id,\n    case_vacancy_id,\n    score,\n    decision,\n    latency_ms,\n    raw_response_json,\n    created_at\n)\nVALUES (\n    gen_random_uuid(),\n    '{{ $json.run_id }}',\n    '{{ $json.case_vacancy_id }}',\n    {{ $json.score }},\n    '{{ $json.decision }}',\n    {{ $json.latency_ms }},\n    '{{ JSON.stringify($json.parsed).replace(/'/g, \"''\") }}'::jsonb,\n    now()\n);",
         "options": {}
       },
-      "id": "549e39c4-96cd-4738-94e0-83b6fbe038c3",
+      "id": "73db50b9-1ce3-426b-8b4f-c7df8e2b9ef6",
       "name": "PG: Save Prompt B Result",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        7920,
-        224
+        12464,
+        2912
       ],
       "credentials": {
         "postgres": {
@@ -600,13 +600,13 @@
       "parameters": {
         "jsCode": "// Return to Split In Batches for next iteration\nreturn [{\n  json: {\n    continue: true\n  }\n}];"
       },
-      "id": "358a46fd-e247-46ec-b10b-6bd27fbf7fde",
+      "id": "04ee8267-4fc0-4ff4-9798-800472718f08",
       "name": "Loop: Continue Prompt B",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        8112,
-        224
+        12656,
+        2912
       ]
     },
     {
@@ -615,13 +615,13 @@
         "query": "UPDATE eval_prompt_runs\nSET\n    status = 'completed',\n    completed_at = now()\nWHERE run_type = 'B'\n  AND status = 'running'\n  AND experiment_id IN (\n    SELECT id FROM eval_prompt_experiments \n    WHERE experiment_code = '{{ $('Run Config').first().json.experiment_code }}'\n  );",
         "options": {}
       },
-      "id": "30f36793-1352-4b85-b8a8-8e41c5b55732",
+      "id": "97cb6b11-d94b-4e45-8817-4192640c8204",
       "name": "PG: Complete Prompt B Run",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6512,
-        464
+        11056,
+        3152
       ],
       "credentials": {
         "postgres": {
@@ -636,13 +636,13 @@
         "query": "WITH mae_a AS (\n    SELECT\n        AVG(ABS(r.score - cv.reference_score)) AS mae_a\n    FROM eval_prompt_results r\n    JOIN eval_prompt_case_vacancies cv ON r.case_vacancy_id = cv.id\n    JOIN eval_prompt_runs run ON r.run_id = run.id\n    WHERE run.run_type = 'A'\n),\nmae_b AS (\n    SELECT\n        AVG(ABS(r.score - cv.reference_score)) AS mae_b\n    FROM eval_prompt_results r\n    JOIN eval_prompt_case_vacancies cv ON r.case_vacancy_id = cv.id\n    JOIN eval_prompt_runs run ON r.run_id = run.id\n    WHERE run.run_type = 'B'\n),\nlatency_a AS (\n    SELECT\n        AVG(r.latency_ms) AS latency_a\n    FROM eval_prompt_results r\n    JOIN eval_prompt_runs run ON r.run_id = run.id\n    WHERE run.run_type = 'A'\n),\nlatency_b AS (\n    SELECT\n        AVG(r.latency_ms) AS latency_b\n    FROM eval_prompt_results r\n    JOIN eval_prompt_runs run ON r.run_id = run.id\n    WHERE run.run_type = 'B'\n),\naccuracy_a AS (\n    SELECT\n        COUNT(*) FILTER (WHERE r.decision = cv.reference_decision)::NUMERIC / COUNT(*) AS accuracy_a\n    FROM eval_prompt_results r\n    JOIN eval_prompt_case_vacancies cv ON r.case_vacancy_id = cv.id\n    JOIN eval_prompt_runs run ON r.run_id = run.id\n    WHERE run.run_type = 'A'\n),\naccuracy_b AS (\n    SELECT\n        COUNT(*) FILTER (WHERE r.decision = cv.reference_decision)::NUMERIC / COUNT(*) AS accuracy_b\n    FROM eval_prompt_results r\n    JOIN eval_prompt_case_vacancies cv ON r.case_vacancy_id = cv.id\n    JOIN eval_prompt_runs run ON r.run_id = run.id\n    WHERE run.run_type = 'B'\n)\nSELECT\n    mae_a.mae_a,\n    mae_b.mae_b,\n    (mae_a.mae_a - mae_b.mae_b) / NULLIF(mae_a.mae_a, 0) AS mae_improvement,\n    latency_a.latency_a,\n    latency_b.latency_b,\n    (latency_b.latency_b - latency_a.latency_a) / NULLIF(latency_a.latency_a, 0) AS latency_growth,\n    accuracy_a.accuracy_a,\n    accuracy_b.accuracy_b\nFROM mae_a, mae_b, latency_a, latency_b, accuracy_a, accuracy_b;",
         "options": {}
       },
-      "id": "aee282e1-89a6-446d-9645-a32464af20a7",
+      "id": "5255683d-c46e-42eb-8421-407f8c8e6004",
       "name": "PG: Calculate Metrics",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        6704,
-        464
+        11248,
+        3152
       ],
       "credentials": {
         "postgres": {
@@ -655,26 +655,26 @@
       "parameters": {
         "jsCode": "const metrics = $json;\nconst config = $('Run Config').first().json;\nconst experimentData = $('PG: Check Experiment').first().json;\n\nconst maeImprovement = parseFloat(metrics.mae_improvement) || 0;\nconst latencyGrowth = parseFloat(metrics.latency_growth) || 0;\n\nconst maeThreshold = 0.20; // 20%\nconst latencyThreshold = 0.30; // 30%\n\nconst maePassed = maeImprovement >= maeThreshold;\nconst latencyPassed = latencyGrowth <= latencyThreshold;\n\nconst finalDecision = maePassed && latencyPassed ? 'ACCEPT PROMPT B' : 'REJECT PROMPT B';\n\nconst reason = [];\nif (!maePassed) {\n  reason.push(`MAE improvement ${maeImprovement.toFixed(2)} is below threshold ${maeThreshold}`);\n}\nif (!latencyPassed) {\n  reason.push(`Latency growth ${latencyGrowth.toFixed(2)} exceeds threshold ${latencyThreshold}`);\n}\n\nreturn [{\n  json: {\n    experiment_code: config.experiment_code,\n    dataset_code: config.dataset_code,\n    pair_count: config.expected_pairs,\n    models: {\n      judge: experimentData.model_judge,\n      prompt_a: experimentData.model_a,\n      prompt_b: experimentData.model_b\n    },\n    metrics: {\n      mae_a: parseFloat(metrics.mae_a).toFixed(4),\n      mae_b: parseFloat(metrics.mae_b).toFixed(4),\n      mae_improvement: maeImprovement.toFixed(4),\n      latency_a: parseFloat(metrics.latency_a).toFixed(2),\n      latency_b: parseFloat(metrics.latency_b).toFixed(2),\n      latency_growth: latencyGrowth.toFixed(4),\n      accuracy_a: parseFloat(metrics.accuracy_a).toFixed(4),\n      accuracy_b: parseFloat(metrics.accuracy_b).toFixed(4)\n    },\n    acceptance_criteria: {\n      mae_improvement_required: '>= 20%',\n      latency_growth_allowed: '<= 30%',\n      mae_passed: maePassed,\n      latency_passed: latencyPassed\n    },\n    final_decision: finalDecision,\n    reason: reason.length > 0 ? reason.join('; ') : 'All criteria met',\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
-      "id": "51ec5cdf-4dd5-4b6a-967c-a2fb47de045b",
+      "id": "62808f82-2cfd-4651-a1a8-552a93d711d4",
       "name": "Generate Report",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        6912,
-        464
+        11456,
+        3152
       ]
     },
     {
       "parameters": {
         "jsCode": "const report = $json;\n\nconst reportText = `\n# HRA Prompt Evaluation Report\n\n**Experiment Code:** ${report.experiment_code}\n**Dataset:** ${report.dataset_code}\n**Date:** ${report.timestamp}\n\n---\n\n## Models\n\n| Run | Model | Temperature |\n|-----|-------|-------------|\n| Judge | ${report.models.judge} | 0 |\n| Prompt A | ${report.models.prompt_a} | 0 |\n| Prompt B | ${report.models.prompt_b} | 0 |\n\n---\n\n## Dataset\n\n- **Total pairs:** ${report.pair_count}\n\n---\n\n## Results\n\n### Primary Metric: Mean Absolute Score Error\n\n| Metric | Prompt A | Prompt B |\n|--------|----------|----------|\n| **MAE** | ${report.metrics.mae_a} | ${report.metrics.mae_b} |\n| **Improvement** | - | ${report.metrics.mae_improvement} |\n\n### Guard Metric: Average Latency\n\n| Metric | Prompt A | Prompt B |\n|--------|----------|----------|\n| **Latency (ms)** | ${report.metrics.latency_a} | ${report.metrics.latency_b} |\n| **Growth** | - | ${report.metrics.latency_growth} |\n\n### Secondary Metric: Decision Accuracy\n\n| Metric | Prompt A | Prompt B |\n|--------|----------|----------|\n| **Accuracy** | ${report.metrics.accuracy_a} | ${report.metrics.accuracy_b} |\n\n---\n\n## Acceptance Criteria\n\n| Criterion | Threshold | Actual | Status |\n|-----------|-----------|--------|--------|\n| MAE improvement | >= 20% | ${report.metrics.mae_improvement} | ${report.acceptance_criteria.mae_passed ? '✅ PASS' : '❌ FAIL'} |\n| Latency growth | <= 30% | ${report.metrics.latency_growth} | ${report.acceptance_criteria.latency_passed ? '✅ PASS' : '❌ FAIL'} |\n\n---\n\n## Final Decision\n\n**${report.final_decision}**\n\n**Reason:** ${report.reason}\n\n---\n\nGenerated at: ${report.timestamp}\n`;\n\nreturn [{\n  json: {\n    report_text: reportText,\n    report_json: report\n  }\n}];"
       },
-      "id": "ea0f397a-2637-4a07-854f-9314b7e56327",
+      "id": "75d518d2-3469-47e2-b2a1-36451114ba71",
       "name": "Format Report",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        7104,
-        464
+        11648,
+        3152
       ]
     }
   ],
@@ -1077,7 +1077,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "15af78d6-5b14-419b-a86c-a2088574c18f",
+  "versionId": "b3f9fe2b-3965-4f84-aee1-0b48417d1fce",
   "meta": {
     "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
   },

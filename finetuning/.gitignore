@@ -1,0 +1,56 @@
+# Data (may contain PII)
+data/
+
+# Training runs (large files)
+runs/
+
+# Models (large files)
+models/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Model weights
+*.safetensors
+*.pt
+*.bin
+*.gguf
+
+# Environment and secrets
+.env
+.env.local
+*.key
+
+# Cache
+.cache/
+.cache_huggingface/
+.cache_torch/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

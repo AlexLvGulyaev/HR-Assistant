@@ -489,6 +489,95 @@ graph TD
 
 ---
 
+## Экспериментальный ML-контур
+
+HR Assistant развивает экспериментальный ML-контур для постоянного улучшения качества matching. Этот контур **не является production-системой** и работает изолированно.
+
+### Архитектурная цепочка
+
+```mermaid
+graph TD
+    PE[Prompt Engineering] --> AB[Prompt A/B Evaluation]
+    AB --> RD[Reference Dataset<br/>Judge оценки]
+    RD --> TD[Teacher Dataset<br/>для Fine-tuning]
+    TD --> FT[Fine-tuning<br/>LoRA]
+    FT --> OV[Offline Validation]
+    OV --> RS[Runtime Smoke Validation]
+    RS --> PR{Production Ready?}
+    PR -->|No| PE
+    PR -->|Yes| PROD[Production]
+```
+
+### Уровень 1: Prompt Evaluation
+
+**Назначение:**
+- A/B-тестирование промптов для matching
+- Формирование reference dataset с Judge-оценками
+
+**Компоненты:**
+- База данных: `eval_prompt_*` таблицы (изолированы от production)
+- Workflow: HRA Prompt Evaluation Experiment
+- Judge-модель: GPT-4.1
+
+**Результат HRA-EXP-V1:**
+- Prompt A vs Prompt B сравнение
+- Reference dataset из 90 кейсов с Judge-оценками
+- MAE метрики, solution ready
+
+**Документация:** [docs/prompt_evaluation/](prompt_evaluation/)
+
+### Уровень 2: Fine-tuning (LoRA)
+
+**Назначение:**
+- Обучение LoRA-адаптеров на teacher dataset
+- Улучшение качества matching
+
+**Компоненты:**
+- Базовая модель: Qwen/Qwen2.5-1.5B-Instruct
+- Метод: LoRA (Low-Rank Adaptation)
+- Платформа: RunPod GPU Pod
+
+**Результаты experiment_002:**
+- Offline validation: значительное улучшение качества
+- Runtime smoke test: **failed negative test**
+- Вывод: модель не production-ready
+
+**Следующий шаг:** Расширение teacher dataset за счёт hard negative примеров
+
+**Документация:** [finetuning/README.md](../finetuning/README.md)
+
+### Уровень 3: Runtime Smoke Validation
+
+**Назначение:**
+- Инженерный стенд для тестирования LLM-провайдеров и LoRA-моделей
+- **НЕ production workflow**
+
+**Компоненты:**
+- Workflow: `HR Processing Worker - Multi Provider Test.json`
+- Провайдеры: OpenAI, RunPod
+- Конфигурация: `workflows/llm-provider-config.js`
+
+**Важно:**
+- Workflow создан исключительно для smoke validation
+- Не используется в production
+- Подключён к RunPod без production-аутентификации
+- Позволяет сравнивать поведение разных моделей
+
+**Документация:** [MULTI_PROVIDER_ARCHITECTURE.md](MULTI_PROVIDER_ARCHITECTURE.md)
+
+### Production vs Experimental
+
+| Компонент | Production | Experimental |
+|-----------|------------|--------------|
+| Workflow | HR Processing Worker | HR Processing Worker - Multi Provider Test |
+| База данных | production таблицы | eval_prompt_* таблицы |
+| LLM | OpenAI GPT-4o-mini | OpenAI / RunPod (Qwen + LoRA) |
+| Назначение | Обработка реальных запросов | Исследование и тестирование |
+
+**Подчёркиваю:** Multi Provider Test workflow НЕ является production-контуром и не используется для обработки реальных запросов.
+
+---
+
 ## Ограничения архитектуры
 
 ### Технические ограничения
