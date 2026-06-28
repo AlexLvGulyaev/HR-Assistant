@@ -172,8 +172,26 @@ python scripts/prepare_dataset.py --config configs/experiment_001.yaml
 - [ ] Документировать результаты
 - [ ] Повторить цикл до production-readiness
 
+## Инженерный отчёт
+
+**Полная документация инженерного процесса Fine-tuning:**
+
+👉 **[FINETUNING_ENGINEERING_REPORT.md](FINETUNING_ENGINEERING_REPORT.md)** — детальный отчёт, отвечающий на вопросы:
+
+1. Почему выбран Fine-tuning
+2. Почему выбран именно LoRA
+3. Подготовка данных (связь с Prompt Evaluation)
+4. Организация обучения
+5. Оценка качества (baseline, offline, runtime)
+6. Experiment 001
+7. Experiment 002
+8. Runtime Validation
+9. Production Validation
+10. Инженерные выводы
+
 ## Ссылки
 
 - Основной проект HRA: `/cases/hr-assistant/`
 - Инструкции проекта: `/CLAUDE.md`
 - Окружение RunPod: `/workspace/hra-finetuning/`
+- Экспериментальный ML-контур: `docs/EXPERIMENTAL_ML_PIPELINE.md`

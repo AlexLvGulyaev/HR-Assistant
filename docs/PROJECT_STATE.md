@@ -153,11 +153,14 @@
 
 | Документ | Статус | Источник | Приоритет |
 |----------|--------|----------|-----------|
-| **finetuning/README.md** | ✅ Создан | HRA Decision | 🔴 Высокий |
+| **finetuning/README.md** | ✅ Обновлён | HRA Decision | 🔴 Высокий |
 | **finetuning/TECHNICAL_FOUNDATION.md** | ✅ Создан | HRA Decision | 🟡 Средний |
+| **finetuning/FINETUNING_ENGINEERING_REPORT.md** | ✅ Создан | HRA Decision | 🔴 Высокий |
 | **finetuning/runs/experiment_002/README.md** | ✅ Создан | Auto-generated | 🟡 Средний |
 | **api/hra_qwen_api.py** | ✅ Создан | HRA Decision | 🟡 Средний |
 | **api/hra_qwen_api_lora.py** | ✅ Создан | HRA Decision | 🟡 Средний |
+| **finetuning/reports/teacher_dataset_report.md** | ✅ Создан | HRA Decision | 🟡 Средний |
+| **finetuning/reports/dataset_validation_report.md** | ✅ Создан | HRA Decision | 🟡 Средний |
 
 ---
 
