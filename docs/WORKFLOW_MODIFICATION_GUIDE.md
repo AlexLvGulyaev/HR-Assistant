@@ -1,88 +1,94 @@
-# Workflow Modification Guide
+# Инструкция по модификации Workflow
 
-**Created:** 2026-06-28
-**Workflow:** HR Processing Worker.json
-**Purpose:** Final architecture for multi-provider LLM support
+**Создано:** 2026-06-28
+**Workflow:** HR Processing Worker - Multi Provider Test.json
+**Назначение:** Финальная архитектура для поддержки мультипровайдерного LLM в тестовом контуре
 
----
-
-## Summary of Changes
-
-| Change | Count | Details |
-|--------|-------|---------|
-| **New nodes** | +7 | 1 Configure LLM Provider + 3 IF Provider + 3 RunPod HTTP |
-| **Modified nodes** | 6 | 3 Prepare Body + 3 Parse |
-| **Renamed nodes** | 3 | OpenAI HTTP nodes renamed with `(OpenAI)` suffix |
-| **Removed nodes** | -3 | Merge nodes (not needed) |
-
-**Total:** 47 → 54 nodes (+7)
+**⚠️ ВАЖНО:** Это руководство относится к экспериментальному workflow, НЕ к production.
 
 ---
 
-## Architecture (Final)
+## Обзор изменений
+
+| Изменение | Количество | Детали |
+|-----------|------------|--------|
+| **Новые nodes** | +7 | 1 Configure LLM Provider + 3 IF Provider + 3 RunPod HTTP |
+| **Изменённые nodes** | 6 | 3 Prepare Body + 3 Parse |
+| **Переименованные nodes** | 3 | OpenAI HTTP nodes переименованы с суффиксом `(OpenAI)` |
+| **Удалённые nodes** | -3 | Merge nodes (не нужны) |
+
+**Итого:** 47 → 54 nodes (+7)
+
+---
+
+## Архитектура (Финальная)
 
 ```
-Configure LLM Provider (sets llm_config)
+Configure LLM Provider (устанавливает llm_config)
        ↓
-Prepare OpenAI Body (conditional response_format)
+Prepare OpenAI Body (условный response_format)
        ↓
-IF: Provider? (checks llm_config.llm_provider)
+IF: Provider? (проверяет llm_config.llm_provider)
        ↓
    OpenAI HTTP Request    ←→    RunPod HTTP Request
-   (with credentials)           (no credentials)
-   (with response_format)        (no response_format)
+   (с credentials)           (без credentials)
+   (с response_format)        (без response_format)
        ↓                              ↓
        │    success → Parse          │    success → Parse
        │    error   → Error handler  │    error   → Error handler
        │                              │
        └──────────┬───────────────────┘
                   ↓
-           Parse Response (shared)
+           Parse Response (общий)
                   ↓
-           Continue Processing
+           Продолжение обработки
 ```
 
 ---
 
-## Node Changes
+## Изменения в Nodes
 
-### New Nodes (7 total)
+### Новые Nodes (7 total)
 
-| Node | Type | Count | Purpose |
-|------|------|-------|---------|
-| Configure LLM Provider | Code | 1 | Set llm_config based on provider |
-| IF: Provider for... | IF | 3 | Provider selection for each LLM call |
-| LLM: ... (RunPod) | HTTP Request | 3 | RunPod API calls |
+| Node | Type | Count | Назначение |
+|------|------|-------|------------|
+| Configure LLM Provider | Code | 1 | Установка llm_config на основе провайдера |
+| IF: Provider for... | IF | 3 | Выбор провайдера для каждого LLM вызова |
+| LLM: ... (RunPod) | HTTP Request | 3 | RunPod API вызовы |
 
-### Modified Nodes (6 total)
+### Изменённые Nodes (6 total)
 
-| Node | Modification |
-|------|--------------|
-| Prepare OpenAI Body: Extract candidate JSON | Conditional response_format |
-| Prepare OpenAI Body: Repair candidate JSON | Conditional response_format |
-| Prepare OpenAI Body: Match candidate vacancy | Conditional response_format |
-| Parse OpenAI Candidate JSON | Use llm_provider from config |
-| Parse OpenAI Repair Candidate JSON | Use llm_provider from config |
-| Parse match JSON | Use llm_provider from config |
+| Node | Изменение |
+|------|-----------|
+| Prepare OpenAI Body: Extract candidate JSON | Условный response_format |
+| Prepare OpenAI Body: Repair candidate JSON | Условный response_format |
+| Prepare OpenAI Body: Match candidate vacancy | Условный response_format |
+| Parse OpenAI Candidate JSON | Использование llm_provider из config |
+| Parse OpenAI Repair Candidate JSON | Использование llm_provider из config |
+| Parse match JSON | Использование llm_provider из config |
 
-### Renamed Nodes (3 total)
+### Переименованные Nodes (3 total)
 
-| Old Name | New Name |
-|----------|-----------|
+| Старое имя | Новое имя |
+|------------|-----------|
 | LLM: Extract candidate JSON | LLM: Extract candidate JSON (OpenAI) |
 | LLM: Repair candidate JSON | LLM: Repair candidate JSON (OpenAI) |
 | LLM: Match candidate vacancy | LLM: Match candidate vacancy (OpenAI) |
 
 ---
 
-## Step-by-Step Modifications
+## Пошаговая модификация
 
-### Step 1: Add Configure LLM Provider Node
+### Шаг 1: Добавить Node Configure LLM Provider
 
-**Position:** After `IF: has pending input?`
+**Позиция:** После `IF: has pending input?`
 
 ```javascript
-const provider = ($env.LLM_PROVIDER || 'openai').toLowerCase();
+// Configure LLM Provider
+// Provider selection: openai (default) | runpod
+// Set via environment variable LLM_PROVIDER
+
+const provider = 'runpod';  // Hardcoded для тестового workflow
 
 const configs = {
   openai: {
@@ -104,27 +110,32 @@ const configs = {
 const config = configs[provider];
 
 if (!config) {
-  throw new Error(`Unknown LLM provider: ${provider}`);
+  throw new Error(`Unknown LLM provider: ${provider}. Supported: openai, runpod`);
 }
 
-return [{ json: { ...$json, llm_config: config } }];
+return [{
+  json: {
+    ...$json,
+    llm_config: config
+  }
+}];
 ```
 
-**Update connections:**
+**Обновить подключения:**
 - `IF: has pending input?` → `Configure LLM Provider`
 - `Configure LLM Provider` → `Prepare OpenAI Body: Extract candidate JSON`
 
 ---
 
-### Step 2: Add IF, RunPod Nodes for Each LLM Call
+### Шаг 2: Добавить IF, RunPod Nodes для каждого LLM вызова
 
-For each of the 3 LLM calls (Extract, Repair, Match), add:
+Для каждого из 3 LLM вызовов (Extract, Repair, Match) добавить:
 
-1. **IF node** before HTTP Request
-2. **RunPod HTTP Request node** (copy of OpenAI, without credentials)
-3. **Connect both branches to Parse and error handler**
+1. **IF node** перед HTTP Request
+2. **RunPod HTTP Request node** (копия OpenAI, без credentials)
+3. **Подключить обе ветки к Parse и error handler**
 
-#### Connection Pattern
+#### Паттерн подключения
 
 ```
 Prepare OpenAI Body → IF: Provider?
@@ -136,13 +147,13 @@ Prepare OpenAI Body → IF: Provider?
                    Error handler        Error handler
 ```
 
-**NOT using Merge - both branches connect directly to Parse**
+**НЕ использовать Merge — обе ветки подключаются напрямую к Parse**
 
 ---
 
-### Step 3: Modify Prepare Body Nodes
+### Шаг 3: Изменить Prepare Body Nodes
 
-Add conditional `response_format`:
+Добавить условный `response_format`:
 
 ```javascript
 const llmConfig = $json.llm_config;
@@ -153,7 +164,7 @@ const openai_body = {
   messages: [/* ... */]
 };
 
-// Add response_format only if provider supports it
+// Добавить response_format только если провайдер поддерживает
 if (llmConfig.llm_supports_structured_output) {
   openai_body.response_format = {
     type: 'json_schema',
@@ -166,19 +177,19 @@ return [{ json: { ...$json, llm_config: llmConfig, openai_body } }];
 
 ---
 
-### Step 4: Create RunPod HTTP Request Nodes
+### Шаг 4: Создать RunPod HTTP Request Nodes
 
-Copy OpenAI nodes, but:
+Скопировать OpenAI nodes, но:
 
-1. Remove `credentials`
-2. Set `authentication: none`
-3. Add `(RunPod)` suffix to name
+1. Удалить `credentials`
+2. Установить `authentication: none`
+3. Добавить суффикс `(RunPod)` к имени
 
 ---
 
-### Step 5: Update Connections
+### Шаг 5: Обновить подключения
 
-**For each LLM call:**
+**Для каждого LLM вызова:**
 
 ```
 Prepare Body → IF: Provider
@@ -192,70 +203,73 @@ RunPod HTTP (error) → Build processing error context
 
 ---
 
-## Testing Checklist
+## Чек-лист тестирования
 
-### OpenAI (default)
+### OpenAI (по умолчанию)
 
-1. Set `LLM_PROVIDER=openai` or leave unset
-2. Run workflow with candidate input
-3. Verify:
-   - LLM request sent to `https://api.openai.com/v1/chat/completions`
+1. Установить `provider = 'openai'` в Configure LLM Provider node
+2. Запустить workflow с candidate input
+3. Проверить:
+   - LLM request отправлен на `https://api.openai.com/v1/chat/completions`
    - Model: `gpt-4o-mini`
-   - `response_format` included in request
-   - Response parsed correctly
-   - Error handling works
+   - `response_format` включён в request
+   - Response корректно распарсен
+   - Error handling работает
 
 ### RunPod
 
-1. Set `LLM_PROVIDER=runpod`
-2. Run workflow with candidate input
-3. Verify:
-   - LLM request sent to RunPod URL
+1. Установить `provider = 'runpod'` в Configure LLM Provider node
+2. Запустить workflow с candidate input
+3. Проверить:
+   - LLM request отправлен на RunPod URL
    - Model: `hra-qwen`
-   - `response_format` **NOT** included in request
-   - No credentials sent
-   - Response parsed correctly
-   - Error handling works
+   - `response_format` **НЕ** включён в request
+   - Credentials не отправляются
+   - Response корректно распарсен
+   - Error handling работает
 
 ---
 
-## Why No Merge?
+## Почему не нужен Merge?
 
-**Problem:** Merge nodes expect data from both inputs simultaneously. For mutually exclusive branches (IF node), only one branch has data at a time.
+**Проблема:** Merge nodes ожидают данные из обоих входов одновременно. Для взаимоисключающих веток (IF node) только одна ветка имеет данные в каждый момент времени.
 
-**Solution:** Connect both branches directly to the same downstream node (Parse). n8n handles this correctly - only the active branch's data flows downstream.
+**Решение:** Подключить обе ветки напрямую к одному downstream node (Parse). n8n обрабатывает это корректно — только данные активной ветки передаются дальше.
 
-**Benefits:**
-- Simpler architecture
-- No waiting for missing input
-- No data loss
-- Cleaner error handling
-
----
-
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `workflows/HR Processing Worker.json` | Added 7 nodes, modified 6 nodes, removed 3 Merge nodes |
-| `docs/MULTI_PROVIDER_ARCHITECTURE.md` | Architecture document |
-| `docs/WORKFLOW_MODIFICATION_GUIDE.md` | This document |
-| `workflows/llm-provider-config.js` | Configuration module |
+**Преимущества:**
+- Проще архитектура
+- Нет ожидания отсутствующего входа
+- Нет потери данных
+- Чище обработка ошибок
 
 ---
 
-## Rollback Instructions
+## Изменённые файлы
 
-If issues arise:
-
-1. Set `LLM_PROVIDER=openai` (default)
-2. Revert workflow import to previous version
-3. No database changes to rollback
+| Файл | Изменение |
+|------|-----------|
+| `workflows/HR Processing Worker.json` | Production workflow (только OpenAI) |
+| `workflows/HR Processing Worker - Multi Provider Test.json` | Test workflow (RunPod hardcoded) |
+| `docs/MULTI_PROVIDER_ARCHITECTURE.md` | Этот документ |
+| `docs/WORKFLOW_MODIFICATION_GUIDE.md` | Этот документ |
+| `workflows/llm-provider-config.js` | Модуль конфигурации |
+| `docs/CHANGE_LOG.md` | Версия 2.2.0 |
 
 ---
 
-## References
+## Инструкции по откату
 
-- [MULTI_PROVIDER_ARCHITECTURE.md](MULTI_PROVIDER_ARCHITECTURE.md) - Architecture overview
-- [llm-provider-config.js](../workflows/llm-provider-config.js) - Configuration module
+Если возникнут проблемы:
+
+1. Установить `provider = 'openai'` в Configure LLM Provider node (default)
+2. Импортировать предыдущую версию workflow
+3. Нет изменений в БД для отката
+
+---
+
+## Ссылки
+
+- [MULTI_PROVIDER_ARCHITECTURE.md](MULTI_PROVIDER_ARCHITECTURE.md) — Обзор архитектуры
+- [llm-provider-config.js](../workflows/llm-provider-config.js) — Модуль конфигурации
 - [n8n IF Node](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.if/)
+- [EXPERIMENTAL_ML_PIPELINE.md](EXPERIMENTAL_ML_PIPELINE.md) — Архитектура экспериментального ML-контура

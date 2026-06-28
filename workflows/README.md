@@ -6,7 +6,9 @@
 
 ## Состав workflow
 
-### Основные workflow (6)
+### Production Workflows (6)
+
+**⚠️ Важно:** Эти workflow используются в production для обработки реальных запросов.
 
 #### 1. HR Intake (hr-intake.json)
 
@@ -128,6 +130,61 @@
 **Функции:**
 - Централизованная обработка ошибок
 - Логирование в `processing_logs`
+
+---
+
+### Экспериментальные workflow (2)
+
+**⚠️ Важно:** Эти workflow являются **инженерными стендами** и НЕ используются в production. Они предназначены для тестирования и исследования в рамках экспериментального ML-контура.
+
+#### 8. HRA Prompt Evaluation Experiment (HRA Prompt Evaluation Experiment.json)
+
+**Узлов:** ~50
+
+**Триггер:** Manual / Schedule
+
+**Функции:**
+- A/B-тестирование промптов для matching
+- Сравнение Prompt A vs Prompt B
+- Формирование reference dataset с Judge-оценками
+- Запись результатов в `eval_prompt_*` таблицы
+
+**Назначение:**
+- Prompt Evaluation — первый этап ML-контура
+- Формирование Teacher Dataset для Fine-tuning
+
+**Контур:** Experimental (изолирован от production)
+
+**База данных:** Таблицы `eval_prompt_*` (изолированы от production)
+
+**Документация:** [docs/prompt_evaluation/README.md](../docs/prompt_evaluation/README.md)
+
+---
+
+#### 9. HR Processing Worker - Multi Provider Test (HR Processing Worker - Multi Provider Test.json)
+
+**Узлов:** 54
+
+**Триггер:** Schedule (каждые 10 секунд)
+
+**Функции:**
+- Runtime smoke validation для LoRA-моделей
+- Тестирование Qwen + LoRA adapter на RunPod
+- Сравнение поведения с production workflow
+
+**Назначение:**
+- Тестирование LoRA-моделей перед production
+- Smoke validation (positive и negative тесты)
+
+**Контур:** Experimental (инженерный стенд)
+
+**LLM Provider:** RunPod (hardcoded)
+
+**Модель:** hra-qwen (Qwen + LoRA adapter)
+
+**⚠️ Важно:** Этот workflow НЕ является production-контуром. Production workflow — `HR Processing Worker.json`.
+
+**Документация:** [docs/MULTI_PROVIDER_ARCHITECTURE.md](../docs/MULTI_PROVIDER_ARCHITECTURE.md)
 
 ---
 

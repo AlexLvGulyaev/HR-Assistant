@@ -1,31 +1,33 @@
-# Multi-Provider LLM Architecture
+# Мультипровайдерная LLM Архитектура
 
-**Created:** 2026-06-28
-**Status:** Engineering Test Stand
-**Author:** AI Automation Portfolio Lab
+**Создано:** 2026-06-28
+**Статус:** Инженерный стенд для тестирования
+**Автор:** AI Automation Portfolio Lab
 
 ---
 
-## Overview
+## Обзор
 
-This document describes the architecture for testing multiple LLM providers in HR Assistant.
+Этот документ описывает архитектуру для тестирования нескольких LLM-провайдеров в HR Assistant.
 
-**⚠️ IMPORTANT: This is NOT a production workflow.**
+**⚠️ ВАЖНО: Это НЕ production workflow.**
 
-The `HR Processing Worker - Multi Provider Test` workflow is an **engineering test stand** created exclusively for:
-- Testing different LLM providers (OpenAI, RunPod)
-- Validating LoRA adapters in runtime
-- Conducting smoke tests before production deployment
+Workflow `HR Processing Worker - Multi Provider Test` является **инженерным стендом**, созданным исключительно для:
+- Тестирования различных LLM-провайдеров (OpenAI, RunPod)
+- Валидации LoRA-адаптеров в runtime
+- Проведения smoke-тестов перед развёртыванием в production
 
-**This workflow is NOT used in production.** The production workflow is `HR Processing Worker.json` which uses only OpenAI.
+**Этот workflow НЕ используется в production.** Production workflow — `HR Processing Worker.json`, который использует только OpenAI.
 
-## Requirements
+---
 
-1. **OpenAI (production)** — used in production workflow
-2. **RunPod (test)** — used for testing LoRA adapters
-3. **Separate workflows** — production and test are isolated
-4. **Configuration module** — centralized provider configuration
-5. **Conditional response_format** — depends on provider capabilities
+## Требования
+
+1. **OpenAI (production)** — используется в production workflow
+2. **RunPod (test)** — используется для тестирования LoRA-адаптеров
+3. **Отдельные workflow** — production и test изолированы
+4. **Модуль конфигурации** — централизованная конфигурация провайдеров
+5. **Условный response_format** — зависит от возможностей провайдера
 
 ---
 
@@ -33,68 +35,68 @@ The `HR Processing Worker - Multi Provider Test` workflow is an **engineering te
 
 ### Production Workflow: HR Processing Worker.json
 
-| Aspect | Value |
-|--------|-------|
+| Аспект | Значение |
+|--------|----------|
 | **Workflow** | HR Processing Worker.json |
 | **LLM Provider** | OpenAI only |
 | **Model** | gpt-4o-mini |
 | **Structured Output** | ✅ json_schema |
 | **Authentication** | n8n credentials |
-| **Purpose** | Processing real candidate requests |
+| **Purpose** | Обработка реальных запросов кандидатов |
 | **Status** | ✅ Production-ready |
 
 ### Test Workflow: HR Processing Worker - Multi Provider Test.json
 
-| Aspect | Value |
-|--------|-------|
+| Аспект | Значение |
+|--------|----------|
 | **Workflow** | HR Processing Worker - Multi Provider Test.json |
 | **LLM Provider** | RunPod (hardcoded) |
 | **Model** | hra-qwen (Qwen + LoRA adapter) |
 | **Structured Output** | ⚠️ Experimental |
 | **Authentication** | None (RunPod proxy endpoint) |
-| **Purpose** | Engineering test stand for LoRA smoke validation |
+| **Purpose** | Инженерный стенд для LoRA smoke validation |
 | **Status** | ⚠️ Experimental, NOT production |
 
-**Why separate workflows?**
+**Почему отдельные workflow?**
 
-1. **Isolation:** Testing LoRA adapters must not affect production
-2. **Safety:** RunPod endpoint has no production authentication
-3. **Clarity:** Clear separation between production and experimental code
-4. **Flexibility:** Test workflow can have experimental features
+1. **Изоляция:** Тестирование новых моделей не должно влиять на production
+2. **Безопасность:** RunPod endpoint не имеет production-аутентификации
+3. **Ясность:** Чёткое разделение между production и экспериментальным кодом
+4. **Гибкость:** Test workflow может иметь экспериментальные функции
 
-**Why hardcoded RunPod in test workflow?**
+**Почему hardcoded RunPod в test workflow?**
 
-The test workflow is specifically designed for LoRA adapter testing. The provider is hardcoded as 'runpod' to simplify smoke testing. The IF nodes remain in the workflow for future extensibility, but currently only the RunPod branch is active.
+Test workflow специально создан для тестирования LoRA-адаптеров. Провайдер hardcoded как 'runpod' для упрощения smoke-тестирования. IF-ноды остаются в workflow для будущей расширяемости.
 
 ---
 
-## Supported Providers
+## Поддерживаемые провайдеры
 
-### OpenAI (default)
+### OpenAI (по умолчанию)
 
-| Parameter | Value |
-|-----------|-------|
+| Параметр | Значение |
+|----------|----------|
 | **URL** | `https://api.openai.com/v1/chat/completions` |
 | **Model** | `gpt-4o-mini` |
 | **Auth** | OpenAI API credential (`pANFrhR1xZgvvzrJ`) |
-| **Structured Output** | ✅ Supported (`json_schema`) |
-| **Error Handling** | ✅ Connected to `Build processing error context` |
+| **Structured Output** | ✅ Поддерживается (`json_schema`) |
+| **Error Handling** | ✅ Подключено к `Build processing error context` |
 
 ### RunPod
 
-| Parameter | Value |
-|-----------|-------|
+| Параметр | Значение |
+|----------|----------|
 | **URL** | `https://bgi0g1thpts995-8000.proxy.runpod.net/v1/chat/completions` |
 | **Model** | `hra-qwen` |
 | **Auth** | None (`authentication: none`) |
-| **Structured Output** | ❌ Not supported |
-| **Error Handling** | ✅ Connected to `Build processing error context` |
+| **Structured Output** | ❌ Не поддерживается |
+| **Error Handling** | ✅ Подключено к `Build processing error context` |
 
 ---
 
-## Architecture
+## Архитектура
 
-### Direct Connection Pattern (Production-Ready)
+### Паттерн прямого подключения (Production-Ready)
 
 ```
 Configure LLM Provider
@@ -117,83 +119,58 @@ IF: Provider?
            Common Processing
 ```
 
-### Why Direct Connection (No Merge)?
+### Почему прямое подключение (без Merge)?
 
-**Problem:** Merge nodes are designed for combining multiple active inputs. For mutually exclusive branches (IF node), only one branch will have data at a time. Using Merge would either:
-- Wait for the second input (never arrives) → timeout/hang
-- Lose data from the active branch
+**Проблема:** Merge-ноды предназначены для объединения нескольких активных входов. Для взаимоисключающих веток (IF node) только одна ветка имеет данные в каждый момент времени. Использование Merge либо:
+- Ждёт второй вход (который никогда не придёт) → timeout/зависание
+- Теряет данные из активной ветки
 
-**Solution:** Connect both branches directly to the same downstream node (Parse). n8n automatically handles this correctly - only the active branch's data flows downstream.
+**Решение:** Подключить обе ветки напрямую к одному downstream node (Parse). n8n автоматически обрабатывает это — только данные активной ветки передаются дальше.
 
-**n8n Behavior:** When an IF node routes to one of two branches, only that branch executes. The other branch produces no output. Both branches can safely connect to the same downstream node without conflict.
-
----
-
-## What is Duplicated?
-
-**Transport layer (6 nodes):**
-- 3 OpenAI HTTP Request nodes (with credentials, with response_format)
-- 3 RunPod HTTP Request nodes (no credentials, no response_format)
-
-**Supporting nodes (3 nodes):**
-- 3 IF nodes for provider selection
-
-**NOT duplicated:**
-- ~~3 Merge nodes~~ (not needed for mutually exclusive branches)
+**Поведение n8n:** Когда IF node направляет в одну из двух веток, только эта ветка выполняется. Другая ветка не produces output. Обе ветки могут безопасно подключаться к одному downstream node без конфликта.
 
 ---
 
-## What is NOT Duplicated?
+## Что дублируется?
 
-**Business logic (9 nodes):**
-- 3 Prepare Body nodes (conditional `response_format` based on `llm_config`)
-- 3 Parse nodes (common response processing for both providers)
+**Транспортный слой (6 nodes):**
+- 3 OpenAI HTTP Request nodes (с credentials, с response_format)
+- 3 RunPod HTTP Request nodes (без credentials, без response_format)
+
+**Вспомогательные nodes (3 nodes):**
+- 3 IF nodes для выбора провайдера
+
+**НЕ дублируется:**
+- ~~3 Merge nodes~~ (не нужны для взаимоисключающих веток)
+
+---
+
+## Что НЕ дублируется?
+
+**Бизнес-логика (9 nodes):**
+- 3 Prepare Body nodes (условный `response_format` на основе `llm_config`)
+- 3 Parse nodes (общая обработка ответа для обоих провайдеров)
 - 1 Configure LLM Provider node
-- All downstream processing (validation, database, Telegram, etc.)
+- Вся последующая обработка (validation, database, Telegram, etc.)
 
-**Error handling:**
-- Both OpenAI and RunPod use the **same** error handlers
-- `Build processing error context: Extract` for Extract candidate JSON
-- `Build processing error context: Repair` for Repair candidate JSON
-- `Build processing error context: Match` for Match candidate vacancy
-
----
-
-## Workflow Nodes Summary
-
-### Total Node Count
-
-**Before:** 47 nodes
-**After:** 54 nodes
-**Added:** +7 nodes
-
-### New Nodes Added
-
-| Node Type | Count | Purpose |
-|-----------|-------|---------|
-| Configure LLM Provider | 1 | Set llm_config based on `$env.LLM_PROVIDER` |
-| IF: Provider for... | 3 | Provider selection for each LLM call |
-| HTTP Request (RunPod) | 3 | RunPod API calls (no credentials, no response_format) |
-
-**NOT added:**
-- ~~Merge nodes~~ (not needed for mutually exclusive branches)
-
-### Modified Nodes
-
-| Node | Modification |
-|------|--------------|
-| Prepare OpenAI Body (3) | Conditional `response_format` based on `llm_config.llm_supports_structured_output` |
-| Parse (3) | Use `llm_provider` from config for logging |
-| OpenAI HTTP (3) | Renamed to `(OpenAI)`, URL from `llm_config.llm_url` |
+**Обработка ошибок:**
+- OpenAI и RunPod используют **общие** обработчики ошибок
+- `Build processing error context: Extract` для Extract candidate JSON
+- `Build processing error context: Repair` для Repair candidate JSON
+- `Build processing error context: Match` для Match candidate vacancy
 
 ---
 
-## Implementation Details
+## Детали реализации
 
-### Configure LLM Provider Node
+### Node: Configure LLM Provider
 
 ```javascript
-const provider = ($env.LLM_PROVIDER || 'openai').toLowerCase();
+// Configure LLM Provider
+// Provider selection: openai (default) | runpod
+// Set via environment variable LLM_PROVIDER
+
+const provider = 'runpod';
 
 const configs = {
   openai: {
@@ -201,13 +178,13 @@ const configs = {
     llm_url: 'https://api.openai.com/v1/chat/completions',
     llm_model: 'gpt-4o-mini',
     llm_supports_structured_output: true,
-    llm_auth_credential_id: 'pANFrhR1xZgvvzrJ'
+    llm_auth_credential_id: null
   },
   runpod: {
     llm_provider: 'runpod',
-    llm_url: 'https://bgi0g1thpts995-8000.proxy.runpod.net/v1/chat/completions',
+    llm_url: 'https://khu0q820y5ssqu-8000.proxy.runpod.net/v1/chat/completions',
     llm_model: 'hra-qwen',
-    llm_supports_structured_output: false,
+    llm_supports_structured_output: true,
     llm_auth_credential_id: null
   }
 };
@@ -218,10 +195,15 @@ if (!config) {
   throw new Error(`Unknown LLM provider: ${provider}. Supported: openai, runpod`);
 }
 
-return [{ json: { ...$json, llm_config: config } }];
+return [{
+  json: {
+    ...$json,
+    llm_config: config
+  }
+}];
 ```
 
-### Prepare Body Node (Conditional response_format)
+### Node: Prepare Body (условный response_format)
 
 ```javascript
 // Get LLM provider configuration
@@ -245,22 +227,22 @@ if (llmConfig.llm_supports_structured_output) {
   };
 }
 
-return [{ json: { ...$json, openai_body } }];
+return [{ json: { ...$json, llm_config: llmConfig, openai_body } }];
 ```
 
-### IF: Provider Node
+### Node: IF: Provider
 
 ```javascript
 // Check provider
 $json.llm_config.llm_provider === 'openai'
 ```
 
-- **True** → OpenAI HTTP Request (with credentials, with response_format)
-- **False** → RunPod HTTP Request (no credentials, no response_format)
+- **True** → OpenAI HTTP Request (с credentials, с response_format)
+- **False** → RunPod HTTP Request (без credentials, без response_format)
 
-### Error Handling
+### Обработка ошибок
 
-Both branches connect to the **same** error handler:
+Обе ветки подключаются к **общему** обработчику ошибок:
 
 ```
 OpenAI HTTP Request
@@ -274,28 +256,29 @@ RunPod HTTP Request
 
 ---
 
-## Switching Providers
+## Переключение провайдеров
 
-### To RunPod
+### На RunPod
 
-```bash
-export LLM_PROVIDER=runpod
+```javascript
+// В Configure LLM Provider node
+const provider = 'runpod';
 ```
 
-### To OpenAI (default)
+### На OpenAI (по умолчанию)
 
-```bash
-export LLM_PROVIDER=openai
-# or leave unset (defaults to openai)
+```javascript
+// В Configure LLM Provider node
+const provider = 'openai';
 ```
 
 ---
 
-## Extensibility
+## Расширяемость
 
-### Adding New Provider (e.g., Anthropic Claude)
+### Добавление нового провайдера (например, Anthropic Claude)
 
-1. **Add configuration** in `Configure LLM Provider`:
+1. **Добавить конфигурацию** в `Configure LLM Provider`:
 
 ```javascript
 anthropic: {
@@ -307,98 +290,109 @@ anthropic: {
 }
 ```
 
-2. **Add IF branch** for provider selection (change condition to check for `openai` first)
-3. **Add HTTP Request node** for Anthropic
-4. **Connect Anthropic HTTP Request** to Parse (success) and error handler (error)
+2. **Добавить IF branch** для выбора провайдера
+3. **Добавить HTTP Request node** для Anthropic
+4. **Подключить Anthropic HTTP Request** к Parse (success) и error handler (error)
 
-**NOT required:**
-- ~~Add Merge node~~ (not needed)
-- Change business logic
-- Change database
-- Change Telegram processing
+**НЕ требуется:**
+- ~~Добавить Merge node~~ (не нужно)
+- Изменять бизнес-логику
+- Изменять database queries
+- Изменять Telegram processing
 
-**Changes required:**
-- ✅ Configuration (1 node)
+**Требуемые изменения:**
+- ✅ Конфигурация (1 node)
 - ✅ IF condition (3 nodes)
 - ✅ HTTP Request node (3 nodes)
-- ✅ Error handling connections (already shared)
+- ✅ Error handling connections (уже общие)
 
 ---
 
-## Open/Closed Principle Compliance
+## Соответствие принципу Open/Closed
 
-**Open for extension:**
-- Adding new providers requires only configuration + transport layer changes
+**Открыто для расширения:**
+- Добавление новых провайдеров требует только конфигурацию + изменения транспортного слоя
 
-**Closed for modification:**
-- Business logic remains unchanged
-- Database queries unchanged
-- Telegram integration unchanged
-- JSON parsing unchanged
-- Matching algorithms unchanged
-
----
-
-## Testing Checklist
-
-- [x] JSON validation passed
-- [x] All connections reference existing nodes
-- [x] OpenAI provider works with default config
-- [x] OpenAI structured outputs work correctly
-- [x] RunPod provider works without auth
-- [x] RunPod requests work without `response_format`
-- [x] Provider switch via environment variable works
-- [x] Fallback to OpenAI when `LLM_PROVIDER` not set
-- [x] Error handling for unknown provider
-- [x] Error outputs connected for both providers
-- [x] No business logic changes
-- [x] No SQL changes
-- [x] No Telegram processing changes
+**Закрыто для модификации:**
+- Бизнес-логика остаётся без изменений
+- Database queries без изменений
+- Telegram integration без изменений
+- JSON parsing без изменений
+- Matching algorithms без изменений
 
 ---
 
-## Files Modified
+## Тестирование
 
-| File | Change |
-|------|--------|
-| `workflows/HR Processing Worker.json` | Added 7 nodes, modified 6 nodes, removed 3 Merge nodes |
-| `docs/MULTI_PROVIDER_ARCHITECTURE.md` | This document |
-| `docs/WORKFLOW_MODIFICATION_GUIDE.md` | Implementation guide |
-| `workflows/llm-provider-config.js` | Configuration module |
-| `docs/CHANGE_LOG.md` | Version 2.1.0 |
+### OpenAI (по умолчанию)
+
+1. Установить `provider = 'openai'` в Configure LLM Provider node
+2. Запустить workflow с candidate input
+3. Проверить:
+   - LLM request отправлен на `https://api.openai.com/v1/chat/completions`
+   - Model: `gpt-4o-mini`
+   - `response_format` включён в request
+   - Response корректно распарсен
+   - Error handling работает
+
+### RunPod
+
+1. Установить `provider = 'runpod'` в Configure LLM Provider node
+2. Запустить workflow с candidate input
+3. Проверить:
+   - LLM request отправлен на RunPod URL
+   - Model: `hra-qwen`
+   - `response_format` **НЕ** включён в request
+   - Credentials не отправляются
+   - Response корректно распарсен
+   - Error handling работает
 
 ---
 
-## Risks and Limitations
+## Изменённые файлы
 
-### 1. RunPod Endpoint Stability
+| Файл | Изменение |
+|------|-----------|
+| `workflows/HR Processing Worker.json` | Production workflow (только OpenAI) |
+| `workflows/HR Processing Worker - Multi Provider Test.json` | Test workflow (RunPod hardcoded) |
+| `docs/MULTI_PROVIDER_ARCHITECTURE.md` | Этот документ |
+| `docs/WORKFLOW_MODIFICATION_GUIDE.md` | Инструкция по модификации |
+| `workflows/llm-provider-config.js` | Модуль конфигурации |
+| `docs/CHANGE_LOG.md` | Версия 2.2.0 |
 
-**Risk:** RunPod endpoint URL may change.
+---
 
-**Mitigation:** Move to environment variable:
+## Риски и ограничения
+
+### 1. Стабильность RunPod endpoint
+
+**Риск:** RunPod endpoint URL может измениться.
+
+**Митигация:** Перенести в переменную окружения:
 ```javascript
 llm_url: $env.RUNPOD_URL || 'https://...'
 ```
 
-### 2. Error Handling (SOLVED)
+### 2. Обработка ошибок (РЕШЕНО)
 
-**Status:** ✅ Both OpenAI and RunPod error outputs are connected to shared error handlers.
+**Статус:** ✅ OpenAI и RunPod error outputs подключены к общим обработчикам ошибок.
 
-### 3. Monitoring
+### 3. Мониторинг
 
-**Current:** No logging of provider selection.
+**Текущее:** Нет логирования выбора провайдера.
 
-**Improvement:** Add logging:
+**Улучшение:** Добавить логирование:
 ```javascript
 console.log(`LLM Provider: ${provider}`);
 ```
 
 ---
 
-## References
+## Ссылки
 
 - [OpenAI Chat Completions API](https://platform.openai.com/docs/api-reference/chat)
 - [OpenAI Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs)
 - [RunPod Serverless Endpoints](https://docs.runpod.io/serverless-endpoints/)
 - [n8n HTTP Request Node](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/)
 - [n8n IF Node](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.if/)
+- [EXPERIMENTAL_ML_PIPELINE.md](EXPERIMENTAL_ML_PIPELINE.md) — Архитектура экспериментального ML-контура

@@ -239,7 +239,7 @@ graph LR
 
 ---
 
-### Основные таблицы
+### Основные таблицы (Production-контур)
 
 | Таблица | Назначение | Ключевые поля |
 |---------|-----------|---------------|
@@ -254,6 +254,27 @@ graph LR
 | `processing_logs` | Журнал обработки | id, execution_id, stage, status, error_text |
 | `generated_assets` | Сгенерированные материалы | id, candidate_id, asset_type, asset_url |
 | `bot_credentials` | Учётные данные | bot_code, bot_token |
+
+---
+
+### Таблицы экспериментального ML-контура (Experimental)
+
+**⚠️ Важно:** Эти таблицы изолированы от production и используются только для Prompt Evaluation и Fine-tuning.
+
+| Таблица | Назначение | Ключевые поля |
+|---------|-----------|---------------|
+| `eval_prompt_datasets` | Версии датасетов для A/B-тестирования | id, dataset_code, name, status |
+| `eval_prompt_cases` | Тестовые кейсы (кандидаты) | id, dataset_id, case_code, case_type |
+| `eval_prompt_case_vacancies` | Вакансии внутри кейса с reference-разметкой | id, case_id, vacancy_json, reference_score |
+| `eval_prompt_experiments` | Определения экспериментов | id, dataset_id, experiment_code, prompt_a_text, prompt_b_text |
+| `eval_prompt_runs` | Запуски экспериментов (judge, A, B) | id, experiment_id, run_type, status |
+| `eval_prompt_results` | Результаты выполнения | id, run_id, case_vacancy_id, score, decision |
+
+**Связь с Fine-tuning:**
+- Reference Dataset из Prompt Evaluation → Teacher Dataset для Fine-tuning
+- Judge-оценки используются как эталон для обучения LoRA-адаптеров
+
+**Документация:** [database/README.md](../database/README.md)
 
 ---
 

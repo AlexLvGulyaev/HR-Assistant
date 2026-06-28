@@ -144,6 +144,66 @@
 
 ---
 
+## Экспериментальный ML-контур
+
+**⚠️ Важно:** Экспериментальный ML-контур НЕ используется в production. Он предназначен для исследования и улучшения качества системы.
+
+### Назначение
+
+Экспериментальный ML-контур обеспечивает непрерывное развитие качества системы за счёт:
+1. Prompt Evaluation (A/B-тестирование промптов)
+2. Fine-tuning (обучение LoRA-адаптеров)
+3. Runtime Smoke Validation (тестирование моделей)
+
+### Workflow
+
+| Workflow | Узлы | Назначение | Контур |
+|----------|------|-----------|--------|
+| **HRA Prompt Evaluation Experiment** | ~50 | A/B-тестирование промптов | Experimental |
+| **HR Processing Worker - Multi Provider Test** | 54 | Smoke validation LoRA-моделей | Experimental |
+
+**Важно:** `HR Processing Worker - Multi Provider Test` — это инженерный стенд, НЕ production workflow.
+
+### AI-модели (Experimental)
+
+| Модель | Назначение | Workflow | Параметры |
+|--------|-----------|----------|-----------|
+| **Qwen/Qwen2.5-1.5B-Instruct** | Base model для Fine-tuning | Multi Provider Test | LoRA adapter |
+| **Qwen + LoRA adapter** | Fine-tuned model | Multi Provider Test | Temperature: 0.2 |
+
+### LLM-провайдеры (Experimental)
+
+| Провайдер | Endpoint | Назначение | Authentication |
+|-----------|----------|-----------|----------------|
+| **RunPod** | RunPod proxy URL | Smoke validation LoRA-моделей | None (proxy endpoint) |
+
+### База данных (Experimental)
+
+**⚠️ Изолирована от production:**
+
+| Таблица | Назначение |
+|---------|-----------|
+| `eval_prompt_datasets` | Версии датасетов |
+| `eval_prompt_cases` | Тестовые кейсы |
+| `eval_prompt_case_vacancies` | Вакансии с reference-разметкой |
+| `eval_prompt_experiments` | Определения экспериментов |
+| `eval_prompt_runs` | Запуски экспериментов |
+| `eval_prompt_results` | Результаты выполнения |
+
+### Результаты Experiment 002
+
+| Метрика | Base Qwen | Qwen + LoRA | GPT-4o-mini (baseline) |
+|---------|-----------|-------------|------------------------|
+| Offline Validation | ✅ Baseline | ✅ **Improved** | Reference |
+| Runtime Positive Test | ✅ Pass | ✅ Pass | N/A |
+| Runtime Negative Test | ✅ Pass | ❌ **Failed** | N/A |
+
+**Вывод:** Модель не готова к production. Требуется расширение teacher dataset за счёт hard negative примеров.
+
+**Документация:** [EXPERIMENTAL_ML_PIPELINE.md](EXPERIMENTAL_ML_PIPELINE.md)
+
+---
+
 ## Зависимости
 
 ### Внутренние зависимости
