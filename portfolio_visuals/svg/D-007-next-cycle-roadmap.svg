@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 340" width="820" height="340" role="img" aria-label="Next cycle roadmap">
+
+<rect width="820" height="340" fill="#0d0d10" rx="8"/>
+
+<text x="34" y="42" fill="#e8e8ec" font-size="20" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Next cycle roadmap</text>
+
+<text x="34" y="70" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="start">Each closed question opens a new one</text>
+
+<rect x="30.0" y="110" width="175" height="185" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="8"/>
+<text x="117.5" y="150" fill="#FFB347" font-size="18" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">Calibration</text>
+<text x="117.5" y="195" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">MAE closer</text>
+<text x="117.5" y="219" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">to GPT</text>
+<rect x="225.0" y="110" width="175" height="185" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="8"/>
+<text x="312.5" y="150" fill="#FF6B6B" font-size="18" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">Augmentation</text>
+<text x="312.5" y="195" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">stratified hard</text>
+<text x="312.5" y="219" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">negatives</text>
+<rect x="420.0" y="110" width="175" height="185" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="8"/>
+<text x="507.5" y="150" fill="#4ECDC4" font-size="18" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">Metrics</text>
+<text x="507.5" y="195" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">production FPR/FNR</text>
+<text x="507.5" y="219" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">by segment</text>
+<rect x="615.0" y="110" width="175" height="185" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="8"/>
+<text x="702.5" y="150" fill="#96CEB4" font-size="18" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">Server</text>
+<text x="702.5" y="195" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">quantized persistent</text>
+<text x="702.5" y="219" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="middle">vLLM</text>
+
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Test evaluation loss">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ffffff"/></marker></defs>
+<rect width="640" height="360" fill="#0d0d10" rx="8"/>
+<text x="30" y="30" fill="#e8e8ec" font-size="16" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Test evaluation loss</text>
+<text x="30" y="50" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">Held-out likelihood does not reflect matching quality</text>
+<rect x="80" y="159.29848263918254" width="50" height="140.70151736081746" fill="#8a8a9a" stroke="none" stroke-width="1" rx="3"/>
+<rect x="136" y="126.08695652173913" width="50" height="173.91304347826087" fill="#4ECDC4" stroke="none" stroke-width="1" rx="3"/>
+<text x="133" y="320" fill="#e8e8ec" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Exp 001</text>
+<rect x="210" y="154.73634314479966" width="50" height="145.26365685520034" fill="#8a8a9a" stroke="none" stroke-width="1" rx="3"/>
+<rect x="266" y="148.10214249728614" width="50" height="151.89785750271386" fill="#4ECDC4" stroke="none" stroke-width="1" rx="3"/>
+<text x="263" y="320" fill="#e8e8ec" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Exp 003</text>
+<rect x="340" y="156.2642135974681" width="50" height="143.7357864025319" fill="#8a8a9a" stroke="none" stroke-width="1" rx="3"/>
+<rect x="396" y="156.37713384758095" width="50" height="143.62286615241905" fill="#4ECDC4" stroke="none" stroke-width="1" rx="3"/>
+<text x="393" y="320" fill="#e8e8ec" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Exp 004</text>
+<rect x="400" y="110" width="14" height="14" fill="#8a8a9a" stroke="none" stroke-width="1" rx="2"/>
+<text x="422" y="122" fill="#e8e8ec" font-size="11" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">Base Qwen</text>
+<rect x="400" y="140" width="14" height="14" fill="#4ECDC4" stroke="none" stroke-width="1" rx="2"/>
+<text x="422" y="152" fill="#e8e8ec" font-size="11" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">LoRA</text>
+<line x1="60" y1="300" x2="560" y2="300" stroke="#8a8a9a" stroke-width="2"/>
+</svg>

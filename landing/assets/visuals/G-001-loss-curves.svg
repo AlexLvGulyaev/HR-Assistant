@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 520" width="1100" height="520" role="img" aria-label="Exp 001: eval loss drops, decision accuracy stays flat at 44%">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ffffff"/></marker></defs>
+<rect width="1100" height="520" fill="#0d0d10" rx="8"/>
+<text x="36" y="42" fill="#e8e8ec" font-size="24" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Exp 001: форма без смысла</text>
+<text x="36" y="76" fill="#8a8a9a" font-size="15" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">Loss падает, decision accuracy остаётся на уровне базовой модели</text>
+
+<!-- Eval Loss panel -->
+<rect x="60" y="115" width="460" height="320" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="290" y="156" fill="#ffffff" font-size="18" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">Eval Loss</text>
+<line x1="60" y1="406" x2="520" y2="406" stroke="#2a2a36" stroke-width="1"/>
+<text x="50" y="411" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">0.00</text>
+<line x1="60" y1="335.5" x2="520" y2="335.5" stroke="#2a2a36" stroke-width="1"/>
+<text x="50" y="340.5" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">0.25</text>
+<line x1="60" y1="265" x2="520" y2="265" stroke="#2a2a36" stroke-width="1"/>
+<text x="50" y="270" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">0.50</text>
+<line x1="60" y1="194.5" x2="520" y2="194.5" stroke="#2a2a36" stroke-width="1"/>
+<text x="50" y="199.5" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">0.75</text>
+<line x1="60" y1="124" x2="520" y2="124" stroke="#2a2a36" stroke-width="1"/>
+<text x="50" y="129" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">1.00</text>
+<!-- train loss: 0.512, 0.195, 0.147, 0.113, 0.098 -->
+<polyline points="60,261.6 175,350.9 290,357.5 405,362.1 520,365.4" fill="none" stroke="#4ECDC4" stroke-width="2.5" opacity="0.75"/>
+<!-- eval loss: 0.344, 0.246, 0.235, 0.235, 0.239 -->
+<polyline points="60,291.0 175,308.6 290,310.7 405,310.7 520,309.6" fill="none" stroke="#4ECDC4" stroke-width="3.5" stroke-dasharray="6,4" opacity="0.95"/>
+<line x1="405" y1="124" x2="405" y2="406" stroke="#ffffff" stroke-width="1" stroke-dasharray="5,4" opacity="0.8"/>
+<text x="410" y="139" fill="#ffffff" font-size="12" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">best ep4</text>
+
+<!-- Decision Accuracy panel -->
+<rect x="580" y="115" width="460" height="320" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="810" y="156" fill="#ffffff" font-size="18" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">Decision Accuracy</text>
+<line x1="580" y1="406" x2="1040" y2="406" stroke="#2a2a36" stroke-width="1"/>
+<text x="570" y="411" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">0%</text>
+<line x1="580" y1="335.5" x2="1040" y2="335.5" stroke="#2a2a36" stroke-width="1"/>
+<text x="570" y="340.5" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">25%</text>
+<line x1="580" y1="265" x2="1040" y2="265" stroke="#2a2a36" stroke-width="1"/>
+<text x="570" y="270" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">50%</text>
+<line x1="580" y1="194.5" x2="1040" y2="194.5" stroke="#2a2a36" stroke-width="1"/>
+<text x="570" y="199.5" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">75%</text>
+<line x1="580" y1="124" x2="1040" y2="124" stroke="#2a2a36" stroke-width="1"/>
+<text x="570" y="129" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">100%</text>
+<!-- base model dashed line -->
+<line x1="580" y1="292" x2="1040" y2="292" stroke="#8a8a9a" stroke-width="2" stroke-dasharray="8,5" opacity="0.6"/>
+<text x="1030" y="282" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">base 44%</text>
+<!-- DA flat line at 44% -->
+<polyline points="580,292 695,292 810,292 925,292 1040,292" fill="none" stroke="#FF6B6B" stroke-width="4" opacity="0.95"/>
+<circle cx="580" cy="292" r="6" fill="#FF6B6B"/>
+<circle cx="695" cy="292" r="6" fill="#FF6B6B"/>
+<circle cx="810" cy="292" r="6" fill="#FF6B6B"/>
+<circle cx="925" cy="292" r="6" fill="#FF6B6B"/>
+<circle cx="1040" cy="292" r="6" fill="#FF6B6B"/>
+
+<!-- X-axis labels -->
+<text x="60" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep1</text>
+<text x="175" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep2</text>
+<text x="290" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep3</text>
+<text x="405" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep4</text>
+<text x="520" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep5</text>
+
+<text x="580" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep1</text>
+<text x="695" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep2</text>
+<text x="810" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep3</text>
+<text x="925" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep4</text>
+<text x="1040" y="436" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep5</text>
+
+<!-- Legend -->
+<rect x="60" y="474" width="16" height="16" fill="#4ECDC4" opacity="0.75" rx="2"/>
+<text x="84" y="487" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">train loss</text>
+<rect x="180" y="474" width="16" height="16" fill="#4ECDC4" stroke="#4ECDC4" stroke-width="2" stroke-dasharray="5,3" rx="2"/>
+<text x="204" y="487" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">eval loss</text>
+<rect x="320" y="480" width="16" height="4" fill="#FF6B6B" rx="1"/>
+<text x="344" y="487" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">decision accuracy</text>
+</svg>

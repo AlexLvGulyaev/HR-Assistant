@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" width="640" height="240" role="img" aria-label="Checkpoint selection timeline">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ffffff"/></marker></defs>
+<rect width="640" height="240" fill="#0d0d10" rx="8"/>
+<text x="30" y="30" fill="#e8e8ec" font-size="16" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Checkpoint selection timeline</text>
+<text x="30" y="50" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">Best epoch in each experiment was never epoch 5</text>
+<line x1="60" y1="130" x2="580" y2="130" stroke="#8a8a9a" stroke-width="2"/>
+<line x1="80" y1="125" x2="80" y2="135" stroke="#8a8a9a" stroke-width="1"/>
+<text x="80" y="152" fill="#8a8a9a" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep 1</text>
+<line x1="176" y1="125" x2="176" y2="135" stroke="#8a8a9a" stroke-width="1"/>
+<text x="176" y="152" fill="#8a8a9a" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep 2</text>
+<line x1="272" y1="125" x2="272" y2="135" stroke="#8a8a9a" stroke-width="1"/>
+<text x="272" y="152" fill="#8a8a9a" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep 3</text>
+<line x1="368" y1="125" x2="368" y2="135" stroke="#8a8a9a" stroke-width="1"/>
+<text x="368" y="152" fill="#8a8a9a" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep 4</text>
+<line x1="464" y1="125" x2="464" y2="135" stroke="#8a8a9a" stroke-width="1"/>
+<text x="464" y="152" fill="#8a8a9a" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">ep 5</text>
+<line x1="560" y1="125" x2="560" y2="135" stroke="#8a8a9a" stroke-width="1"/>
+<text x="560" y="152" fill="#8a8a9a" font-size="9" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">end</text>
+<circle cx="368" cy="95" r="8" fill="#4ECDC4" stroke="#ffffff" stroke-width="1"/>
+<text x="380" y="99" fill="#4ECDC4" font-size="10" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Exp 001 best ep 4</text>
+<circle cx="464" cy="69" r="8" fill="#FFB347" stroke="#ffffff" stroke-width="1"/>
+<text x="476" y="73" fill="#FFB347" font-size="10" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Exp 002 best ep 5</text>
+<circle cx="464" cy="43" r="8" fill="#FF6B6B" stroke="#ffffff" stroke-width="1"/>
+<text x="476" y="47" fill="#FF6B6B" font-size="10" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Exp 003 best ep 5</text>
+<circle cx="272" cy="17" r="8" fill="#96CEB4" stroke="#ffffff" stroke-width="1"/>
+<text x="284" y="21" fill="#96CEB4" font-size="10" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Exp 004 best ep 3</text>
+</svg>

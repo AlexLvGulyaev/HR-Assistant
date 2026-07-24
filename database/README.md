@@ -12,7 +12,15 @@
 - `schema_hr_assistant.sql` — основная схема БД (боевой контур)
 - `02-prompt-evaluation.sql` — схема evaluation-контура для A/B-тестирования промптов
 - `03-seed-eval-dataset-v1.sql` — сидирование датасета HRA-EVAL-V1
+- `03-seed-eval-dataset-v2.sql` — сидирование датасета HRA-EVAL-V2
 - `04-create-experiment-v1.sql` — создание эксперимента HRA-EXP-V1
+- `04-create-experiment-v2.sql` — создание эксперимента HRA-EXP-V2
+- `05-create-smoke-experiment.sql` — создание smoke-эксперимента
+- `06-extend-judge-reference-fields.sql` — расширение reference-полей Judge
+- `07-create-experiment-v3.sql` — создание эксперимента Experiment 003 (HRA-EXP-V3)
+- `08-validate-experiment-v3-pre-judge.sql` — проверки перед Judge для Experiment 003
+- `09-validate-experiment-v3-post-judge.sql` — проверки после Judge для Experiment 003
+- `10-extract-teacher-dataset-v3.sql` — проверка готовности 123 пар к экспорту
 
 ---
 
@@ -505,9 +513,9 @@ SELECT log_processing_event(
 - Latency growth ≤ 30%
 
 **Документация:**
-- [Judge Prompt](../shared/prompts/judge-matching-prompt-v1.md)
-- [Experimental Prompt B](../shared/prompts/experimental-matching-prompt-v1.md)
-- [Workflow Documentation](../docs/PROMPT_EVALUATION_WORKFLOW.md)
+- Judge Prompt: см. `prompt_evaluation/PROMPTS.md` в `docs/`
+- Experimental Prompt B: см. `prompt_evaluation/PROMPTS.md` в `docs/`
+- Workflow Documentation: см. `docs/prompt_evaluation/WORKFLOW_DESIGN.md` и `WORKFLOW_IMPLEMENTATION.md`
 
 ---
 

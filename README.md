@@ -22,6 +22,10 @@
 - **[Руководство кандидата](docs/USER_GUIDE.md)** — как отправить резюме через Telegram
 - **[Руководство HR-специалиста](docs/HR_GUIDE.md)** — работа с результатами matching
 
+### Публичный кейс
+
+- **[Storytelling Landing](landing/README.md)** — кинематографический лендинг экспериментов LoRA: `https://hra-lora.alex-n8n.site`
+
 ### Для инженера
 
 - **[Архитектура](docs/ARCHITECTURE.md)** — компоненты, потоки данных, ER-диаграмма

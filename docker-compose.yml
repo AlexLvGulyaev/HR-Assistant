@@ -1,0 +1,23 @@
+# HR Assistant LoRA Landing - Docker Compose
+# Source of Truth for production deployment.
+#
+# Usage:
+#   docker compose up -d --build
+#
+# The static landing is served by nginx and exposed to the existing
+# Traefik reverse proxy via the n8n_default network.
+
+services:
+  hra-lora:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    container_name: hra-lora
+    restart: always
+    networks:
+      - hra-lora-network
+
+networks:
+  hra-lora-network:
+    external: true
+    name: n8n_default

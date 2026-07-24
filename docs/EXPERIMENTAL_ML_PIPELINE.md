@@ -1,7 +1,8 @@
 # Экспериментальный ML-контур HR Assistant
 
 **Created:** 2026-06-28
-**Status:** Experimental
+**Updated:** 2026-07-22
+**Status:** Experimental — Experiment 003 завершён (partially confirmed)
 **Author:** AI Automation Portfolio Lab
 
 ---
@@ -124,19 +125,21 @@ graph TD
 
 **Результаты:**
 
-| Experiment | Offline Quality | Runtime Test |
-|------------|-----------------|--------------|
-| Experiment 001 | ✅ Baseline | ✅ Pass |
-| Experiment 002 | ✅ **Improved** | ❌ **Failed negative** |
+| Experiment | Dataset | Offline Quality | Runtime Test |
+|------------|---------|-----------------|--------------|
+| Experiment 001 | 90 кейсов | ✅ Baseline | ✅ Pass |
+| Experiment 002 | 90 кейсов | ✅ **Improved** | ❌ **Failed negative** |
+| Experiment 003 | 123 кейса (+33 hard negative) | ✅ **eval_loss 0.31** | ✅ **Pass (7/7)** |
 
 **Ключевой вывод:**
-- LoRA улучшает offline качество
-- Модель **не прошла runtime negative smoke test**
-- Причина: недостаточно hard negative примеров в teacher dataset
+- LoRA улучшает offline качество.
+- Experiment 002 **не прошёл runtime negative smoke test** из-за недостатка hard negative примеров.
+- Experiment 003 добавил hard negatives и **прошёл runtime negative smoke test (7/7)**, но ценой умеренного снижения decision accuracy на original test set (precision/recall trade-off).
+- Модель всё ещё **не является production-ready**.
 
-**Директория:** `finetuning/runs/experiment_002/`
+**Директория:** `finetuning/runs/experiment_002/`, `finetuning/runs/experiment_003/`
 
-**Документация:** [finetuning/README.md](../finetuning/README.md)
+**Документация:** [finetuning/README.md](../finetuning/README.md), [Experiment_003_Report.md](../finetuning/Experiment_003_Report.md)
 
 ---
 
@@ -152,10 +155,11 @@ graph TD
 - JSON Validity Rate
 - Score Correlation
 
-**Результат Experiment 002:**
-- Лучший чекпоинт: epoch 3
-- Значительное улучшение качества vs baseline
-- Offline validation: ✅ Pass
+**Результаты:**
+- Experiment 002: лучший чекпоинт epoch 3, eval_loss 0.44, значительное улучшение качества vs baseline — ✅ Pass.
+- Experiment 003: лучший чекпоинт epoch 2, eval_loss 0.31, улучшение vs Experiment 002 — ✅ Pass.
+
+**Оговорка:** Offline validation loss на малом original test set (9 записей) у LoRA Experiment 003 оказалась выше, чем у base Qwen; это не основная бизнес-метрика.
 
 ---
 
@@ -189,11 +193,15 @@ graph TD
 1. **Positive Smoke Test:** Корректные matching-запросы
 2. **Negative Smoke Test:** Некорректные или edge-case запросы
 
-**Результат Experiment 002:**
-- Positive Smoke Test: ✅ Pass
-- Negative Smoke Test: ❌ **Failed**
+**Результаты:**
+- Experiment 002: Positive Smoke Test ✅ Pass, Negative Smoke Test ❌ **Failed**
+- Experiment 003: Positive Smoke Test ✅ Pass, Negative Smoke Test ✅ **Pass (7/7)**
 
-**Документация:** [MULTI_PROVIDER_ARCHITECTURE.md](MULTI_PROVIDER_ARCHITECTURE.md)
+**Важное изменение в Experiment 003:**
+- Помимо Multi Provider Test workflow появился автоматический локальный runtime smoke test: `finetuning/scripts/runtime_smoke_test.py` + фиксированный `data/smoke_set.jsonl`.
+- Smoke set фиксируется **до обучения**, что исключает подбор тестов под результат.
+
+**Документация:** [MULTI_PROVIDER_ARCHITECTURE.md](MULTI_PROVIDER_ARCHITECTURE.md), [Experiment_003_Report.md](../finetuning/Experiment_003_Report.md)
 
 ---
 
@@ -211,9 +219,10 @@ graph TD
 
 **Текущий статус:**
 - Experiment 002: ❌ Не готова (failed negative test)
-- Следующий шаг: Расширение teacher dataset
+- Experiment 003: ⚠️ Частично подтверждена гипотеза (runtime negative smoke пройден, но precision/recall trade-off)
+- Следующий шаг: Баланс precision/recall (Cycle 4)
 
-**Решение:** Модель **не является production-ready**. Требуется следующий цикл обучения с расширенным teacher dataset.
+**Решение:** Модель **не является production-ready**. Требуется следующий цикл обучения для устранения over-correction.
 
 ---
 

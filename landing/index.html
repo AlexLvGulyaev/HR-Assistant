@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Assistant LoRA: рождение способности</title>
+  <meta name="description" content="Документальный фильм внутри браузера: как небольшая языковая модель учится принимать HR-решения.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<button class="dossier-toggle" aria-label="Toggle navigation" title="Menu">☰</button>
+<nav id="dossier" class="expanded">
+  <div class="dossier-brand">HRA LoRA</div>
+  <div class="scene-thumbs">
+    <button class="scene-thumb active" data-scene="1"><span>1</span> Рождение</button>
+    <button class="scene-thumb" data-scene="2"><span>2</span> Действующие лица</button>
+    <button class="scene-thumb" data-scene="3"><span>3</span> Базовая модель</button>
+    <button class="scene-thumb" data-scene="4"><span>4</span> Первый урок</button>
+    <button class="scene-thumb" data-scene="5"><span>5</span> Парадокс метрик</button>
+    <button class="scene-thumb" data-scene="6"><span>6</span> Второй урок</button>
+    <button class="scene-thumb" data-scene="7"><span>7</span> Ловушка</button>
+    <button class="scene-thumb" data-scene="8"><span>8a</span> Третий урок</button>
+    <button class="scene-thumb" data-scene="9"><span>8b</span> Торговля</button>
+    <button class="scene-thumb" data-scene="10"><span>9</span> Баланс</button>
+    <button class="scene-thumb" data-scene="11"><span>10</span> Внешняя проверка</button>
+    <button class="scene-thumb" data-scene="12"><span>11</span> Smoke repeatability</button>
+    <button class="scene-thumb" data-scene="13"><span>12</span> Разрыв и фикс</button>
+    <button class="scene-thumb" data-scene="14"><span>13a</span> Поиск узкого места</button>
+    <button class="scene-thumb" data-scene="15"><span>13b</span> Latency</button>
+    <button class="scene-thumb" data-scene="16"><span>14</span> Сильнее ожиданий</button>
+    <button class="scene-thumb" data-scene="17"><span>15</span> Честный диагноз</button>
+    <button class="scene-thumb" data-scene="18"><span>16</span> Следующий цикл</button>
+    <button class="scene-thumb" data-scene="19"><span>17</span> Разбор эпох</button>
+    <button class="scene-thumb" data-scene="20"><span>18</span> Лучшая эпоха</button>
+    <button class="scene-thumb" data-scene="21"><span>19</span> Данные важнее архитектуры</button>
+    <button class="scene-thumb" data-scene="22"><span>20</span> Архив</button>
+    <button class="scene-thumb" data-scene="23"><span>21</span> О методе</button>
+  </div>
+  <div class="dossier-footer">
+    <a href="https://github.com/alexander-gulyaev/ai-automation-portfolio-lab" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<main id="film">
+
+  <!-- Scene 1: Title -->
+  <section id="scene-1" class="scene scene-title-card center" data-lumina="base">
+    <div class="scene-inner">
+      <div class="hero-lumina" id="lumina-1"></div>
+      <p class="scene-label">Документальный фильм внутри браузера</p>
+      <h1 class="scene-title">HR Assistant LoRA</h1>
+      <p class="scene-subtitle hero-subtitle">Рождение способности. Как небольшая языковая модель учится принимать HR-решения — урок за уроком, датасет за датасетом.</p>
+      <div class="timeline-mini">
+        <div class="tl-node"><span>1</span>Форма</div>
+        <div class="tl-node"><span>2</span>Ёмкость</div>
+        <div class="tl-node"><span>3</span>Ловушки</div>
+        <div class="tl-node"><span>4</span>Баланс</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 2: Dramatis personae -->
+  <section id="scene-2" class="scene scene-cast" data-lumina="base">
+    <div class="scene-inner">
+      <div class="lumina-corner" id="lumina-2"></div>
+      <p class="scene-label">Сцена 2 · Действующие лица</p>
+      <h2 class="scene-title center-title">Кто есть кто в этом фильме</h2>
+      <p class="scene-subtitle center-subtitle cast-subtitle">Модели, метрики и инструменты — с их ролями.<br>Если какое-то слово непонятно, вернитесь сюда.</p>
+      <div class="cast-grid">
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="none" stroke="#4ECDC4" stroke-width="2"/><circle cx="32" cy="32" r="8" fill="#4ECDC4"/><path d="M32 18 L32 12 M32 46 L32 52 M18 32 L12 32 M46 32 L52 32" stroke="#4ECDC4" stroke-width="2" stroke-linecap="round"/></svg>
+          <strong>Qwen2.5-1.5B-Instruct</strong>
+          <span class="cast-role">Главная героиня</span>
+          <p>Базовая языковая модель. Умеет многое из общих задач, но не умеет сопоставлять кандидатов с вакансиями.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><rect x="18" y="18" width="28" height="28" rx="6" fill="none" stroke="#96CEB4" stroke-width="2"/><path d="M24 32 L40 32 M32 24 L32 40" stroke="#96CEB4" stroke-width="2" stroke-linecap="round"/></svg>
+          <strong>LoRA</strong>
+          <span class="cast-role">Адаптер-наставник</span>
+          <p>Маленький модуль, который доучивает базовую модель конкретной задаче без перезаписи всей модели.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><rect x="12" y="20" width="40" height="28" rx="4" fill="none" stroke="#FFB347" stroke-width="2"/><circle cx="24" cy="34" r="4" fill="#FFB347"/><circle cx="40" cy="34" r="4" fill="#FFB347"/></svg>
+          <strong>Teacher Dataset</strong>
+          <span class="cast-role">Учитель</span>
+          <p>Примеры правильных ответов, по которым модель учится. Состав примеров важнее архитектуры.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><circle cx="20" cy="32" r="10" fill="none" stroke="#4ECDC4" stroke-width="2"/><circle cx="44" cy="32" r="10" fill="none" stroke="#4ECDC4" stroke-width="2"/><line x1="30" y1="32" x2="34" y2="32" stroke="#4ECDC4" stroke-width="2"/></svg>
+          <strong>Decision Accuracy</strong>
+          <span class="cast-role">Судья по решениям</span>
+          <p>Доля случаев, где модель правильно сказала match или no_match. Главная бизнес-метрика.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><line x1="14" y1="48" x2="50" y2="48" stroke="#FFB347" stroke-width="2"/><path d="M16 48 L24 36 L32 44 L42 28 L50 38" fill="none" stroke="#FFB347" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <strong>MAE</strong>
+          <span class="cast-role">Средняя ошибка</span>
+          <p>Mean Absolute Error. Насколько в среднем модель ошибается в числовом score кандидата.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><path d="M14 44 Q22 20 32 44 T50 44" fill="none" stroke="#FF6B6B" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="44" r="3" fill="#FF6B6B"/></svg>
+          <strong>Validation Loss</strong>
+          <span class="cast-role">Ложный друг</span>
+          <p>Стандартная ML-метрика. В этой задаче она обманывает: низкий loss ≠ правильные решения.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><rect x="16" y="14" width="32" height="36" rx="4" fill="none" stroke="#FF6B6B" stroke-width="2"/><path d="M24 30 L28 34 L40 22" fill="none" stroke="#FF6B6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <strong>Hard Negatives</strong>
+          <span class="cast-role">Ловушки</span>
+          <p>Сложные примеры, где кандидат внешне похож на подходящего, но на самом деле не подходит.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><rect x="16" y="14" width="32" height="36" rx="4" fill="none" stroke="#96CEB4" stroke-width="2"/><path d="M24 34 L28 38 L40 26" fill="none" stroke="#96CEB4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <strong>Positives & Borderlines</strong>
+          <span class="cast-role">Восстановители баланса</span>
+          <p>Подходящие и пограничные кандидаты. Помогают модели не становиться слишком консервативной.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><rect x="10" y="28" width="44" height="12" rx="3" fill="none" stroke="#4ECDC4" stroke-width="2"/><circle cx="20" cy="34" r="3" fill="#4ECDC4"/><circle cx="32" cy="34" r="3" fill="#4ECDC4"/><circle cx="44" cy="34" r="3" fill="#4ECDC4"/></svg>
+          <strong>Production Smoke</strong>
+          <span class="cast-role">Реальная проверка</span>
+          <p>Тесты в настоящем API с реальными запросами. Показывают, выдержит ли модель боевые условия.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><path d="M16 48 L16 24 L32 16 L48 24 L48 48" fill="none" stroke="#4ECDC4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 48 L24 32 L40 32 L40 48" fill="none" stroke="#4ECDC4" stroke-width="2"/></svg>
+          <strong>vLLM</strong>
+          <span class="cast-role">Скоростной двигатель</span>
+          <p>Inference-движок, который ускоряет ответы модели в 5–7 раз без потери качества.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><circle cx="32" cy="26" r="12" fill="none" stroke="#ffffff" stroke-width="2"/><rect x="22" y="38" width="20" height="12" rx="2" fill="none" stroke="#ffffff" stroke-width="2"/></svg>
+          <strong>GPT-4o-mini</strong>
+          <span class="cast-role">Облачный эталон</span>
+          <p>Модель-референс от OpenAI. С ней сравниваем, насколько близка локальная модель к облачной.</p>
+        </div>
+        <div class="cast-card">
+          <svg class="cast-icon" viewBox="0 0 64 64"><rect x="14" y="18" width="36" height="28" rx="4" fill="none" stroke="#4ECDC4" stroke-width="2"/><path d="M20 26 L28 26 M20 32 L34 32 M20 38 L30 38" stroke="#4ECDC4" stroke-width="2" stroke-linecap="round"/></svg>
+          <strong>JSON</strong>
+          <span class="cast-role">Язык отчётов</span>
+          <p>Структурированный формат ответа модели: match/no_match, score, оценки по компонентам, reasoning.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 3: Base model -->
+  <section id="scene-3" class="scene" data-lumina="base">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 3 · Базовая модель</p>
+          <h2 class="scene-title">Всё, что умеет модель из коробки</h2>
+          <p class="scene-subtitle">Qwen2.5-1.5B-Instruct умеет говорить, строить JSON и вежливо отвечать. Но сопоставить кандидата с вакансией — другая задача.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num" data-source="experiments.001.generation_test.base.valid_json_rate">100%</span><span class="metric-label">valid JSON</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.001.generation_test.base.decision_accuracy">44%</span><span class="metric-label">decision accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.001.generation_test.base.mae_score">38.8</span><span class="metric-label">MAE score</span></div>
+          </div>
+          <p class="scene-voice">«Форма ответа освоена, но смысл задачи — нет.»</p>
+        </div>
+        <div class="visual-col">
+          <div class="case-card base-case">
+            <strong>Кейс из коробки</strong>
+            <p>Врач на вакансию специалиста по разметке данных.</p>
+            <span class="case-tag bad">reference: no_match</span>
+            <span class="case-tag bad">model: match</span>
+          </div>
+          <div class="lumina-small" id="lumina-3"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 4: First lesson -->
+  <section id="scene-4" class="scene" data-lumina="form">
+    <div class="scene-inner">
+      <div class="hypothesis-note top scene-header">
+        <span class="hn-label">Гипотеза:</span>
+        <p>LoRA на 90 teacher-примерах (r=8, 5 эпох) научится повторять разметку и улучшит решения по сравнению с базовой моделью.</p>
+      </div>
+      <div class="scene-grid two-col-wide-viz">
+        <div class="text-col">
+          <p class="scene-label">Сцена 4 · Первый урок</p>
+          <h2 class="scene-title">Форма без смысла</h2>
+          <p class="scene-subtitle">LoRA на 90 примерах, 5 эпох. Loss падает, а decision accuracy остаётся на уровне базовой модели — модель выучила форму, а не смысл.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num" data-source="experiments.001.generation_test.decision_accuracy">44%</span><span class="metric-label">decision accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.001.best_eval_loss">0.235</span><span class="metric-label">best eval loss</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.001.best_checkpoint.epoch">4</span><span class="metric-label">лучшая эпоха</span></div>
+          </div>
+          <p class="scene-voice">«Модель выучила форму ответа, а не его смысл.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-001-loss-curves.svg?v=3" alt="Training and validation loss curves" class="viz-img extra-wide">
+          <div class="lumina-small" id="lumina-4"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 5: Metric paradox -->
+  <section id="scene-5" class="scene" data-lumina="form">
+    <div class="scene-inner">
+      <div class="scene-grid two-col-wide-viz">
+        <div class="text-col">
+          <p class="scene-label">Сцена 5 · Парадокс метрик</p>
+          <h2 class="scene-title">Хороший loss — плохая новость</h2>
+          <p class="scene-subtitle">Validation loss говорит «всё отлично», а решения — «всё плохо». Значит, мы измеряли не то.</p>
+          <div class="paradox-cards compact">
+            <div class="paradox-card">
+              <span class="pc-exp">Exp 001</span>
+              <span class="pc-val loss-low">loss 0.235</span>
+              <span class="pc-val acc-low">accuracy 44%</span>
+            </div>
+            <div class="paradox-card">
+              <span class="pc-exp">Exp 002</span>
+              <span class="pc-val loss-high">loss 0.444</span>
+              <span class="pc-val acc-high">accuracy 78%</span>
+            </div>
+          </div>
+          <p class="scene-voice">«Language-modeling perplexity измеряет не то же самое, что способность принимать HR-решения.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-002-best-eval-loss.svg?v=3" alt="Best validation loss per experiment" class="viz-img extra-wide">
+          <div class="lumina-small" id="lumina-5"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 6: Second lesson -->
+  <section id="scene-6" class="scene" data-lumina="direction">
+    <div class="scene-inner">
+      <div class="hypothesis-note top scene-header">
+        <span class="hn-label">Гипотеза:</span>
+        <p>Увеличение ёмкости адаптера (r=8→16, 7 модулей) на тех же 90 примерах позволит модели уловить matching-логику.</p>
+      </div>
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 6 · Второй урок</p>
+          <h2 class="scene-title">Первый рост</h2>
+          <p class="scene-subtitle">Тот же датасет, другая динамика обучения. Модель начинает понимать matching-логику — но production-ловушки ещё впереди.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num" data-source="experiments.002.generation_test.decision_accuracy">78%</span><span class="metric-label">decision accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.002.generation_test.mae_score">21.9</span><span class="metric-label">MAE score</span></div>
+          </div>
+          <p class="scene-voice">«Модель стала лучше улавливать matching-логику, но реальный мир оказался сложнее тестового набора.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-021-base-vs-lora-exp001-exp002.svg?v=4" alt="Base vs LoRA decision accuracy and MAE for Exp 001 and 002" class="viz-img scene-6-viz">
+          <div class="lumina-small" id="lumina-6"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 7: Trap -->
+  <section id="scene-7" class="scene" data-lumina="shell">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 7 · Ловушка</p>
+          <h2 class="scene-title">Чего не видит offline-тест</h2>
+          <p class="scene-subtitle">Positive smoke проходит. Negative smoke падает: obvious negatives, hard negatives, edge cases, invalid input — модель пропускает ловушки.</p>
+          <div class="highlight-group">
+            <div class="metric-row">
+              <div class="metric bad"><span class="metric-num">FAIL</span><span class="metric-label">negative smoke Exp 002</span></div>
+            </div>
+            <p class="scene-voice">«Модель не знает, как выглядит настоящая ловушка.»</p>
+          </div>
+          <div class="lumina-small" id="lumina-7"></div>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-022-exp002-smoke-fail.svg?v=1" alt="Runtime smoke matrix Exp 002" class="viz-img smaller">
+          <div class="case-card trap-case">
+            <strong>Кейс-ловушка</strong>
+            <p>Врач на вакансию специалиста по разметке данных.</p>
+            <span class="case-tag">score 27 → 72</span>
+            <span class="case-tag bad">no_match → match</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 8: Hard negatives -->
+  <section id="scene-8" class="scene" data-lumina="learning">
+    <div class="scene-inner">
+      <div class="hypothesis-note top scene-header">
+        <span class="hn-label">Гипотеза:</span>
+        <p>Модель провалила negative smoke из-за недостатка сложных негативных примеров, а не из-за параметров LoRA. Добавим hard negatives, сохранив тот же адаптер.</p>
+      </div>
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 8a · Третий урок</p>
+          <h2 class="scene-title">Hard negatives</h2>
+          <p class="scene-subtitle">Датасет 90 → 123 записи. Модель учится говорить «нет» на сложных негативных примерах. Конфигурация LoRA не менялась.</p>
+          <div class="metric-row">
+            <div class="metric good"><span class="metric-num">7/7</span><span class="metric-label">runtime smoke passed</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.003.generation_test.decision_accuracy">67%</span><span class="metric-label">decision accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.003.best_checkpoint.epoch">2</span><span class="metric-label">лучшая эпоха</span></div>
+          </div>
+          <p class="scene-voice">«Раз модель не знает ловушек, покажем ей ловушки.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-023-dataset-evolution-exp001-003.svg?v=2" alt="Dataset evolution Exp 001–003" class="viz-img scene-8a-viz">
+          <div class="lumina-small" id="lumina-8"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 9: Trade-off -->
+  <section id="scene-9" class="scene" data-lumina="contracted">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 8b · Торговля</p>
+          <h2 class="scene-title">Цена отсева</h2>
+          <p class="scene-subtitle">Hard negatives убили false positives, но модель стала консервативной — и стала отсеивать истинные match.</p>
+          <div class="trade-grid compact">
+            <div class="trade-item">
+              <span class="ti-arrow down">↓</span>
+              <span class="ti-metric" data-source="experiments.003.generation_test.decision_accuracy">67%</span>
+              <span class="ti-label">accuracy после hard negatives</span>
+            </div>
+            <div class="trade-vs">VS</div>
+            <div class="trade-item">
+              <span class="ti-arrow up">↑</span>
+              <span class="ti-metric">7/7</span>
+              <span class="ti-label">runtime smoke passed</span>
+            </div>
+          </div>
+          <p class="scene-voice">«Улучшение в одном измерении качества ухудшило другое. Следующий шаг — проверить, восстановят ли positive и borderline примеры recall, сохранив умение отсеивать ловушки.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-024-precision-recall-tradeoff-scene8b.svg?v=2" alt="Precision recall tradeoff" class="viz-img scene-8b-viz">
+          <div class="lumina-small" id="lumina-9"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 10: Balance -->
+  <section id="scene-10" class="scene scene-balance-wide" data-lumina="balance">
+    <div class="scene-inner">
+      <div class="hypothesis-note top scene-header compact">
+        <span class="hn-label">Гипотеза:</span>
+        <p>Positive и borderline примеры вернут модели способность находить подходящих кандидатов, сохранив достижения по hard negatives.</p>
+      </div>
+      <div class="scene-grid balance-compact">
+        <div class="balance-text-col">
+          <p class="scene-label">Сцена 9 · Четвёртый урок</p>
+          <h2 class="scene-title">Баланс</h2>
+          <p class="scene-subtitle compact">Датасет 123 → 162. Hard negatives остались, добавили positives и borderlines. Конфигурация LoRA не изменилась.</p>
+          <div class="metric-row compact">
+            <div class="metric"><span class="metric-num" data-source="experiments.004.generation_test.decision_accuracy">80%</span><span class="metric-label">decision accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.004.generation_test.mae_score">15.1</span><span class="metric-label">MAE score</span></div>
+            <div class="metric"><span class="metric-num" data-source="dataset_change_log.3.total_records">162</span><span class="metric-label">записей в датасете</span></div>
+          </div>
+          <p class="scene-voice compact">«Правильный состав teacher dataset важнее архитектурных изменений.»</p>
+        </div>
+        <div class="balance-lumina-col">
+          <div class="lumina-small" id="lumina-10"></div>
+        </div>
+        <div class="balance-chart-col">
+          <img src="assets/visuals/G-025-balance-dataset-and-metrics.svg?v=7" alt="Изменение состава teacher dataset и эволюция метрик" class="viz-img extra-wide">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 11: External validation -->
+  <section id="scene-11" class="scene" data-lumina="balance">
+    <div class="scene-inner">
+      <div class="hypothesis-note top scene-header">
+        <span class="hn-label">Гипотеза:</span>
+        <p>На независимой выборке LoRA приблизится к GPT-4o-mini по decision accuracy, но может отличаться по MAE, FNR и скорости.</p>
+      </div>
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 10 · Внешняя проверка</p>
+          <h2 class="scene-title">Модель в незнакомом лесу</h2>
+          <p class="scene-subtitle">102 записи, которых модель никогда не видела. Сравнение с GPT-4o-mini — честная оценка, не маркетинговая цифра.</p>
+          <div class="metric-row">
+            <div class="metric good"><span class="metric-num" data-source="external_validation.lora.decision_accuracy">93.1%</span><span class="metric-label">LoRA accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="external_validation.gpt.decision_accuracy">94.1%</span><span class="metric-label">GPT-4o-mini accuracy</span></div>
+          </div>
+          <p class="scene-voice">«Модель обобщается и приближается к облачной по решениям, но не идентична ей.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-008-external-validation-scatter.svg" alt="External validation scatter" class="viz-img">
+          <div class="lumina-small" id="lumina-11"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Scene 12: Smoke repeatability -->
+  <section id="scene-12" class="scene" data-lumina="balance">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 11 · Smoke repeatability</p>
+          <h2 class="scene-title">Первые продакшн-шаги</h2>
+          <p class="scene-subtitle">Production smoke проходит стабильно: Exp 003, Exp 004, rerun после оптимизации.</p>
+          <div class="metric-row">
+            <div class="metric good"><span class="metric-num">7/7</span><span class="metric-label">Exp 003 passed</span></div>
+            <div class="metric good"><span class="metric-num">7/7</span><span class="metric-label">Exp 004 passed</span></div>
+            <div class="metric good"><span class="metric-num">7/7</span><span class="metric-label">rerun passed</span></div>
+          </div>
+          <p class="scene-voice">«Production smoke — не однократная удача, а стабильный gate.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-026-smoke-repeatability-matrix.svg?v=6" alt="Runtime smoke repeatability matrix" class="viz-img scene-11-viz">
+          <div class="lumina-small" id="lumina-12"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 13: Truncation bug -->
+  <section id="scene-13" class="scene" data-lumina="production">
+    <div class="scene-inner">
+      <div class="hypothesis-note top scene-header compact">
+        <span class="hn-label">Гипотеза:</span>
+        <p>Обрезание ответа и отсутствие fallback искажали оценку качества модели. Увеличим лимит токенов и добавим защиту от обрыва JSON.</p>
+      </div>
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 12 · Разрыв и фикс</p>
+          <h2 class="scene-title">Когда ответ не влезает</h2>
+          <p class="scene-subtitle">Production runtime нашёл слабое место: truncation + HTTP 422. Фикс: max_tokens 300 → 512 + graceful JSON fallback.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num">0.867 → 1.000</span><span class="metric-label">valid JSON</span></div>
+            <div class="metric"><span class="metric-num">0.800 → 0.933</span><span class="metric-label">decision accuracy</span></div>
+          </div>
+          <p class="scene-voice">«Production bug может исказить оценку качества модели.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-015-before-after-truncation.svg" alt="Before after truncation fix" class="viz-img">
+          <div class="lumina-small" id="lumina-13"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 14: Latency profiling -->
+  <section id="scene-14" class="scene" data-lumina="production">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 13a · Поиск узкого места</p>
+          <h2 class="scene-title">Где теряется время</h2>
+          <p class="scene-subtitle">После Exp 004 latency p50 = 11.7 с — слишком медленно. Профилирование показывает: почти всё время уходит на генерацию токенов.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num">&gt;99%</span><span class="metric-label">времени — generate</span></div>
+            <div class="metric"><span class="metric-num" data-source="latency.stage_profile.generate.p50_ms">9.9</span><span class="metric-label">мс генерации (p50)</span></div>
+          </div>
+          <p class="scene-voice">«Bottleneck найден: почти всё время уходит на генерацию токенов.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-012-latency-stage-breakdown.svg?v=3" alt="Latency stage breakdown" class="viz-img scene-13a-viz">
+          <div class="lumina-small" id="lumina-14"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 15: Latency optimization -->
+  <section id="scene-15" class="scene" data-lumina="production">
+    <div class="scene-inner">
+      <div class="hypothesis-note top scene-header">
+        <span class="hn-label">Гипотеза:</span>
+        <p>vLLM + warm persistent process даст production-скорость до 2 секунд без переобучения и без заметной потери точности.</p>
+      </div>
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 13b · Latency</p>
+          <h2 class="scene-title">Модель учится быстрее</h2>
+          <p class="scene-subtitle">vLLM сокращает latency в несколько раз. Warm persistent process доводит среднее время ответа до 1.6 с.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num" data-source="engine_benchmark.transformers_fp16.mean_latency_ms">9.1</span><span class="metric-label">transformers fp16, с</span></div>
+            <div class="metric good"><span class="metric-num" data-source="engine_benchmark.vllm_fp16.mean_latency_ms">2.2</span><span class="metric-label">vLLM fp16, с</span></div>
+          </div>
+          <p class="scene-voice">«Latency становится отдельной инженерной задачей после достижения качества.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-011-engine-benchmark.svg" alt="Engine benchmark" class="viz-img">
+          <div class="lumina-small" id="lumina-15"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Scene 16: Lumina vs GPT-4o-mini -->
+  <section id="scene-16" class="scene" data-lumina="production">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 14 · Сильнее ожиданий</p>
+          <h2 class="scene-title">Qwen-LoRA vs GPT-4o-mini</h2>
+          <p class="scene-subtitle">102 пары кандидат-вакансия, которых модель никогда не видела. Qwen-LoRA приблизилась к облачному эталону по решениям, но не идентична ему.</p>
+          <div class="metric-row">
+            <div class="metric good"><span class="metric-num" data-source="latency.optimized.lora_summary.decision_accuracy">93.1%</span><span class="metric-label">Qwen-LoRA accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="latency.optimized.gpt_summary.decision_accuracy">92.2%</span><span class="metric-label">GPT-4o-mini accuracy</span></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num" data-source="latency.optimized.lora_summary.mae_score">19.5</span><span class="metric-label">Qwen-LoRA MAE</span></div>
+            <div class="metric"><span class="metric-num" data-source="latency.optimized.gpt_summary.mae_score">6.9</span><span class="metric-label">GPT-4o-mini MAE</span></div>
+          </div>
+          <p class="scene-voice">«Qwen-LoRA держится рядом с облачным эталоном — и остаётся независимой.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-027-qwen-lora-vs-gpt.svg?v=3" alt="Qwen-LoRA vs GPT-4o-mini comparison" class="viz-img scene-14-viz">
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Scene 17: Honest diagnosis -->
+  <section id="scene-17" class="scene" data-lumina="production">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 15 · Честный диагноз</p>
+          <h2 class="scene-title">Что доказано, а что нет</h2>
+          <p class="scene-subtitle">Честная классификация достижений важнее маркетингового оптимизма.</p>
+          <div class="diagnosis-list">
+            <div class="diag proven"><span class="diag-badge">✓</span> Dataset engineering работает</div>
+            <div class="diag proven"><span class="diag-badge">✓</span> Production smoke — стабильный gate</div>
+            <div class="diag proven"><span class="diag-badge">✓</span> Latency optimization даёт production-viable скорость</div>
+            <div class="diag partial"><span class="diag-badge">~</span> Сравнение с GPT: близко по accuracy, отстаёт по MAE/FNR</div>
+            <div class="diag next"><span class="diag-badge">→</span> Calibration, augmentation, quantized server</div>
+          </div>
+          <p class="scene-voice">«Мы доказали, что маленькая локальная модель может стать production-viable. Мы не доказали, что она превосходит эталон во всём.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/D-008-proven-partial-next.svg?v=6" alt="Proven partial next" class="viz-img wide">
+          <div class="lumina-small" id="lumina-17"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 18: Next cycle -->
+  <section id="scene-18" class="scene" data-lumina="next">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 16 · Следующий цикл</p>
+          <h2 class="scene-title">Модель продолжает расти</h2>
+          <p class="scene-subtitle">ML-исследование циклично. Каждый цикл заканчивается не победой, а новым вопросом.</p>
+          <div class="roadmap-list">
+            <div class="roadmap-item"><span class="ri-num">1</span>Калибровка score</div>
+            <div class="roadmap-item"><span class="ri-num">2</span>Аугментация датасета</div>
+            <div class="roadmap-item"><span class="ri-num">3</span>Hard-negative метрики</div>
+            <div class="roadmap-item"><span class="ri-num">4</span>Квантизованный сервер</div>
+          </div>
+          <p class="scene-voice">«История продолжается.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/D-007-next-cycle-roadmap.svg?v=2" alt="Next cycle roadmap" class="viz-img scene-15-viz">
+          <div class="lumina-small" id="lumina-18"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Scene 19: Epoch breakdown Exp 004 -->
+  <section id="scene-19" class="scene" data-lumina="next">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 17 · Разбор эпох</p>
+          <h2 class="scene-title">Две кривые — одно решение</h2>
+          <p class="scene-subtitle">ML-инженер анализирует не одну метрику, а две. Train loss отражает запоминание модели, eval loss — способность к обобщению. Experiment 004 показывает, как инженер принимает решение, сравнивая обе кривые, а не выбирая checkpoint автоматически по номеру эпохи.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num">3 / 5</span><span class="metric-label">best epoch</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.004.generation_test.decision_accuracy">80%</span><span class="metric-label">decision accuracy</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.004.generation_test.mae_score">15.1</span><span class="metric-label">MAE score</span></div>
+          </div>
+          <p class="scene-voice">«Лучший checkpoint рождается не из минимального train loss, а из баланса между запоминанием и обобщением.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-028-exp004-epoch-breakdown.svg" alt="Experiment 004 train and eval loss per epoch" class="viz-img wide">
+          <div class="lumina-small" id="lumina-19"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Scene 20: Best epoch -->
+  <section id="scene-20" class="scene" data-lumina="production">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 18 · Лучшая эпоха</p>
+          <h2 class="scene-title">Лучшая эпоха — не последняя</h2>
+          <p class="scene-subtitle">Во всех экспериментах лучший checkpoint оказался не на финальной эпохе. Train loss падал дальше, eval loss рос.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num" data-source="experiments.001.best_checkpoint.epoch">4</span><span class="metric-label">Exp 001 best epoch</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.002.best_checkpoint.epoch">3</span><span class="metric-label">Exp 002 best epoch</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.003.best_checkpoint.epoch">2</span><span class="metric-label">Exp 003 best epoch</span></div>
+            <div class="metric"><span class="metric-num" data-source="experiments.004.best_checkpoint.epoch">3</span><span class="metric-label">Exp 004 best epoch</span></div>
+          </div>
+          <p class="scene-voice">«Больше усилий не всегда означает больше мастерства.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/G-016-best-epoch-markers.svg?v=2" alt="Best epoch markers" class="viz-img scene-16-viz">
+          <div class="lumina-small" id="lumina-20"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 21: Data > architecture -->
+  <section id="scene-21" class="scene" data-lumina="next">
+    <div class="scene-inner">
+      <div class="scene-grid two-col">
+        <div class="text-col">
+          <p class="scene-label">Сцена 19 · Данные важнее архитектуры</p>
+          <h2 class="scene-title">Главный рычаг качества</h2>
+          <p class="scene-subtitle">Все 4 adapter_config.json идентичны: r=16, α=32, dropout=0.05, 7 target modules. Менялись только данные.</p>
+          <div class="metric-row">
+            <div class="metric"><span class="metric-num">90 → 90 → 123 → 162</span><span class="metric-label">размер датасета</span></div>
+            <div class="metric"><span class="metric-num">r=16</span><span class="metric-label">LoRA rank</span></div>
+            <div class="metric"><span class="metric-num">7</span><span class="metric-label">target modules</span></div>
+          </div>
+          <p class="scene-voice">«Одинаковая модель, разные данные — разные качества.»</p>
+        </div>
+        <div class="visual-col">
+          <img src="assets/visuals/D-010-dataset-change-log.svg?v=4" alt="Dataset change log" class="viz-img wide">
+          <div class="lumina-small" id="lumina-21"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 22: Archive -->
+  <section id="scene-22" class="scene scene-archive" data-lumina="next">
+    <div class="scene-inner">
+      <div class="scene-grid two-col-wide-viz">
+        <div class="text-col">
+          <p class="scene-label">Сцена 20 · Архив</p>
+          <h2 class="scene-title">Все артефакты на одном экране</h2>
+          <p class="scene-subtitle">Ключевые графики и диаграммы, которые документируют путь модели.</p>
+          <p class="scene-voice">«Каждая метрика — это маленькое открытие.»</p>
+          <div class="lumina-small" id="lumina-22"></div>
+        </div>
+        <div class="visual-col">
+          <div class="archive-grid archive-grid-2x3">
+            <img src="assets/visuals/G-001-loss-curves.svg?v=3" alt="Loss curves" class="archive-thumb">
+            <img src="assets/visuals/G-007-test-eval-loss.svg" alt="Test eval loss" class="archive-thumb">
+            <img src="assets/visuals/G-006-per-component-mae.svg" alt="Per component MAE" class="archive-thumb">
+            <img src="assets/visuals/G-010-latency-cdf.svg" alt="Latency CDF" class="archive-thumb">
+            <img src="assets/visuals/G-014-lora-vs-gpt-radar.svg" alt="LoRA vs GPT radar" class="archive-thumb">
+            <img src="assets/visuals/D-003-dataset-composition-transition.svg" alt="Dataset composition transition" class="archive-thumb">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 23: Method -->
+  <section id="scene-23" class="scene scene-compact" data-lumina="next">
+    <div class="scene-inner">
+      <div class="lumina-corner" id="lumina-23"></div>
+      <div class="scene-grid center">
+        <p class="scene-label">Сцена 21 · О методе</p>
+        <h2 class="scene-title">Как устроен эксперимент</h2>
+        <p class="scene-subtitle">Teacher dataset → LoRA → vLLM → Telegram. Одинаковая архитектура, разные данные. Каждое число связано с JSON-источником.</p>
+        <img src="assets/visuals/D-001-pipeline-schematic.svg?v=3" alt="Pipeline schematic" class="viz-img wide">
+        <div class="method-params compact">
+          <div class="param"><span>base model</span>Qwen2.5-1.5B-Instruct</div>
+          <div class="param"><span>LoRA r</span>16</div>
+          <div class="param"><span>alpha</span>32</div>
+          <div class="param"><span>dropout</span>0.05</div>
+          <div class="param"><span>target modules</span>7</div>
+        </div>
+        <p class="scene-voice">«История продолжается. Следующий цикл — калибровка, расширение датасета, квантизованный сервер.»</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="data/experimentData.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

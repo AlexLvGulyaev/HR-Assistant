@@ -44,7 +44,8 @@ COMMENT ON COLUMN eval_prompt_datasets.status IS 'Статус: draft, active, a
 CREATE TABLE IF NOT EXISTS eval_prompt_cases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     dataset_id UUID NOT NULL REFERENCES eval_prompt_datasets(id) ON DELETE CASCADE,
-    case_code TEXT UNIQUE NOT NULL,
+    case_code TEXT NOT NULL,
+    CONSTRAINT eval_prompt_cases_case_code_dataset_unique UNIQUE (dataset_id, case_code),
     case_type TEXT NOT NULL,
     candidate_json JSONB NOT NULL,
     notes TEXT,

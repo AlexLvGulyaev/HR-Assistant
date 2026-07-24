@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Run Configuration\n// Change these values to run different experiments\nreturn [{\n  json: {\n    experiment_code: 'HRA-EXP-V2',\n    dataset_code: 'HRA-EVAL-V2',\n    expected_pairs: 90\n  }\n}];"
+        "jsCode": "// Run Configuration\n// Change these values to run different experiments\nreturn [{\n  json: {\n    experiment_code: 'HRA-EXP-V5-EXT',\n    dataset_code: 'HRA-EVAL-V5-EXT',\n    expected_pairs: 102\n  }\n}];"
       },
       "id": "7ad1e582-2670-450d-8ee7-0b7c77f9f315",
       "name": "Run Config",
@@ -1077,7 +1077,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "b3f9fe2b-3965-4f84-aee1-0b48417d1fce",
+  "versionId": "ada00687-5048-434f-a907-de1d5466ae7a",
   "meta": {
     "instanceId": "459d700c4d3ea9df0b9dbe57d77ff97afbecd67db60fe901cb9d66accc63fb7f"
   },

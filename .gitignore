@@ -1,2 +1,60 @@
+# ============================================================
+# Internal project history and source materials
+# ============================================================
 task_history/
 attachments/
+
+# ============================================================
+# Internal landing design and research artifacts
+# ============================================================
+landing/docs/
+
+# ============================================================
+# Fine-tuning datasets, training runs, checkpoints and model weights
+# ============================================================
+finetuning/data/
+finetuning/runs/
+finetuning/models/
+
+# ============================================================
+# Internal RunPod operations and transfer materials
+# ============================================================
+finetuning/runpod_operation_manual*.md
+finetuning/runpod filesystem.txt
+finetuning/configs/*_winscp_transfer.md
+finetuning/configs/message_to_runpod_cc*.md
+
+# ============================================================
+# Raw internal experiment protocols
+# ============================================================
+finetuning/Experiment_003.md
+finetuning/Experiment_004.md
+
+# ============================================================
+# Python generated files
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ============================================================
+# Common local environment and tool artifacts
+# ============================================================
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ============================================================
+# OS and editor files
+# ============================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

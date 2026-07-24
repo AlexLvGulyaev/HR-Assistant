@@ -1,67 +1,25 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-
-MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
-
-app = FastAPI()
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_ID,
-    torch_dtype="auto",
-    device_map="auto"
-)
-
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-
-class ChatRequest(BaseModel):
-    model: str = "hra-qwen"
-    messages: list[ChatMessage]
-    max_tokens: int = 300
-    temperature: float = 0.2
-
-@app.post("/v1/chat/completions")
-def chat(req: ChatRequest):
-    prompt = tokenizer.apply_chat_template(
-        [m.model_dump() for m in req.messages],
-        tokenize=False,
-        add_generation_prompt=True
-    )
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=req.max_tokens,
-        do_sample=req.temperature > 0,
-        temperature=req.temperature if req.temperature > 0 else None
-    )
-    text = tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
-    return {
-        "choices": [{"message": {"role": "assistant", "content": text}}],
-        "model": req.model
-    }
-
-@app.get("/v1/models")
-def models():
-    return {"data": [{"id": "hra-qwen"}]}
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import json
+import argparse
 
-MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
 
 app = FastAPI()
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_ID,
-    torch_dtype="auto",
-    device_map="auto",
-)
+
+def load_config(config_path: str):
+    import yaml
+    from pathlib import Path
+
+    path = Path(config_path)
+    if not path.is_absolute():
+        # If relative, assume it's relative to /workspace/hra-finetuning
+        path = Path("/workspace/hra-finetuning") / path
+
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
 
 class ChatMessage(BaseModel):
@@ -134,56 +92,87 @@ def apply_response_format(messages: list[ChatMessage], response_format: dict | N
     return patched
 
 
-@app.post("/v1/chat/completions")
-def chat(req: ChatRequest):
-    messages = apply_response_format(req.messages, req.response_format)
+def create_app(config_path: str = "configs/experiment_003.yaml"):
+    config = load_config(config_path)
+    model_id = config["model"]["id"]
+    torch_dtype_str = config["model"].get("torch_dtype", "auto")
+    device_map = config["model"].get("device_map", "auto")
 
-    prompt = tokenizer.apply_chat_template(
-        [m.model_dump() for m in messages],
-        tokenize=False,
-        add_generation_prompt=True,
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    base_model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=torch_dtype_str if torch_dtype_str != "auto" else "auto",
+        device_map=device_map,
     )
+    base_model.eval()
 
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    @app.post("/v1/chat/completions")
+    def chat(req: ChatRequest):
+        messages = apply_response_format(req.messages, req.response_format)
 
-    generation_kwargs = {
-        "max_new_tokens": req.max_tokens,
-        "do_sample": req.temperature > 0,
-    }
+        prompt = tokenizer.apply_chat_template(
+            [m.model_dump() for m in messages],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
 
-    if req.temperature > 0:
-        generation_kwargs["temperature"] = req.temperature
+        inputs = tokenizer(prompt, return_tensors="pt").to(base_model.device)
 
-    outputs = model.generate(
-        **inputs,
-        **generation_kwargs,
-    )
+        generation_kwargs = {
+            "max_new_tokens": req.max_tokens,
+            "do_sample": req.temperature > 0,
+        }
 
-    text = tokenizer.decode(
-        outputs[0][inputs["input_ids"].shape[-1]:],
-        skip_special_tokens=True,
-    ).strip()
+        if req.temperature > 0:
+            generation_kwargs["temperature"] = req.temperature
 
-    if req.response_format and req.response_format.get("type") == "json_schema":
-        text = extract_json_object(text)
+        outputs = base_model.generate(
+            **inputs,
+            **generation_kwargs,
+        )
 
-    return {
-        "id": "chatcmpl-hra-qwen",
-        "object": "chat.completion",
-        "model": req.model,
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": text,
-                },
-                "finish_reason": "stop",
-            }
-        ],
-    }
+        text = tokenizer.decode(
+            outputs[0][inputs["input_ids"].shape[-1]:],
+            skip_special_tokens=True,
+        ).strip()
+
+        if req.response_format and req.response_format.get("type") == "json_schema":
+            text = extract_json_object(text)
+
+        return {
+            "id": "chatcmpl-hra-qwen",
+            "object": "chat.completion",
+            "model": req.model,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": text,
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+
+    @app.get("/v1/models")
+    def models():
+        return {"data": [{"id": "hra-qwen"}]}
+
+    return app
 
 
-@app.get("/v1/models")
-def models():
-    return {"data": [{"id": "hra-qwen"}]}
+def main():
+    parser = argparse.ArgumentParser(description="Base Qwen API for HRA")
+    parser.add_argument("--config", type=str, default="configs/experiment_003.yaml", help="Path to config YAML")
+    parser.add_argument("--host", type=str, default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
+
+    import uvicorn
+    create_app(args.config)
+    uvicorn.run(app, host=args.host, port=args.port)
+
+
+if __name__ == "__main__":
+    main()

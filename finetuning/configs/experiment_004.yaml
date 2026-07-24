@@ -1,0 +1,177 @@
+# Launch Contract: Experiment 004
+# HR Assistant LoRA Fine-tuning — Balanced Teacher Dataset
+#
+# Назначение: единый Source of Truth для запуска Experiment 004 на RunPod.
+# Структура путей соответствует реальной файловой системе RunPod:
+#   /workspace/hra-finetuning/     — основной рабочий каталог
+#   /workspace/hra_qwen_api*.py    — runtime API (не в подкаталоге api/)
+#
+# Все неизменяемые параметры зафиксированы и совпадают с Experiment 003.
+# Единственная изменяемая переменная — состав teacher dataset.
+
+experiment:
+  id: "experiment_004"
+  code: "HRA-EXP-V4"
+  name: "HRA LoRA v4 - Balanced Teacher Dataset"
+  description: "LoRA fine-tuning с пересбалансированным teacher dataset: сохранены все hard negative примеры Experiment 003 + добавлены high-quality positive/borderline кандидаты"
+  previous_experiment: "experiment_003"
+  status: "planned"
+  result: "pending"
+
+workspace:
+  # RunPod: /workspace/hra-finetuning
+  # VPS:    cases/hr-assistant/finetuning/
+  base_dir: "/workspace/hra-finetuning"
+  data_dir: "data"
+  runs_dir: "runs"
+  reports_dir: "reports"
+  scripts_dir: "scripts"
+  configs_dir: "configs"
+  api_dir: "/workspace"
+  models_dir: "models"
+
+model:
+  id: "Qwen/Qwen2.5-1.5B-Instruct"
+  revision: null
+  trust_remote_code: true
+  torch_dtype: "float16"
+  device_map: "auto"
+  cache_dir: "/root/.cache/huggingface"
+
+dataset:
+  experiment_code: "HRA-EXP-V4"
+  dataset_code: "HRA-EVAL-V4"
+  source_experiment: "HRA-EXP-V3"
+  description: "162 кейса: 41 кандидат Experiment 003 (90 + 33 hard negative записи) + 13 новых positive/borderline кандидатов (39 записей)"
+
+  files:
+    train: "data/train.jsonl"
+    validation: "data/validation.jsonl"
+    test: "data/test.jsonl"
+    holdout: "data/holdout.jsonl"
+
+  split:
+    train: 114
+    validation: 27
+    test: 15
+    holdout: 6
+
+  stratification:
+    groups:
+      - name: "obvious_match"
+        description: "Явное совпадение"
+      - name: "borderline"
+        description: "Пограничный случай"
+      - name: "obvious_no_match"
+        description: "Явное несовпадение"
+
+  manifest: "data/manifest_experiment_004.json"
+
+method:
+  type: "lora"
+
+  lora:
+    r: 16
+    alpha: 32
+    dropout: 0.05
+    bias: "none"
+    task_type: "CAUSAL_LM"
+    target_modules:
+      - "q_proj"
+      - "k_proj"
+      - "v_proj"
+      - "o_proj"
+      - "gate_proj"
+      - "up_proj"
+      - "down_proj"
+
+training:
+  num_train_epochs: 5
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-4
+  optim: "adamw_torch"
+  fp16: true
+  logging_steps: 5
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  save_total_limit: 5
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  report_to: "none"
+  seed: 42
+  max_length: 2048
+
+python:
+  interpreter: "/workspace/hra-finetuning/.venv/bin/python"
+  requirements: "requirements.txt"
+
+output:
+  run_dir: "runs/experiment_004"
+  best_adapter_dir: "runs/experiment_004/best_adapter"
+  checkpoints_dir: "runs/experiment_004"
+  training_log: "runs/experiment_004/training_report.json"
+  trainer_state: "runs/experiment_004/trainer_state.json"
+
+commands:
+  train: "/workspace/hra-finetuning/.venv/bin/python scripts/train_lora.py --config configs/experiment_004.yaml"
+  evaluate_generation: "/workspace/hra-finetuning/.venv/bin/python scripts/evaluate_generation_test.py --config configs/experiment_004.yaml"
+  evaluate_loss: "/workspace/hra-finetuning/.venv/bin/python scripts/evaluate_test.py --config configs/experiment_004.yaml"
+  runtime_api: "/workspace/hra-finetuning/.venv/bin/python /workspace/hra_qwen_api_lora.py --config /workspace/hra-finetuning/configs/experiment_004.yaml"
+
+runtime_smoke:
+  file: "data/smoke_set.jsonl"
+  description: "Фиксированный набор позитивных, очевидных негативных, hard negative и edge case запросов"
+  categories:
+    - "positive"
+    - "obvious_negative"
+    - "hard_negative"
+    - "edge_case"
+    - "invalid_input"
+    - "stability_repeat"
+
+comparison:
+  baseline_models:
+    - name: "base_qwen"
+      type: "base"
+      description: "Qwen/Qwen2.5-1.5B-Instruct zero-shot"
+    - name: "experiment_003_best_lora"
+      type: "adapter"
+      description: "LoRA adapter из Experiment 003 (runs/experiment_003/best_adapter)"
+    - name: "experiment_004_best_lora"
+      type: "adapter"
+      description: "LoRA adapter из Experiment 004 (runs/experiment_004/best_adapter)"
+    - name: "gpt_4o_mini"
+      type: "api"
+      description: "Production OpenAI GPT-4o-mini baseline"
+
+expected_artifacts:
+  model:
+    - "runs/experiment_004/best_adapter/adapter_config.json"
+    - "runs/experiment_004/best_adapter/tokenizer_config.json"
+    - "runs/experiment_004/best_adapter/adapter_model.safetensors"
+  training:
+    - "runs/experiment_004/trainer_state.json"
+    - "runs/experiment_004/training_report.json"
+  evaluation:
+    - "runs/experiment_004/generation_test/generation_test_report.json"
+    - "runs/experiment_004/holdout_evaluation/generation_test_report.json"
+    - "runs/experiment_004/test_evaluation/test_metrics.json"
+  validation:
+    - "runs/experiment_004/runtime_smoke_report.json"
+  operation:
+    - "runs/experiment_004/OPERATION_LOG.md"
+
+# Метаданные
+metadata:
+  created: "2026-07-22"
+  author: "HRA Team"
+  status: "launch_contract"
+  notes:
+    - "Параметры LoRA и обучения неизменны относительно Experiment 003"
+    - "Единственная изменяемая переменная — состав teacher dataset"
+    - "Runtime smoke set фиксируется до обучения"
+    - "Все артефакты обучения хранятся на persistent volume RunPod, не передаются через git"
+    - "Синхронизация VPS → RunPod выполняется вручную через WinSCP по списку в configs/experiment_004_winscp_transfer.md"

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Per-component MAE heatmap">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ffffff"/></marker></defs>
+<rect width="640" height="360" fill="#0d0d10" rx="8"/>
+<text x="30" y="30" fill="#e8e8ec" font-size="16" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Per-component MAE — Exp 004</text>
+<text x="30" y="50" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">Error is not uniform across scoring components</text>
+<rect x="80" y="216.0" width="100" height="63.99999999999999" fill="#4ECDC4" stroke="none" stroke-width="1" rx="4" opacity="0.85"/>
+<text x="130.0" y="206.0" fill="#4ECDC4" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">2.4</text>
+<text x="130.0" y="300" fill="#e8e8ec" font-size="11" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Role</text>
+<rect x="220" y="198.22222222222223" width="100" height="81.77777777777779" fill="#4ECDC4" stroke="none" stroke-width="1" rx="4" opacity="0.85"/>
+<text x="270.0" y="188.22222222222223" fill="#4ECDC4" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">3.1</text>
+<text x="270.0" y="300" fill="#e8e8ec" font-size="11" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Skills</text>
+<rect x="360" y="120.0" width="100" height="160.0" fill="#4ECDC4" stroke="none" stroke-width="1" rx="4" opacity="0.85"/>
+<text x="410.0" y="110.0" fill="#4ECDC4" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">6.0</text>
+<text x="410.0" y="300" fill="#e8e8ec" font-size="11" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Experience</text>
+<rect x="500" y="153.77777777777777" width="100" height="126.22222222222221" fill="#4ECDC4" stroke="none" stroke-width="1" rx="4" opacity="0.85"/>
+<text x="550.0" y="143.77777777777777" fill="#4ECDC4" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">4.7</text>
+<text x="550.0" y="300" fill="#e8e8ec" font-size="11" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Conditions</text>
+<line x1="60" y1="280" x2="580" y2="280" stroke="#8a8a9a" stroke-width="2"/>
+</svg>

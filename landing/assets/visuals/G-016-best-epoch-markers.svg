@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="800" height="420" role="img" aria-label="Best epoch per experiment">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L0,6 L9,3 z" fill="#ffffff"/>
+  </marker>
+</defs>
+<rect width="800" height="420" fill="#0d0d10" rx="8"/>
+<text x="40" y="42" fill="#e8e8ec" font-size="20" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Best epoch per experiment</text>
+<text x="40" y="66" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">Best checkpoint was never the final epoch (trained for 5 epochs each)</text>
+<line x1="90" y1="298.0" x2="710" y2="298.0" stroke="#2a2a35" stroke-width="1"/>
+<text x="78" y="302.0" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">1</text>
+<line x1="90" y1="246.0" x2="710" y2="246.0" stroke="#2a2a35" stroke-width="1"/>
+<text x="78" y="250.0" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">2</text>
+<line x1="90" y1="194.0" x2="710" y2="194.0" stroke="#2a2a35" stroke-width="1"/>
+<text x="78" y="198.0" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">3</text>
+<line x1="90" y1="142.0" x2="710" y2="142.0" stroke="#2a2a35" stroke-width="1"/>
+<text x="78" y="146.0" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">4</text>
+<line x1="90" y1="90.0" x2="710" y2="90.0" stroke="#2a2a35" stroke-width="1"/>
+<text x="78" y="94.0" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="end" font-weight="normal">5</text>
+<text x="30" y="220.0" fill="#8a8a9a" font-size="12" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal" transform="rotate(-90, 30, 220.0)">epoch</text>
+<line x1="90" y1="90.0" x2="710" y2="90.0" stroke="#8a8a9a" stroke-width="1.5" stroke-dasharray="5,5"/>
+<text x="718" y="94.0" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">final epoch = 5</text>
+<rect x="90.0" y="90.0" width="86" height="260.0" fill="#4ECDC4" opacity="0.10" rx="4"/>
+<rect x="90.0" y="142.0" width="86" height="208.0" fill="#4ECDC4" rx="4"/>
+<text x="133.0" y="130.0" fill="#4ECDC4" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">ep 4</text>
+<text x="133.0" y="106.0" fill="#4ECDC4" font-size="10" font-family="Inter, sans-serif" text-anchor="middle" font-weight="500" opacity="0.7">of 5</text>
+<text x="133.0" y="372" fill="#e8e8ec" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Exp 001</text>
+<rect x="268.0" y="90.0" width="86" height="260.0" fill="#FFB347" opacity="0.10" rx="4"/>
+<rect x="268.0" y="194.0" width="86" height="156.0" fill="#FFB347" rx="4"/>
+<text x="311.0" y="182.0" fill="#FFB347" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">ep 3</text>
+<text x="311.0" y="106.0" fill="#FFB347" font-size="10" font-family="Inter, sans-serif" text-anchor="middle" font-weight="500" opacity="0.7">of 5</text>
+<text x="311.0" y="372" fill="#e8e8ec" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Exp 002</text>
+<rect x="446.0" y="90.0" width="86" height="260.0" fill="#FF6B6B" opacity="0.10" rx="4"/>
+<rect x="446.0" y="246.0" width="86" height="104.0" fill="#FF6B6B" rx="4"/>
+<text x="489.0" y="234.0" fill="#FF6B6B" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">ep 2</text>
+<text x="489.0" y="106.0" fill="#FF6B6B" font-size="10" font-family="Inter, sans-serif" text-anchor="middle" font-weight="500" opacity="0.7">of 5</text>
+<text x="489.0" y="372" fill="#e8e8ec" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Exp 003</text>
+<rect x="624.0" y="90.0" width="86" height="260.0" fill="#96CEB4" opacity="0.10" rx="4"/>
+<rect x="624.0" y="194.0" width="86" height="156.0" fill="#96CEB4" rx="4"/>
+<text x="667.0" y="182.0" fill="#96CEB4" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">ep 3</text>
+<text x="667.0" y="106.0" fill="#96CEB4" font-size="10" font-family="Inter, sans-serif" text-anchor="middle" font-weight="500" opacity="0.7">of 5</text>
+<text x="667.0" y="372" fill="#e8e8ec" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Exp 004</text>
+<line x1="90" y1="350" x2="710" y2="350" stroke="#8a8a9a" stroke-width="2"/>
+</svg>

@@ -1,7 +1,7 @@
 # Project State: HR Assistant
 
-**Last Updated:** 2026-06-28
-**Status:** Production-ready (v2.1) + Experimental ML-контур
+**Last Updated:** 2026-07-23
+**Status:** Production-ready (v2.1) + Experimental ML-контур (Experiment 004 completed; LoRA validated as on-premise candidate) + LoRA storytelling landing deployed
 **Case ID:** hr-assistant
 
 ---
@@ -40,12 +40,13 @@
 | Компонент | Статус | Готовность | Комментарий |
 |-----------|--------|------------|-------------|
 | Prompt Evaluation | Active | ✅ 100% | HRA-EXP-V1 завершён, сформирован reference dataset |
-| Fine-tuning Infrastructure | Experimental | ✅ 90% | Каталог finetuning/, configs, scripts, runs |
-| Fine-tuning Experiment 002 | Completed | ⚠️ 70% | Лучший результат offline, но failed negative test |
-| Runtime Smoke Validation | Engineering Test | ✅ 100% | Multi Provider Test workflow для smoke validation |
-| LoRA Model Production | Not Ready | ❌ 0% | Модель не готова к production |
+| Fine-tuning Infrastructure | Experimental | ✅ 100% | Каталог finetuning/, configs, scripts, runs, launch contract pattern |
+| Fine-tuning Experiment 003 | Completed | ⚠️ 75% | Runtime negative smoke пройден (7/7), но decision accuracy на original test снизилась (−11.1 pp) |
+| Fine-tuning Cycle 4 / Experiment 004 | Completed | ✅ 90% | External validation пройдена: LoRA 0.931 vs GPT-4o-mini 0.941 decision_accuracy на 102 парах (GPT-4o reference). LoRA не обгоняет GPT-4o-mini, но является рабочим on-premise кандидатом. Latency optimization запущена 2026-07-22; score calibration остаётся открытым. |
+| Runtime Smoke Validation | Engineering Test | ✅ 100% | Локальный `runtime_smoke_test.py` + Multi Provider Test workflow |
+| LoRA Model Production | Not Ready | ❌ 0% | Модель не готова к production; Cycle 4 нацелен на устранение precision/recall trade-off и сравнение с GPT-4o-mini |
 
-**Ключевой вывод:** LoRA улучшает offline качество, но модель не прошла runtime negative smoke test. Следующий цикл должен быть направлен на расширение teacher dataset за счёт hard negative примеров.
+**Ключевой вывод:** Experiment 003 подтвердил гипотезу частично: hard negative примеры решили проблему runtime negative smoke, но модель стала более консервативной и допускает ложные отрицательные решения. Требуется следующий цикл для баланса precision/recall.
 
 ### Production Readiness
 
@@ -75,6 +76,37 @@
    - **Статус:** Fixed
    - **Ссылка:** [known-issues.md](known-issues.md#kp-002-bot-token-в-репозитории)
 
+3. **⚠️ LoRA PRECISION / RECALL TRADE-OFF** (открыто 2026-07-22, частично устранён 2026-07-22)
+   - **Описание:** Experiment 003 прошёл runtime negative smoke, но на original test set появились ложные отрицательные решения на genuine match-кейсах. Модель стала слишком консервативной после добавления hard negatives.
+   - **Влияние:** LoRA-адаптер не может заменить GPT-4o-mini в production, но пригоден как on-premise / edge альтернатива.
+   - **Статус:** Частично устранён. Experiment 004 прошёл runtime smoke (7/7), достиг decision_accuracy 0.931 vs GPT-4o-mini 0.941 на внешней валидации (102 пары, GPT-4o reference). Latency optimization запущена 2026-07-22; score calibration (MAE 19.6 vs 6.2) остаётся открытым.
+   - **Ссылки:** [Experiment_003_Report.md](../finetuning/Experiment_003_Report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md), [latency optimization task](../task_history/2026-07-22_task-latency-optimization-lora-experiment-004.md)
+   - **Рекомендации:** score calibration, vLLM/TGI inference, quantization, расширение teacher dataset.
+
+4. **🟡 VALIDATION ACCURACY VS PRODUCTION HARD NEGATIVES MISMATCH** (открыто 2026-07-22)
+   - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation, но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 9 из 36 hard-negative-like записей (25 %) размечены reference-teacher как `match` (Junior SA → SA, BA → SA, DA → SA, Senior BA с salary mismatch → SA). External validation V5-EXT содержит всего 17,6 % hard-negative-like записей и не покрывает ключевые failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах.
+   - **Влияние:** Метрика 0.931 создаёт ложное ощущение готовности LoRA к production; критические false positives (аналитики на SA, junior, salary mismatch) остаются незамеченными до реального тестирования.
+   - **Статус:** Открыто. Решение: ввести stratified metrics и production smoke set.
+   - **Ссылки:** [teacher_dataset_report_v4.md](../finetuning/reports/teacher_dataset_report_v4.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md), [analysis task](../task_history/2026-07-22_task-analyze-teacher-dataset-hard-negatives.md), [Telegram smoke test task](../task_history/2026-07-22_task-real-world-smoke-test-telegram-validation.md)
+   - **Рекомендации:**
+     - Ввести stratified decision accuracy: POSITIVE, OBVIOUSNOMATCH, BORDERLINE, HARD NEGATIVE.
+     - Считать FPR по категориям hard negatives (BA/DA/process analyst → SA, junior/стажёр, salary mismatch, одиночный навык).
+     - Сформировать production smoke set (~30–50 кейсов), покрывающий HN1–HN8, EC1, EC3, EC4, POSITIVE, OBVIOUSNOMATCH.
+     - Перед следующим циклом дообучения ре-разметить hard negatives с жёстким критерием: без прямых ключевых навыков → `no_match`.
+     - Добавить в teacher dataset extreme sparse profiles и salary mismatch.
+
+---
+
+### LoRA Storytelling Landing
+
+| Компонент | Статус | Готовность | Комментарий |
+|-----------|--------|------------|-------------|
+| **Landing HTML/CSS/JS** | Deployed | ✅ 100% | 15 сцен, scroll-анимации, адаптивность |
+| **Engineering graphs** | Deployed | ✅ 100% | 15 SVG-графиков из артефактов экспериментов |
+| **Evidence Room** | Deployed | ✅ 100% | 7 expandable box-ов с таблицами и графиками |
+| **Production URL** | Live | ✅ 100% | https://hra-lora.alex-n8n.site, HTTPS, gzip, security headers |
+| **Deployment Guide** | Updated | ✅ 100% | Docker + Traefik (current), Caddy/nginx (alternatives) |
+
 ---
 
 ## Documentation Status
@@ -86,7 +118,7 @@
 - Исправлено 27 нарушений (синтетические данные, неверные модели, ошибки изображений)
 - Все документы приведены в соответствие с реальными источниками (workflow, БД, SCREENSHOT_INDEX)
 
-**Применённый паттерн:** [documentation-source-of-truth-discipline.md](documentation-source-of-truth-discipline.md)
+**Применённый паттерн:** [documentation-source-of-truth-discipline.md](../../../shared/patterns/documentation-source-of-truth-discipline.md)
 
 ---
 
@@ -155,7 +187,8 @@
 |----------|--------|----------|-----------|
 | **finetuning/README.md** | ✅ Обновлён | HRA Decision | 🔴 Высокий |
 | **finetuning/TECHNICAL_FOUNDATION.md** | ✅ Создан | HRA Decision | 🟡 Средний |
-| **finetuning/FINETUNING_ENGINEERING_REPORT.md** | ✅ Создан | HRA Decision | 🔴 Высокий |
+| **finetuning/FINETUNING_ENGINEERING_REPORT.md** | ✅ Обновлён | HRA Decision | 🔴 Высокий |
+| **finetuning/Experiment_003_Report.md** | ✅ Создан | HRA Decision | 🔴 Высокий |
 | **finetuning/runs/experiment_002/README.md** | ✅ Создан | Auto-generated | 🟡 Средний |
 | **api/hra_qwen_api.py** | ✅ Создан | HRA Decision | 🟡 Средний |
 | **api/hra_qwen_api_lora.py** | ✅ Создан | HRA Decision | 🟡 Средний |
@@ -267,17 +300,106 @@
 
 ## Next Steps
 
-### Phase 0: Fine-tuning Cycle 2 (приоритет: критический)
+### Phase 0: Fine-tuning Cycle 3 — Experiment 003 (приоритет: критический)
 
-**Цель:** Довести LoRA-модель до production-readiness
+**Цель:** Проверить гипотезу о влиянии hard negative примеров на runtime negative smoke test
 
 **Задачи:**
-- [ ] Расширить teacher dataset (hard negative examples)
-- [ ] Провести experiment_003
-- [ ] Пройти runtime smoke validation
-- [ ] Документировать результаты
+- [x] Расширить teacher dataset (hard negative examples)
+- [x] Провести experiment_003
+- [x] Пройти runtime smoke validation
+- [x] Документировать результаты
 
-**Срок:** 2-3 дня
+**Результат:** Гипотеза подтверждена частично — runtime negative smoke пройден, но появился precision/recall trade-off.
+
+**Срок:** завершён 2026-07-22
+
+---
+
+### Phase 0b: Fine-tuning Cycle 4 — Experiment 004 (приоритет: критический) ✅ ЗАВЕРШЁН
+
+**Цель:** Устранить precision/recall trade-off Experiment 003 и подготовить LoRA-модель к production
+
+**Задачи:**
+- [x] Сформулировать и утвердить гипотезу Cycle 4 — баланс positive/borderline примеров, сохранение hard negatives, сравнение с GPT-4o-mini
+- [x] Подготовить изменённый teacher dataset — 13 новых positive/borderline примеров, SQL-скрипты V4 и валидация
+- [x] Провести проектирование Experiment_004 (конфиг, launch contract, WinSCP transfer list, smoke set)
+- [x] Провести обучение Experiment_004 в RunPod CC
+- [x] Пройти runtime smoke validation без ложных отрицательных решений
+- [x] Подтвердить сохранение качества на internal test set
+- [x] Выполнить A/B-сравнение с GPT-4o-mini на internal test set (15 records)
+- [x] Выполнить A/B-сравнение с GPT-4o-mini на external validation set (HRA-EVAL-V5-EXT, 102 pairs, GPT-4o reference judge)
+- [x] Зафиксировать итоговый вердикт по гипотезе в Experiment_004_Report.md
+
+**Результат:**
+- Гипотеза частично подтверждена.
+- LoRA обобщается на external validation: decision_accuracy 0.931 vs GPT-4o-mini 0.941.
+- LoRA не обгоняет GPT-4o-mini по совокупности метрик (MAE, latency).
+- LoRA подходит как on-premise / edge кандидат.
+
+**Рекомендации для следующих циклов:**
+1. Score calibration (MAE 19.6 vs 6.2)
+2. Latency optimization (vLLM/TGI, quantization)
+3. Снижение FNR (дополнительные positive/borderline примеры)
+4. Расширение teacher dataset до 300–500 пар
+5. Эксперименты с QLoRA / larger base model
+
+**Срок:** завершён 2026-07-22
+
+---
+
+### Phase 0c: Latency Optimization — Experiment 004 (приоритет: критический) 🔄 В ПРОЦЕССЕ
+
+**Цель:** Снизить p95 latency LoRA inference с ~17 секунд до ≤2 секунд без переобучения, сохранив decision_accuracy в пределах 5 pp от 0.931 на external validation.
+
+**Ограничения:**
+- Нельзя менять adapter (`runs/experiment_004/best_adapter/`).
+- Нельзя менять base model (`Qwen/Qwen2.5-1.5B-Instruct`).
+- Можно менять inference engine, quantization, caching, batching, API implementation.
+
+**Задачи:**
+- [x] Спроектировать план latency optimization
+- [x] Создать скрипт профилирования (`scripts/profile_lora_latency.py`)
+- [x] Создать benchmark движков / квантования (`scripts/benchmark_lora_engines.py`)
+- [x] Создать 4-bit quantized API (`api/hra_qwen_api_lora_4bit.py`)
+- [x] Создать vLLM launcher (`api/hra_qwen_api_lora_vllm.py`)
+- [x] Подготовить RunPod operation manual и WinSCP transfer list
+- [ ] Выполнить профилирование и benchmark на RunPod
+- [ ] Выбрать лучший engine и зафиксировать обоснование
+- [ ] Прогнать optimized API на external validation и smoke set
+- [ ] Зафиксировать latency optimization report
+- [ ] Обновить PROJECT_STATE.md и finetuning/README.md по результатам
+
+**Срок:** 1–2 дня
+
+---
+
+### Phase 0d: Hard-Negative Dataset Fix & Production Metrics (приоритет: критический) 🆕
+
+**Цель:** Устранить mismatch между validation accuracy и production-качеством на hard negatives; подготовить метрики и production smoke set для принятия решения о внедрении LoRA.
+
+**Контекст:**
+- Teacher dataset V4 содержит hard negatives, размеченные как `match` (9 / 36 hard-negative-like записей).
+- External validation V5-EXT недостаточно покрывает production-failure modes (процессный аналитик, salary mismatch 450k, extreme sparse junior).
+- Telegram smoke test показал: LoRA 35 %, GPT-4o-mini 43 % на 23 hard-negative/edge анкетах.
+
+**Задачи:**
+- [ ] Сформулировать жёсткий критерий разметки hard negatives (BA/DA/process analyst → SA = no_match без прямых скиллов; junior/стажёр → senior/middle вакансия = no_match; salary > max на 50 %+ = no_match).
+- [ ] Ре-разметить hard negatives в teacher dataset V4 (или создать V5) с учётом критерия.
+- [ ] Добавить extreme sparse profiles: стажёр с 1 навыком SQL, junior с 0 лет опытом, кандидат без IT-коннотаций.
+- [ ] Добавить salary mismatch примеры (salary выше максимума на 50 %+ при сильном профиле).
+- [ ] Добавить процессного аналитика на SA и Prompt Engineer.
+- [ ] Сформировать production smoke set 30–50 кейсов, покрывающий HN1–HN8, EC1, EC3, EC4, POSITIVE, OBVIOUSNOMATCH.
+- [ ] Ввести stratified metrics: accuracy/FPR по POSITIVE / OBVIOUSNOMATCH / BORDERLINE / HARD NEGATIVE.
+- [ ] Прогнать LoRA и GPT-4o-mini на production smoke set и зафиксировать сравнение.
+- [ ] Обновить `finetuning/FINETUNING_ENGINEERING_REPORT.md` и `docs/PROJECT_STATE.md` по результатам.
+
+**Критерий готовности LoRA к production:**
+- ≥ 70 % correct на production smoke set;
+- FPR ≤ 15 % на hard-negative категориях;
+- MAE score ≤ 15 на POSITIVE / OBVIOUSNOMATCH strata.
+
+**Срок:** 2–3 дня (после завершения Phase 0c).
 
 ---
 
@@ -383,6 +505,8 @@
 
 | Дата | Статус | Изменение |
 |------|--------|-----------|
+| 2026-07-22 | Validation vs Production Mismatch | Анализ teacher dataset и external validation объяснил расхождение: hard negatives часто размечены как match, external validation не покрывает Telegram-failure modes; введён Phase 0d с stratified metrics и production smoke set |
+| 2026-07-22 | Fine-tuning Experiment 003 | Runtime negative smoke пройден (7/7), но decision accuracy на original test снизилась (−11.1 pp); гипотеза подтверждена частично, модель не production-ready |
 | 2026-06-28 | Fine-tuning Experiment 002 | Лучший результат offline, failed negative smoke test, не production-ready |
 | 2026-06-28 | Multi-Provider Architecture | Добавлен инженерный стенд для smoke validation LLM-провайдеров |
 | 2026-06-28 | Runtime API | Добавлены hra_qwen_api.py и hra_qwen_api_lora.py для LoRA-моделей |

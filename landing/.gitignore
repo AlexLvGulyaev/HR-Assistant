@@ -1,0 +1,9 @@
+# Landing preview / local build artifacts
+*.png
+*.jpg
+*.jpeg
+*.gif
+.DS_Store
+*.log
+node_modules/
+dist/

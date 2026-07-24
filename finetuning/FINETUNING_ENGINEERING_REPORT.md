@@ -1,7 +1,7 @@
 # Инженерный отчёт: Fine-tuning в HR Assistant
 
-**Дата:** 2026-06-28
-**Статус:** Экспериментальный ML-контур
+**Дата:** 2026-07-22
+**Статус:** Экспериментальный ML-контур — Experiment 003 завершён (partially confirmed), не production-ready
 **Автор:** AI Automation Portfolio Lab
 
 ---
@@ -14,8 +14,9 @@
 4. [Experiment 002: Улучшение параметров](#4-experiment-002-улучшение-параметров)
 5. [Runtime интеграция](#5-runtime-интеграция)
 6. [Runtime Validation](#6-runtime-validation)
-7. [Production Decision](#7-production-decision)
-8. [Инженерные выводы](#8-инженерные-выводы)
+7. [Experiment 003: Hard Negative Teacher Dataset](#7-experiment-003-hard-negative-teacher-dataset)
+8. [Production Decision](#8-production-decision)
+9. [Инженерные выводы](#9-инженерные-выводы)
 
 ---
 
@@ -408,7 +409,60 @@ graph TB
 
 ---
 
-## 7. Production Decision
+## 7. Experiment 003: Hard Negative Teacher Dataset
+
+### Постановка задачи
+
+**Гипотеза:** провал runtime negative smoke test в Experiment 002 связан с недостатком hard negative и edge case-примеров в teacher dataset, а не с параметрами LoRA или архитектурой модели.
+
+**Единственная изменяемая переменная:** состав teacher dataset.
+
+**Неизменяемые параметры:** базовая модель, LoRA конфигурация, гиперпараметры обучения, runtime-контур — все совпадают с Experiment 002.
+
+### Изменения teacher dataset
+
+| Аспект | Experiment 002 | Experiment 003 |
+|--------|----------------|----------------|
+| Кандидатов | 30 | 41 |
+| Записей | 90 | 123 |
+| Train / Validation / Test / Holdout | 72 / 9 / 9 | 93 / 15 / 9 / 6 |
+| Hard negative категории | — | HN-1–HN-8, EC-1, EC-3, EC-4 |
+| Новые кандидаты | — | 11 (33 записи) |
+
+### Результаты обучения
+
+| Метрика | Experiment 002 | Experiment 003 |
+|---------|----------------|----------------|
+| Best eval_loss | 0.44 | **0.31** |
+| Лучшая эпоха | 3 | 2 |
+| Peak VRAM | ~8 GB | ~7.4 GB |
+| Время обучения | — | 180 с |
+
+### Offline evaluation (original test set, 9 записей)
+
+| Модель | valid_json_rate | decision_accuracy | MAE_score |
+|--------|-----------------|-------------------|-----------|
+| Base Qwen (Exp 002) | 1.0 | 0.444 | 38.78 |
+| LoRA Exp 002 | 1.0 | **0.778** | **21.89** |
+| Base Qwen (Exp 003) | 1.0 | 0.222 | 38.33 |
+| LoRA Exp 003 | 1.0 | 0.667 | 22.22 |
+
+### Runtime smoke test
+
+| Эксперимент | Positive | Negative | Hard Negative | Edge / Invalid | Итого |
+|-------------|----------|----------|---------------|----------------|-------|
+| Experiment 002 | ✅ Pass | ❌ Fail | ❌ Fail | ❌ Fail | не пройден |
+| **Experiment 003** | ✅ Pass | ✅ Pass | ✅ Pass | ✅ Pass | **7/7 passed** |
+
+### Интерпретация
+
+- **Positive result:** hard negative примеры решили ключевую проблему Experiment 002 — модель стала корректно отклонять сложные нерелевантные профили.
+- **Trade-off:** модель стала более консервативной. На original test set появились ложные отрицательные решения на genuine match-кейсах (системный аналитик), что снизило decision accuracy с 0.778 до 0.667.
+- **Test loss** LoRA (8.26) выше base Qwen (7.90) на малой выборке; это не основная бизнес-метрика.
+
+---
+
+## 8. Production Decision
 
 ### Итерационное развитие модели
 
@@ -422,97 +476,116 @@ graph TD
     E6 --> E7{Production Ready?}
     E7 -->|No| E8[Расширение Dataset<br/>hard negatives]
     E8 --> E9[Experiment 003]
-    E9 --> E5
-    E7 -->|Yes| E10[Production]
+    E9 --> E10[Runtime Smoke<br/>7/7 passed]
+    E10 --> E11{Production Ready?}
+    E11 -->|No| E12[Следующий цикл<br/>precision/recall balance]
+    E11 -->|Not yet| E10
+    E7 -->|Yes| E13[Production]
     
     style E7 fill:#ff9999
     style E8 fill:#ffcc99
-    style E10 fill:#ccffcc
+    style E11 fill:#ff9999
+    style E12 fill:#ffcc99
 ```
 
-### Анализ неудачи
+### Анализ результатов
 
-**Negative Smoke Test failed.**
+**Negative Smoke Test пройден в Experiment 003**, но на original test set наблюдается умеренное снижение decision accuracy и появление ложных отрицательных решений. Это указывает на **precision/recall trade-off**: модель стала слишком консервативной после добавления hard negatives.
 
-**Сформированная гипотеза:**
+**Teacher Dataset состав (Experiment 003):**
 
-По результатам Experiment 002 сформулирована гипотеза, что одной из вероятных причин неудовлетворительных результатов Negative Smoke Test является недостаточная представленность сложных отрицательных сценариев в Teacher Dataset.
-
-**Teacher Dataset состав (из finetuning/reports/teacher_dataset_report.md):**
-
-| Тип кейса | Количество |
-|-----------|------------|
-| obvious_match | 30 |
-| obvious_no_match | 30 |
-| borderline | 30 |
-| **Всего** | **90** |
+| Split | Записи | Состав |
+|-------|--------|--------|
+| train | 93 | исходный train + новые hard negatives |
+| validation | 15 | исходный validation + новые hard negatives |
+| test | 9 | исходный test Experiment 002 (без изменений) |
+| holdout | 6 | новые hard negative / edge case кандидаты |
 
 ### Итоговое решение
 
 | Критерий | Статус |
 |----------|--------|
-| Offline validation | ✅ Pass |
+| Offline validation | ✅ Pass (eval_loss улучшилась) |
 | Positive smoke test | ✅ Pass |
-| Negative smoke test | ❌ Fail |
+| Negative smoke test | ✅ Pass |
+| Сохранение качества на original test | ⚠️ Partial (decision accuracy −11.1 pp) |
 | **Production Ready** | **❌ NO** |
 
-**Инженерное решение:** Документировать ограничение, перейти к следующему циклу.
+**Инженерное решение:** Гипотеза подтверждена частично. Hard negatives решают проблему runtime negative smoke, но требуется следующий цикл для баланса precision/recall перед production.
+
 
 ---
 
-## 8. Инженерные выводы
+## 9. Инженерные выводы
 
 ### Что было сделано
 
 | Этап | Результат | Документация |
 |------|-----------|--------------|
 | Prompt Evaluation | Reference Dataset 90 кейсов | docs/prompt_evaluation/ |
-| Teacher Dataset | JSONL 72/9/9 split | finetuning/data/ |
+| Teacher Dataset v2 | JSONL 72/9/9 split | finetuning/data/ |
+| Teacher Dataset v3 | JSONL 93/15/9/6 split + hard negatives | finetuning/reports/teacher_dataset_report_v3.md |
 | Infrastructure | RunPod RTX A5000 | finetuning/README.md |
 | Experiment 001 | Базовый запуск | finetuning/runs/experiment_001/ |
 | Experiment 002 | eval_loss=0.44 | finetuning/runs/experiment_002/ |
+| Experiment 003 | eval_loss=0.31, runtime smoke 7/7 passed | finetuning/runs/experiment_003/ |
 | Runtime API | hra_qwen_api_lora.py | api/ |
-| Validation | positive pass, negative fail | Данный документ |
+| Runtime smoke test | Автоматический `runtime_smoke_test.py` | finetuning/scripts/runtime_smoke_test.py |
+
+### Что сработало
+
+| Успех | Доказательство |
+|-------|----------------|
+| Hard negatives исправили runtime negative smoke | `runtime_smoke_report.json`: 7/7 passed |
+| JSON-генерация стабильна | valid_json_rate = 1.0 во всех экспериментах |
+| Параметризованный launch contract работает | `configs/experiment_003.yaml`, все скрипты читают `--config` |
+| WinSCP + RunPod CC workflow воспроизводим | `OPERATION_LOG.md`, `experiment_003_winscp_transfer.md` |
 
 ### Что НЕ сработало
 
 | Проблема | Доказательство |
 |----------|----------------|
-| Negative test failed | Runtime Smoke Test результаты |
+| Negative test failed в Experiment 002 | Runtime Smoke Test результаты |
+| Over-correction в Experiment 003 | Generation Test Report: decision accuracy 0.667 vs 0.778, ложные отрицательные на системном аналитике |
 | Галлюцинации на edge cases | Generation Test Report |
 
 ### Следующий цикл
 
-**Сформулированная гипотеза:**
+**Сформулированная цель:**
 
-Следующий цикл будет направлен на расширение Teacher Dataset за счёт hard negative и edge case сценариев с последующей повторной проверкой гипотезы.
+Следующий цикл должен устранить precision/recall trade-off Experiment 003. Варианты:
+1. Добавить больше качественных positive/borderline примеров, чтобы модель не теряла genuine matches.
+2. Скорректировать system prompt / порог decision для баланса.
+3. Исследовать assistant-only loss или взвешенную loss-функцию для лучшего разделения match/no_match.
 
 ### Извлечённые уроки
 
 | Урок | Доказательство |
 |------|----------------|
-| Offline ≠ Runtime | Positive pass, negative fail |
+| Offline ≠ Runtime | Positive pass, negative fail в Exp 002 |
 | Multi-level validation необходима | Каждый уровень выявляет разные проблемы |
-| Инженерный процесс важнее модели | Воспроизводимый пайплайн |
+| Инженерный процесс важнее модели | Воспроизводимый пайплайн с launch contract |
+| Dataset bias ≠ dataset size | 33 новых записи изменили поведение модели, но вызвали over-correction |
 
 ---
 
 ## Заключение
 
-### Статус Experiment 002
+### Статус Experiment 003
 
 | Аспект | Статус |
 |--------|--------|
-| Offline качество | ✅ Улучшено |
+| Offline качество | ✅ Улучшено (eval_loss 0.44 → 0.31) |
 | Positive test | ✅ Pass |
-| Negative test | ❌ Fail |
+| Negative test | ✅ Pass |
+| Original test quality | ⚠️ Partial (decision accuracy −11.1 pp) |
 | Production ready | ❌ NO |
 
 ### Следующий шаг
 
-**Cycle 3:** Расширение Teacher Dataset, повтор обучения, runtime validation.
+**Cycle 4:** Баланс precision/recall. Варианты: добавить positive/borderline примеры, скорректировать prompt/porog, или изменить стратегию loss. Перед production требуется повторный runtime smoke и offline evaluation без degradation.
 
 ---
 
 **Статус документа:** Engineering Report
-**Последнее обновление:** 2026-06-28
+**Последнее обновление:** 2026-07-22

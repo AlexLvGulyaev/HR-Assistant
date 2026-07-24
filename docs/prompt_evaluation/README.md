@@ -112,7 +112,7 @@ Prompt Engineering → Prompt A/B Evaluation → Reference Dataset
 |----------|-------|
 | [../SPEC.md](../SPEC.md) | Спецификация HR Assistant |
 | [../ARCHITECTURE.md](../ARCHITECTURE.md) | Общая архитектура |
-| [../README.md](../README.md) | Главная страница проекта |
+| [../../README.md](../../README.md) | Главная страница проекта |
 
 ---
 

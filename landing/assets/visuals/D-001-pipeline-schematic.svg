@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360" role="img" aria-label="Full pipeline schematic">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ffffff"/></marker></defs>
+<rect width="1200" height="360" fill="#0d0d10" rx="8"/>
+<text x="36" y="42" fill="#e8e8ec" font-size="22" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Full pipeline: teacher dataset → Telegram</text>
+<text x="36" y="72" fill="#8a8a9a" font-size="14" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">One machine, reproducible stages, versioned artifacts</text>
+<rect x="60" y="130" width="240" height="130" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="180.0" y="172" fill="#4ECDC4" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">Teacher dataset</text>
+<text x="180.0" y="208" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">90 → 123 → 162 records</text>
+<path d="M 300 195.0 L 330 195.0" stroke="#ffffff" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="330" y="130" width="240" height="130" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="450.0" y="172" fill="#FFB347" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">LoRA adapter</text>
+<text x="450.0" y="208" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">Qwen2.5-1.5B + r=16</text>
+<path d="M 570 195.0 L 600 195.0" stroke="#ffffff" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="600" y="130" width="240" height="130" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="720.0" y="172" fill="#FF6B6B" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">vLLM server</text>
+<text x="720.0" y="208" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">warm persistent process</text>
+<path d="M 840 195.0 L 870 195.0" stroke="#ffffff" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="870" y="130" width="240" height="130" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="990.0" y="172" fill="#96CEB4" font-size="16" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">Telegram API</text>
+<text x="990.0" y="208" fill="#8a8a9a" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">runtime smoke gate</text>
+</svg>

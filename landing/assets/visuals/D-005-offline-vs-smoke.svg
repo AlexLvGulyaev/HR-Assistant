@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" role="img" aria-label="Offline validation vs production smoke">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ffffff"/></marker></defs>
+<rect width="720" height="260" fill="#0d0d10" rx="8"/>
+<text x="30" y="30" fill="#e8e8ec" font-size="16" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Offline validation and production smoke are not equivalent gates</text>
+<text x="30" y="50" fill="#8a8a9a" font-size="11" font-family="Inter, sans-serif" text-anchor="start" font-weight="normal">Each catches failure modes the other misses</text>
+<rect x="120" y="90" width="220" height="120" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="230" y="125" fill="#4ECDC4" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">Offline validation</text>
+<text x="230" y="160" fill="#8a8a9a" font-size="10" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">held-out test
+metrics: accuracy, MAE</text>
+<rect x="420" y="90" width="220" height="120" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="6"/>
+<text x="530" y="125" fill="#96CEB4" font-size="13" font-family="Inter, sans-serif" text-anchor="middle" font-weight="600">Production smoke</text>
+<text x="530" y="160" fill="#8a8a9a" font-size="10" font-family="Inter, sans-serif" text-anchor="middle" font-weight="normal">runtime API
+adversarial cases</text>
+<path d="M 360 150 L 400 150" stroke="#FFB347" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="380" y="140" fill="#FFB347" font-size="18" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">≠</text>
+</svg>

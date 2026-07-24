@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" role="img" aria-label="Proven partial next map">
+<rect width="960" height="520" fill="#0d0d10" rx="8"/>
+<text x="36" y="50" fill="#e8e8ec" font-size="22" font-family="Inter, sans-serif" text-anchor="start" font-weight="600">Proven · Partial · Next</text>
+<text x="36" y="84" fill="#8a8a9a" font-size="15" font-family="Inter, sans-serif" text-anchor="start">Honest classification of what the experiments established</text>
+
+<rect x="25.0" y="125" width="290" height="360" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="8"/>
+<text x="170.0" y="179" fill="#96CEB4" font-size="21" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">Proven</text>
+<text x="47.0" y="233" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Dataset engineering works</text>
+<text x="47.0" y="283" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Production smoke gate stable</text>
+<text x="47.0" y="333" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Latency viable with vLLM</text>
+<text x="47.0" y="383" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• External validation 0.931</text>
+<rect x="335.0" y="125" width="290" height="360" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="8"/>
+<text x="480.0" y="179" fill="#FFB347" font-size="21" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">Partial</text>
+<text x="357.0" y="233" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Near GPT on decisions</text>
+<text x="357.0" y="283" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Quality holds on rerun</text>
+<text x="357.0" y="333" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Hard-negative coverage</text>
+<rect x="645.0" y="125" width="290" height="360" fill="#1a1a24" stroke="#2a2a36" stroke-width="1" rx="8"/>
+<text x="790.0" y="179" fill="#FF6B6B" font-size="21" font-family="Inter, sans-serif" text-anchor="middle" font-weight="700">Next</text>
+<text x="667.0" y="233" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Score calibration parity</text>
+<text x="667.0" y="283" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Stratified FPR/FNR</text>
+<text x="667.0" y="333" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Quantized server</text>
+<text x="667.0" y="383" fill="#e8e8ec" font-size="17" font-family="Inter, sans-serif" text-anchor="start">• Full GPT parity</text>
+
+</svg>

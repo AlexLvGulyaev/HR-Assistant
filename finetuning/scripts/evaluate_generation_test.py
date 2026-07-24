@@ -1,3 +1,4 @@
+import argparse
 import json
 import re
 from pathlib import Path
@@ -7,12 +8,18 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 
-MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
-BASE_DIR = Path("/workspace/hra-finetuning")
-TEST_PATH = BASE_DIR / "data/test.jsonl"
-RUN_DIR = BASE_DIR / "runs/experiment_002"
-BEST_ADAPTER = RUN_DIR / "best_adapter"
-OUT_DIR = RUN_DIR / "generation_test"
+def load_config(config_path: str) -> dict:
+    import yaml
+    with open(config_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generation test for HRA LoRA")
+    parser.add_argument("--config", type=str, default="configs/experiment_003.yaml")
+    parser.add_argument("--test-file", type=str, default=None, help="Override test file (test/holdout)")
+    parser.add_argument("--output-name", type=str, default=None, help="Override output subdirectory name")
+    return parser.parse_args()
 
 
 def load_jsonl(path: Path):
@@ -40,11 +47,12 @@ def build_prompt(row, tokenizer):
     return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
 
-def load_base():
+def load_base(model_id: str, torch_dtype="float16", device_map="auto"):
+    dtype = torch.float16 if torch_dtype == "float16" else torch.float32
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        dtype=torch.float16,
-        device_map="auto",
+        model_id,
+        dtype=dtype,
+        device_map=device_map,
         trust_remote_code=True,
     )
     model.eval()
@@ -119,7 +127,6 @@ def summarize(results):
 
 def evaluate_model(name, model, tokenizer, rows):
     results = []
-
     for i, row in enumerate(rows, start=1):
         teacher = get_teacher(row)
         raw = generate(model, tokenizer, row)
@@ -134,7 +141,6 @@ def evaluate_model(name, model, tokenizer, rows):
             "parsed_output": pred,
             "metrics": metrics,
         })
-
         print(f"{name} {i}/{len(rows)} valid={metrics['valid_json']} decision={metrics['decision_match']} score_err={metrics['score_abs_error']}")
 
     return {
@@ -144,36 +150,50 @@ def evaluate_model(name, model, tokenizer, rows):
 
 
 def main():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    args = parse_args()
+    config = load_config(args.config)
 
-    rows = load_jsonl(TEST_PATH)
+    base_dir = Path(config["workspace"]["base_dir"])
+    run_dir = base_dir / config["output"]["run_dir"]
+    best_adapter = run_dir / "best_adapter"
 
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+    test_file = base_dir / (args.test_file or config["dataset"]["files"]["test"])
+    output_name = args.output_name or "generation_test"
+    out_dir = run_dir / output_name
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    model_id = config["model"]["id"]
+    torch_dtype = config["model"].get("torch_dtype", "float16")
+    device_map = config["model"].get("device_map", "auto")
+
+    rows = load_jsonl(test_file)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     print("Evaluating Base Qwen generation...")
-    base_model = load_base()
+    base_model = load_base(model_id, torch_dtype, device_map)
     base_eval = evaluate_model("base_qwen", base_model, tokenizer, rows)
     del base_model
     torch.cuda.empty_cache()
 
-    print("Evaluating LoRA checkpoint-72 generation...")
-    lora_base = load_base()
-    lora_model = PeftModel.from_pretrained(lora_base, BEST_ADAPTER)
+    print("Evaluating LoRA best adapter generation...")
+    lora_base = load_base(model_id, torch_dtype, device_map)
+    lora_model = PeftModel.from_pretrained(lora_base, best_adapter)
     lora_model.eval()
     lora_eval = evaluate_model("best_lora", lora_model, tokenizer, rows)
     del lora_model, lora_base
     torch.cuda.empty_cache()
 
     report = {
-        "test_file": str(TEST_PATH),
-        "adapter": str(BEST_ADAPTER),
+        "test_file": str(test_file),
+        "adapter": str(best_adapter),
         "base_qwen": base_eval,
         "best_lora": lora_eval,
     }
 
-    out_json = OUT_DIR / "generation_test_report.json"
+    out_json = out_dir / "generation_test_report.json"
     out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("\nSUMMARY")
