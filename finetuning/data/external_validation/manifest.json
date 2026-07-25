@@ -1,0 +1,25 @@
+{
+  "experiment_code": "HRA-EXP-V5-EXT",
+  "dataset_code": "HRA-EVAL-V5-EXT",
+  "source": "PostgreSQL",
+  "export_script": "scripts/extract_external_validation.py",
+  "judge": "gpt-4o",
+  "temperature": 0,
+  "files": {
+    "external_validation": {
+      "path": "external_validation.jsonl",
+      "records": 102,
+      "sha256": "4d7730bd8ac6db04dea8ba728aeddce7fe6f555cf0cff490476a3211cedb8eac"
+    },
+    "external_validation_subset_20": {
+      "path": "external_validation_subset_20.jsonl",
+      "records": 20,
+      "sha256": "14f8158f4138bf26672955e93e78cb179398f925f4c615817dd3bda0c7e3834b"
+    },
+    "external_validation_subset_21": {
+      "path": "external_validation_subset_21.jsonl",
+      "records": 21,
+      "sha256": "2ab9858535cd0f525415fa4a6d6cd2f76ed4f3d38b8739b469d0410368666d07"
+    }
+  }
+}

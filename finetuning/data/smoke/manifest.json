@@ -1,0 +1,13 @@
+{
+  "purpose": "runtime smoke validation",
+  "files": {
+    "smoke_set": {
+      "path": "smoke_set.jsonl",
+      "records": 7,
+      "sha256": "fba02bd7e56d224ded443f64b4427cdc82b9dac2853c681f20c4497f553f4065",
+      "contains_experiment_code": false,
+      "contains_dataset_code": false,
+      "note": "Original file does not contain experiment_code or dataset_code metadata"
+    }
+  }
+}

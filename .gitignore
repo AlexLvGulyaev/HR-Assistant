@@ -12,7 +12,6 @@ landing/docs/
 # ============================================================
 # Fine-tuning datasets, training runs, checkpoints and model weights
 # ============================================================
-finetuning/data/
 finetuning/runs/
 finetuning/models/
 

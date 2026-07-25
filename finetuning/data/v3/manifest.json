@@ -1,0 +1,28 @@
+{
+  "experiment_code": "HRA-EXP-V3",
+  "dataset_code": "HRA-EVAL-V3",
+  "source": "PostgreSQL",
+  "export_script": "scripts/extract_teacher_dataset.py",
+  "splits": {
+    "train": {
+      "path": "train.jsonl",
+      "records": 93,
+      "sha256": "841c51ee1a4995e95acaa850428d9cf3658c55bbfdcb8f4e7ef26b8ab25c4152"
+    },
+    "validation": {
+      "path": "validation.jsonl",
+      "records": 15,
+      "sha256": "dd24e2f69de4ef6abdf73c08850f59e95b01c9ecee93809686fb5bec43ae6f98"
+    },
+    "test": {
+      "path": "test.jsonl",
+      "records": 9,
+      "sha256": "5ebe68d4bac45baab0d7622a7de4d4a313dd0229ff6a4ecce603962c5db09d3f"
+    },
+    "holdout": {
+      "path": "holdout.jsonl",
+      "records": 6,
+      "sha256": "ad8268d6959d52891dd5025d875732b2eb2c1c2a2fd6f0041dbca6db6ca9ac3a"
+    }
+  }
+}
