@@ -1,960 +1,225 @@
-# Experiment 003 Report: Hard Negative Teacher Dataset
+# Experiment 003 Report: Understanding Model Failures Through Hard Negatives
 
 **Кейс:** HR Assistant (hr-assistant)  
 **Модуль:** Fine-tuning / Experimental ML-контур  
 **Дата начала:** 2026-07-21  
 **Дата завершения:** 2026-07-22  
-**Статус:** Этапы 1–15 завершены — гипотеза подтверждена частично, модель не production-ready
+**Статус:** Завершён — гипотеза частично подтверждена; выявлены ограничения модели, требующие следующего цикла
 
 ---
 
-## 1. Сведения об эксперименте
+## 1. Контекст
+
+### 1.1. Что предшествовало
+
+К моменту начала Experiment 003 в кейсе HR Assistant уже было проведено два цикла fine-tuning:
+
+- **Experiment 001** — технический baseline: LoRA обучается стабильно, чекпоинты сохраняются, JSON-формат генерируется.
+- **Experiment 002** — параметрическая оптимизация: увеличены LoRA rank, расширены target modules, увеличено число эпох. Offline-метрики выросли (`eval_loss=0.44`, `decision_accuracy=0.778`), но runtime negative smoke test не пройден — модель давала ложные срабатывания на нерелевантных профилях.
+
+Проблема Experiment 002 была не в архитектуре или гиперпараметрах, а в **составе teacher dataset**: в нём не хватало примеров сложных отрицательных сценариев, которые встречаются в реальном matching.
+
+### 1.2. Цель Experiment 003
+
+Experiment 003 поставил цель не просто улучшить метрики, а **понять природу ошибок модели**. Нужно было ответить на вопрос: *какие именно кейсы ломают production-like matching, и как их нужно представить в teacher dataset, чтобы модель научилась их корректно отклонять?*
+
+Этот эксперимент впервые ввёл:
+
+- **hard-negative категории HN1–HN8**;
+- **edge-case классификацию EC1 / EC3 / EC4**;
+- **системный анализ failure modes**;
+- **понимание, чему именно нужно учить модель дальше**.
+
+### 1.3. Почему этот эксперимент важен
+
+Experiment 003 — это не «предыдущая версия» Experiment 004. Это отчёт о том, **как мы поняли, в чём проблема**. Его выводы стали инженерным основанием для Experiment 004. Без Exp 003 Exp 004 выглядел бы как произвольная доводка dataset; благодаря Exp 003 Exp 004 становится проверкой конкретного вывода: «модель нужно научить отличать hard negatives, не теряя recall на genuine match».
+
+---
+
+## 2. Гипотеза
+
+**H₀ (нулевая гипотеза):**  
+Изменение состава teacher dataset путём добавления hard-negative и edge-case примеров не оказывает практически значимого влияния на способность модели корректно проходить runtime negative smoke test при неизменных параметрах обучения, архитектуре модели и runtime-контуре.
+
+**H₁ (альтернативная гипотеза):**  
+Расширение teacher dataset за счёт hard-negative и edge-case примеров улучшает способность модели корректно обрабатывать сложные отрицательные сценарии в runtime negative smoke test без существенного ухудшения остальных ключевых метрик относительно Experiment 002.
+
+**Критерий подтверждения:**
+- runtime negative smoke test проходит без unexpected matches;
+- `valid_json_rate` сохраняется равным 1.0;
+- offline-метрики не ухудшаются критически (decision_accuracy ≥ 0.60, MAE ≤ 30).
+
+---
+
+## 3. Изменения относительно предыдущего эксперимента
+
+| Компонент | Experiment 002 | Experiment 003 |
+|-----------|----------------|----------------|
+| Teacher dataset | `HRA-EXP-V2`, 90 записей (30 кандидатов) | `HRA-EXP-V3`, 123 записи (41 кандидат) |
+| Hard-negative кандидаты | 0 целенаправленных | 11 (`HRA-EVAL-V2-000101`–`HRA-EVAL-V2-000111`) |
+| Hard-negative категории | не формализованы | HN1–HN8, EC1/EC3/EC4 |
+| Train+val match % | ~20% | 15.7% |
+| Train+val no_match % | ~80% | 84.3% |
+| Test set | 9 записей (исходный V2) | 9 записей (без изменений) |
+| Hard negative holdout | отсутствовал | 6 записей (2 кандидата) |
+| Runtime smoke set | не формализован | `data/smoke_set.jsonl`, 7 кейсов |
+
+Единственная изменяемая переменная — состав teacher dataset. Все параметры модели, LoRA, обучения и runtime-контура остались прежними.
+
+---
+
+## 4. Неизменяемые параметры
+
+| Группа | Параметр | Значение | Источник |
+|--------|----------|----------|----------|
+| Модель | Base model ID | `Qwen/Qwen2.5-1.5B-Instruct` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| LoRA | `r` | `16` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| LoRA | `lora_alpha` | `32` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| LoRA | `lora_dropout` | `0.05` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| LoRA | `target_modules` | `q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| LoRA | `bias` | `none` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | `num_train_epochs` | `5` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | `per_device_train_batch_size` | `1` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | `gradient_accumulation_steps` | `4` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | `learning_rate` | `2e-4` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | `optim` | `adamw_torch` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | `fp16` | `True` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | Best checkpoint metric | `eval_loss` (minimize) | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Обучение | `seed` | `42` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Runtime | API-контур | FastAPI + Transformers + PEFT ([`../api/hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py)) | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+| Teacher | Judge | GPT-4.1, `temperature = 0` | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) |
+
+Подробное описание технической основы — в [`TECHNICAL_FOUNDATION.md`](TECHNICAL_FOUNDATION.md).
+
+### 4.1. Experimental validity
+
+Все параметры, кроме состава teacher dataset, зафиксированы. Это позволяет интерпретировать различия в результатах как следствие именно изменения dataset, а не модели, обучения или runtime-контура.
+
+| Аспект | Как контролируется |
+|--------|-------------------|
+| Единственная изменяемая переменная | Состав teacher dataset: добавлены 11 hard-negative/edge-case кандидатов (`HRA-EVAL-V2-000101`–`HRA-EVAL-V2-000111`) к 30 кандидатам Exp 002. |
+| Неизменность модели и LoRA | `Qwen/Qwen2.5-1.5B-Instruct`, `r=16`, `alpha=32`, `target_modules` и прочие параметры совпадают с Exp 002. |
+| Неизменность обучения | 5 эпох, batch=1, grad_accum=4, lr=2e-4, `eval_loss` для выбора best checkpoint. |
+| Неизменность runtime | FastAPI + Transformers + PEFT, тот же smoke set, та же процедура запуска. |
+| Прямое сравнение с Exp 002 | Original test set (`data/test.jsonl`) оставлен без изменений; метрики Exp 002 и Exp 003 измерены на одних и тех же 9 записях. |
+
+**Угрозы валидности и ограничения:**
+
+- **Малый test set:** 9 записей не позволяют надёжно оценить recall и FNR.
+- **Ограниченный holdout:** 6 записей (2 кандидата) — только начало обобщения на незнакомые hard negatives.
+- **Зависимость от Judge:** все reference labels сгенерированы GPT-4.1 с `temperature=0`; любые систематические ошибки Judge наследуются моделью.
+- **Ограничения обобщения:** результаты покрывают три вакансии и восемь hard-negative категорий; они не гарантируют качество на произвольных вакансиях или доменах.
+- **Однократная Judge-разметка:** повторные прогоны не проводились; пограничные кейсы с `score >= 60` и `decision=no_match` сохранены как есть.
+
+---
+
+## 5. Датасет
+
+### 5.1. Teacher dataset Experiment 003
 
 | Параметр | Значение |
 |----------|----------|
-| Experiment ID | `experiment_003` |
-| Базовая модель | `Qwen/Qwen2.5-1.5B-Instruct` |
-| Метод | LoRA (Low-Rank Adaptation) |
-| Платформа | RunPod GPU Pod (NVIDIA RTX A5000) |
-| Источник teacher dataset | HRA-EXP-V1 (90 эталонных кейсов) + hard negatives |
-| Предыдущий эксперимент | Experiment 002 — лучший offline-результат, failed runtime negative smoke test |
-| Единственная изменяемая переменная | Состав teacher dataset |
+| Эксперимент | `HRA-EXP-V3` |
+| Dataset | `HRA-EVAL-V3` |
+| Всего записей | 123 (41 кандидат × 3 вакансии) |
+| Train | 93 записи (31 кандидат) |
+| Validation | 15 записей (5 кандидатов) |
+| Test | 9 записей (3 кандидата, исходный V2) |
+| Hard negative holdout | 6 записей (2 кандидата) |
+
+Dataset формировался так:
+- **30 кандидатов Experiment 002** (90 записей) сохранены без изменений.
+- **11 новых hard-negative / edge-case кандидатов** (`HRA-EVAL-V2-000101`–`HRA-EVAL-V2-000111`, 33 записи) добавлены в train/validation/holdout.
+
+### 5.2. Баланс классов
+
+| Split | Записей | match | no_match | % match |
+|-------|---------|-------|----------|---------|
+| train | 93 | 14 | 79 | 15.1% |
+| validation | 15 | 3 | 12 | 20.0% |
+| train+val | 108 | 17 | 91 | 15.7% |
+| test | 9 | 3 | 6 | 33.3% |
+| holdout | 6 | 1 | 5 | 16.7% |
+
+### 5.3. Вакансии
+
+Каждый кандидат оценивается по трём вакансиям:
+- Prompt Engineer / AI Automation Specialist;
+- Системный аналитик;
+- Специалист по разметке данных.
+
+### 5.4. Формат данных
+
+Публичный обезличенный пример формата данных: [`data_sample/example.jsonl`](data_sample/example.jsonl).  
+Полное описание схемы и истории версий — в [`reports/teacher_dataset_report.md`](reports/teacher_dataset_report.md).
 
 ---
 
-## 2. Цель исследования
+## 6. Выполнение
 
-Проверить гипотезу о том, что причиной провала runtime negative smoke test в Experiment 002 является недостаточная представленность hard negative и edge case-примеров в teacher dataset, а не параметры LoRA, архитектура модели или особенности runtime-контура. Базовая модель, гиперпараметры обучения, инфраструктура и runtime-контур остаются прежними.
+### 6.1. Участники и роли
 
----
+| Роль | Ответственность |
+|------|-----------------|
+| **Пользователь** | Инициатор, владелец решения, утверждение гипотез, критериев успеха, split-стратегии и итогового вердикта. |
+| **VPS Claude Code** | Подготовка кода, SQL-скриптов, датасетов, launch contract, структурной preflight, offline evaluation, документации. |
+| **RunPod Claude Code** | GPU-preflight, обучение, выбор checkpoint, runtime smoke, возврат артефактов. |
+| **GPT-4.1 (Teacher / Judge)** | Формирование reference labels для teacher dataset. |
+| **LoRA-модель** | Обучаемый адаптер Qwen + LoRA. |
+| **Telegram / n8n** | Runtime-контур для smoke validation. |
 
-## 3. Исследовательская гипотеза
+### 6.2. Stage-by-stage исполнители
 
-**H₀ (нулевая гипотеза):**
-Изменение состава teacher dataset не оказывает практически значимого влияния на способность модели корректно проходить заранее зафиксированный runtime negative smoke test при неизменных параметрах обучения, архитектуре модели и runtime-контуре.
-
-**H₁ (альтернативная гипотеза):**
-Расширение teacher dataset за счёт hard negative и edge case-примеров улучшает способность модели корректно обрабатывать сложные отрицательные сценарии runtime negative smoke test без существенного ухудшения остальных ключевых метрик относительно Experiment 002.
-
----
-
-## 4. Изменяемая переменная
-
-| Переменная | Описание |
-|------------|----------|
-| Состав teacher dataset | Количество, распределение и содержание обучающих примеров, включая добавление hard negative и edge case-кейсов |
-
----
-
-## 5. Неизменяемые параметры
-
-| Группа | Параметр | Значение | Источник в репозитории |
-|--------|----------|----------|--------------------------|
-| Модель | Base model ID | `Qwen/Qwen2.5-1.5B-Instruct` | `scripts/train_lora.py`, `runs/experiment_002/best_adapter/adapter_config.json` |
-| LoRA | `r` (rank) | `16` | `adapter_config.json` |
-| LoRA | `lora_alpha` | `32` | `adapter_config.json` |
-| LoRA | `lora_dropout` | `0.05` | `adapter_config.json` |
-| LoRA | `target_modules` | `q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj` | `adapter_config.json` |
-| LoRA | `bias` | `none` | `adapter_config.json` |
-| LoRA | `task_type` | `CAUSAL_LM` | `adapter_config.json` |
-| Обучение | `num_train_epochs` | `5` | `scripts/train_lora.py` |
-| Обучение | `per_device_train_batch_size` | `1` | `scripts/train_lora.py` |
-| Обучение | `per_device_eval_batch_size` | `1` | `scripts/train_lora.py` |
-| Обучение | `gradient_accumulation_steps` | `4` | `scripts/train_lora.py` |
-| Обучение | `learning_rate` | `2e-4` | `scripts/train_lora.py` |
-| Обучение | `optim` | `adamw_torch` | `scripts/train_lora.py` |
-| Обучение | `fp16` | `True` | `scripts/train_lora.py` |
-| Обучение | Метрика выбора лучшего чекпоинта | `eval_loss` (minimize) | `scripts/train_lora.py` |
-| Runtime | API-контур | `api/hra_qwen_api_lora.py` + Multi Provider Test workflow | `FINETUNING_ENGINEERING_REPORT.md` |
-| Teacher | Judge | GPT-4.1, `temperature = 0`, прежний prompt и output contract | `FINETUNING_ENGINEERING_REPORT.md`, `teacher_dataset_report.md` |
+| Этап | Вход | Инструмент | Исполнитель | Выходной артефакт | Критерий завершения |
+|------|------|------------|-------------|-------------------|---------------------|
+| 1. Исследовательский контракт | Результаты Experiment 002 | Markdown-шаблон отчёта | Пользователь + VPS Claude Code | `Experiment_003_Report.md` (Stage 1) | Гипотеза и критерии утверждены |
+| 2. Аудит failure modes Experiment 002 | `generation_test_report.json`, runtime observations | Анализ отчётов | VPS Claude Code | Список ошибок Exp 002, обоснование гипотезы | Идентифицированы наблюдаемые failure modes |
+| 3. Каталог hard-negative категорий | Failure modes | Инженерная классификация | VPS Claude Code + Пользователь | Каталог HN1–HN8, EC1/EC3/EC4 | Каждая категория описывает структуру данных, а не ожидаемое поведение модели |
+| 4. Спроектировать hard-negative кандидатов | Каталог категорий | Профили кандидатов | VPS Claude Code | 11 новых кандидатов (`000101`–`000111`) | Все обязательные категории покрыты; уникальность `case_code` |
+| 5. SQL и Judge-разметка | Спецификация кандидатов | SQL-скрипты + n8n workflow | VPS Claude Code + Пользователь | 123 размеченные пары | Все пары валидированы |
+| 6. Формирование teacher dataset | Reference-разметка | [`scripts/extract_teacher_dataset.py`](scripts/extract_teacher_dataset.py) | VPS Claude Code | `train.jsonl`, `validation.jsonl`, `test.jsonl`, `holdout.jsonl` | Стратификация и отсутствие leakage |
+| 7. Launch contract и transfer package | Dataset + параметры | [`configs/experiment_003.yaml`](configs/experiment_003.yaml) | VPS Claude Code | Launch contract, transfer list | Все пути и команды зафиксированы |
+| 8. Обучение и evaluation на RunPod | Dataset + launch contract | [`scripts/train_lora.py`](scripts/train_lora.py), [`scripts/evaluate_generation_test.py`](scripts/evaluate_generation_test.py) | RunPod Claude Code | Best adapter, offline metrics | Best checkpoint выбран, criteria passed |
+| 9. Runtime validation | `data/smoke_set.jsonl` | [`../api/hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py) + [`scripts/runtime_smoke_test.py`](scripts/runtime_smoke_test.py) | RunPod Claude Code | Runtime smoke report | 7/7 passed, 0 unexpected matches |
+| 10. Документирование и вердикт | Все метрики + анализ ошибок | Отчёт эксперимента | VPS Claude Code + Пользователь | `Experiment_003_Report.md` | Вердикт принят и задокументирован; ограничения модели сформулированы |
 
 ---
 
-## 6. Критерии успешности
-
-1. **Runtime negative smoke test:** Experiment 003 проходит заранее зафиксированный набор отрицательных и edge-case сценариев.
-2. **Сохранение качества:** Не наблюдается существенного ухудшения относительно Experiment 002 по совокупности следующих метрик:
-   - valid JSON rate;
-   - decision accuracy;
-   - MAE score;
-   - positive smoke test.
-   
-   Количественный порог «существенного ухудшения» заранее не фиксируется. Итоговая оценка выполняется по результатам сравнительного инженерного анализа Experiment 002 и Experiment 003 с учётом всех ключевых метрик.
-3. **Структурные требования:** Все hard negative-примеры проходят валидацию, отсутствует train/test leakage, конфигурация и артефакты задокументированы.
-
----
-
-## 7. Критерии завершения эксперимента
-
-Эксперимент считается завершённым, когда:
-1. Все 15 этапов регламента пройдены и задокументированы.
-2. Обучение завершено, best adapter однозначно определён и сохранён.
-3. Offline evaluation и runtime smoke test проведены, результаты сравнены с Experiment 002.
-4. Принято одно из трёх решений: гипотеза подтверждена, подтверждена частично или не подтверждена.
-5. Результаты зафиксированы в репозитории (`Experiment_003_Report.md`, `FINETUNING_ENGINEERING_REPORT.md`, `PROJECT_STATE.md`, `task_history`).
-
-Эксперимент останавливается досрочно, если:
-1. Технически невозможно воспроизвести обучение с зафиксированными параметрами.
-2. Hard negative dataset не проходит автоматическую или ручную валидацию.
-3. Пользователь и GPT-ассистент совместно принимают решение об остановке.
-
----
-
-## 8. Выполнение по этапам
-
-### Этап 1. Зафиксировать исследовательский контракт
-
-**Статус:** ✅ Выполнено. Контракт и стратегия split утверждены Пользователем.
-
-**Действия:**
-- Прочитан и проверен регламент `Experiment_003.md`.
-- Изучены связанные документы и артефакты Experiment 002:
-  - `FINETUNING_ENGINEERING_REPORT.md` — обоснование гипотезы и итоги Experiment 002;
-  - `TECHNICAL_FOUNDATION.md` — спецификация модели, LoRA, датасета, метрик;
-  - `scripts/train_lora.py` — скрипт обучения и гиперпараметры;
-  - `runs/experiment_002/best_adapter/adapter_config.json` — параметры LoRA;
-  - `runs/experiment_002/generation_test/generation_test_report.json` — базовые метрики;
-  - `reports/teacher_dataset_report.md` — состав исходного teacher dataset;
-  - `api/hra_qwen_api_lora.py` — runtime API для smoke validation.
-- Подготовлен исследовательский контракт (см. разделы 2–7 данного отчёта).
-- Внесены минимальные редакционные улучшения в `Experiment_003.md`: добавлены метаданные, явный раздел контракта, критерии остановки, связанные артефакты.
-
-**Результат:**
-- `Experiment_003.md` обновлён.
-- `Experiment_003_Report.md` создан.
-- Контракт готов к утверждению.
-
-**Условие перехода:** ✅ выполнено. Пользователь утвердил исследовательский контракт и стратегию split (вариант Б).
-
----
-
-### Этап 2. Проверить фактическую реализацию Experiment 002
-
-**Статус:** ✅ Выполнено.
-
-**Действия:**
-- Проверен скрипт обучения `scripts/train_lora.py` и альтернативный `scripts/train_lora_assistant_only.py`.
-- Проверен скрипт offline generation test `scripts/evaluate_generation_test.py`.
-- Проверен скрипт evaluation loss `scripts/evaluate_test.py`.
-- Проверен `configs/experiment_001.yaml` как шаблон конфигурации.
-- Проверен `runs/experiment_002/trainer_state.json` для восстановления факта выбора best checkpoint.
-- Проверен `runs/experiment_002/generation_test/generation_test_report.json` как сохранённые baseline-метрики.
-- Проверены runtime API `api/hra_qwen_api.py` и `api/hra_qwen_api_lora.py`.
-- Проверен Multi Provider Test workflow `workflows/HR Processing Worker - Multi Provider Test.json`.
-- Просканирован репозиторий на наличие формализованного runtime smoke set.
-- Проверена структура исходного teacher dataset в `data/`.
-
-**Подтверждённые факты:**
-
-| Вопрос | Подтверждённый ответ | Источник |
-|--------|----------------------|----------|
-| Скрипт обучения Experiment 002 | `scripts/train_lora.py` (или `train_lora_assistant_only.py` как вариант с assistant-only loss) | `scripts/train_lora.py:15-116`, `adapter_config.json` совпадает по параметрам LoRA |
-| Базовая модель | `Qwen/Qwen2.5-1.5B-Instruct` | `scripts/train_lora.py:15` |
-| Dataset | `data/train.jsonl`, `data/validation.jsonl` — пути захардкожены в скрипте обучения | `scripts/train_lora.py:17-18` |
-| Output directory | `/workspace/hra-finetuning/runs/experiment_001` в скрипте, но фактические артефакты сохранены в `runs/experiment_002` | `scripts/train_lora.py:19`, фактический путь подтверждён `trainer_state.json` |
-| Параметры обучения | Зашиты в код: 5 эпох, batch=1, grad_accum=4, lr=2e-4, fp16, adamw_torch, eval_strategy=epoch, save_strategy=epoch, load_best_model_at_end=True, metric_for_best_model=eval_loss | `scripts/train_lora.py:78-95` |
-| LoRA параметры | r=16, alpha=32, dropout=0.05, target_modules=[q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj], bias=none, task_type=CAUSAL_LM | `scripts/train_lora.py:61-76`, `adapter_config.json` |
-| Выбор best checkpoint | `load_best_model_at_end=True`, `metric_for_best_model="eval_loss"`, `greater_is_better=False`; лучший checkpoint — `checkpoint-54` на эпохе 3.0, eval_loss=0.4443 | `scripts/train_lora.py:89-91`, `trainer_state.json` |
-| Скрипт generation test | `scripts/evaluate_generation_test.py` — оценивает base Qwen и best LoRA adapter на `data/test.jsonl` | `scripts/evaluate_generation_test.py:10-16` |
-| Скрипт evaluation loss | `scripts/evaluate_test.py` — оценивает base Qwen и best LoRA adapter на `data/test.jsonl` по eval_loss | `scripts/evaluate_test.py:10-16` |
-| Train/validation/test split | 72/9/9, стратифицирован по case_type (obvious_match, borderline, obvious_no_match) — 24/3/3 в каждой группе | `reports/teacher_dataset_report.md`, `extract_teacher_dataset.py`, `data/*.jsonl` |
-| Сохранённые результаты Experiment 002 | `runs/experiment_002/generation_test/generation_test_report.json` содержит полные per-record результаты base Qwen и best LoRA | файл на диске |
-| Runtime API для Experiment 002 | `api/hra_qwen_api_lora.py` использует адаптер по пути `/workspace/adapters/hra_exp002` | `api/hra_qwen_api_lora.py:9` |
-| Runtime-контур | Multi Provider Test workflow направляет matching-запросы к RunPod URL `khu0q820y5ssqu-8000.proxy.runpod.net` при `provider = 'runpod'` | `workflows/HR Processing Worker - Multi Provider Test.json` |
-| Формализованный runtime smoke set | **Не существует как самостоятельный инженерный артефакт проекта.** Упоминания runtime negative smoke test есть в `FINETUNING_ENGINEERING_REPORT.md`, `EXPERIMENTAL_ML_PIPELINE.md` и `PROJECT_STATE.md`, но фиксированного списка кейсов, файла сценариев или отдельного датасета не обнаружено. | результаты поиска по репозиторию |
-
-**Выявленные неопределённости:**
-
-| # | Неопределённость | Комментарий |
-|---|------------------|-------------|
-| 1 | Output directory в `scripts/train_lora.py` указан `runs/experiment_001`, тогда как фактические артефакты находятся в `runs/experiment_002` | Причина расхождения по имеющимся артефактам не устанавливается. |
-| 2 | Runtime smoke set не зафиксирован как артефакт | Для Experiment 003 его необходимо создать заново (Этап 12 регламента). |
-| 3 | Путь к адаптеру в `api/hra_qwen_api_lora.py` — `/workspace/adapters/hra_exp002`, а не `runs/experiment_002/best_adapter` | Соответствие между локальным `runs/experiment_002/best_adapter` и `/workspace/adapters/hra_exp002` на RunPod по имеющимся артефактам не устанавливается. |
-| 4 | Конфиг `configs/experiment_001.yaml` не используется обучающим скриптом напрямую | Скрипт `train_lora.py` не читает YAML; параметры зашиты в код. |
-| 5 | `scripts/evaluate_test.py` ссылается на `runs/experiment_001/best_adapter`, а не `experiment_002` | Скрипты evaluation содержат пути, не совпадающие с фактическим расположением артефактов Experiment 002. |
-
-**Возможность запуска Experiment 003 без изменения рабочих скриптов:**
-
-| Сценарий | Возможно без изменения кода? | Пояснение |
-|----------|------------------------------|-----------|
-| Обучение с новым dataset и output dir | ❌ Нет | `scripts/train_lora.py` содержит фиксированные пути к dataset и output directory. |
-| Generation test для Experiment 003 | ❌ Нет | `scripts/evaluate_generation_test.py` содержит фиксированный путь к adapter Experiment 002. |
-| Evaluation loss для Experiment 003 | ❌ Нет | `scripts/evaluate_test.py` содержит фиксированный путь к adapter. |
-| Runtime API для Experiment 003 | ❌ Нет | `api/hra_qwen_api_lora.py` содержит фиксированный путь к adapter. |
-
-**Действительно необходимые изменения для Experiment 003:**
-
-1. Обеспечить возможность запуска Experiment 003 с новым dataset и отдельным output directory.
-2. Обеспечить возможность evaluation generation test для Experiment 003 с указанием целевого adapter и dataset.
-3. Обеспечить возможность evaluation loss для Experiment 003 с указанием целевого adapter и dataset.
-4. Обеспечить возможность запуска runtime API для Experiment 003 с указанием целевого adapter.
-5. Подготовить hard negative dataset и встроить его в train/validation с сохранением исходного test set (вариант Б, утверждён).
-6. Создать runtime smoke set для Этапа 12 (новый артефакт, отсутствующий в проекте).
-7. Зафиксировать способ параметризации скриптов на следующих этапах.
-
-**Условие перехода:** ✅ выполнено. Отсутствуют предположения о том, какие файлы надо править — список изменений подтверждён анализом кода.
-
----
-
-### Этап 3. Спроектировать hard negative-набор
-
-**Статус:** ✅ Выполнено.
-
-**Действия:**
-- Проанализирован существующий teacher dataset (`data/*.jsonl`, 90 записей).
-- Изучены failure mode Experiment 002 по `generation_test_report.json` и проектной документации.
-- Определены представленные и непокрытые категории негативных случаев.
-- Сформирован каталог категорий hard negative и edge case с приоритетами.
-
-**Анализ существующего teacher dataset:**
-
-| Характеристика | Значение |
-|------------------|----------|
-| Всего записей | 90 |
-| Train / Validation / Test | 72 / 9 / 9 |
-| Группы | obvious_match (30), obvious_no_match (30), borderline (30) |
-| Распределение по группам | 24/3/3 в каждой группе внутри каждого split |
-| Решения | match: 18, no_match: 72 |
-| Вакансии | Prompt Engineer / AI Automation Specialist (30), Системный аналитик (30), Специалист по разметке данных (30) |
-
-**Представленные в текущем dataset категории негативных случаев:**
-
-| Категория | Где представлена | Комментарий | Подтверждение |
-|-----------|------------------|-------------|---------------|
-| Полностью нерелевантная профессия | obvious_no_match | Кандидат из нерелевантной профессии (врач) сопоставлен с IT-вакансиями | `data/*.jsonl`: `HRA-EVAL-V2-000020`, case_type=`obvious_no_match`; `teacher_dataset_report.md` подтверждает группу obvious_no_match |
-| Смежная роль без ключевых навыков | borderline / obvious_match | Кандидат-системный аналитик сопоставлен с вакансией Prompt Engineer; кандидат-Content Manager сопоставлен с вакансией Системный аналитик | `data/*.jsonl`: `HRA-EVAL-V2-000010` vacancy_title="Prompt Engineer / AI Automation Specialist", reference_decision="match", reference_score=60 (пограничный match); `HRA-EVAL-V2-000030` vacancy_title="Системный аналитик", reference_decision="no_match", reference_score=25 (смежная роль без hard skills); `teacher_dataset_report.md`: borderline cases `HRA-EVAL-V2-000007`, `HRA-EVAL-V2-000024`, `HRA-EVAL-V2-000026` |
-| Формально похожая должность с несовпадающим содержанием | obvious_match / borderline / obvious_no_match | Один кандидат сопоставлен с тремя разными вакансиями, включая случаи, когда название близко, но компетенции не совпадают | `data/*.jsonl`: `HRA-EVAL-V2-000001` vacancy_title="Prompt Engineer / AI Automation Specialist" reference_decision="no_match" score=58, тогда же `HRA-EVAL-V2-000001` vacancy_title="Системный аналитик" reference_decision="match" score=98; показывает, что одна и та же роль кандидата по-разному оценивается в зависимости от вакансии |
-| Пограничные случаи (score около порога) | borderline | Кейсы с решением `no_match`, но score ≥ 60 | `teacher_dataset_report.md`: borderline cases `HRA-EVAL-V2-000007` score=62 no_match, `HRA-EVAL-V2-000024` score=64 no_match, `HRA-EVAL-V2-000026` score=62 no_match |
-| Разные вакансии для одного кандидата | все группы | Каждый case_code сопоставлен ровно с 3 вакансиями: Prompt Engineer, Системный аналитик, Специалист по разметке данных | `data/*.jsonl`: 90 записей, 30 уникальных case_code, по 3 записи на каждый case_code; `teacher_dataset_report.md`: split по case_codes |
-
-**Подтверждённые failure mode Experiment 002:**
-
-На основании `runs/experiment_002/generation_test/generation_test_report.json`:
-
-| # | Тип ошибки | Пример из generation test | Подтверждение |
-|---|------------|---------------------------|---------------|
-| 1 | Ложноположительное решение на полностью нерелевантном профиле | Кандидат-врач (`HRA-EVAL-V2-000020`) для вакансии «Специалист по разметке данных» (reference score=27, reference decision=no_match): best LoRA выдала decision=`match`, score=72 | `generation_test_report.json`: best_lora results, index 6, case_code=`HRA-EVAL-V2-000020`, vacancy_title="Специалист по разметке данных", parsed_output.decision="match", parsed_output.score=72, metrics.decision_match=false, metrics.score_abs_error=45.0 |
-| 2 | Завышенный score за счёт общих/нерелевантных навыков | Кандидат-врач (`HRA-EVAL-V2-000020`) для вакансии «Prompt Engineer / AI Automation Specialist» (reference score=19): best LoRA выдала score=57, decision=no_match (score завышен на 38). Аналогично для вакансии «Системный аналитик» (reference score=39): best LoRA score=55 (завышен на 16) | `generation_test_report.json`: best_lora results, indexes 4–6, case_code=`HRA-EVAL-V2-000020`; metrics.score_abs_error: 38.0, 16.0, 45.0 |
-| 3 | Использование нерелевантных аргументов в reasoning | Кандидат-врач (`HRA-EVAL-V2-000020`) для вакансии «Специалист по разметке данных»: в выводе best LoRA указаны «внимательность», «понимание», «грамотный русский язык» как обоснование высокого skills_score; для вакансии Prompt Engineer в выводе указаны «Медицина», «Диагностика», «Лечение», «Пациенты» как соответствующие навыки | `generation_test_report.json`: best_lora results, indexes 4–6, case_code=`HRA-EVAL-V2-000020`; raw_output содержит эти формулировки |
-| 4 | Нестабильность на пограничных случаях | Кандидат `HRA-EVAL-V2-000030` (Content Manager): для вакансии «Специалист по разметке данных» reference decision=`match` (score=64), но best LoRA выдала decision=`no_match` (score=40); для той же вакансии base Qwen также выдал decision=`no_match` (score=78) | `generation_test_report.json`: best_lora results, index 9, case_code=`HRA-EVAL-V2-000030`, vacancy_title="Специалист по разметке данных", metrics.decision_match=false; base_qwen results, index 9, parsed_output.score=78, decision=no_match |
-| 5 | Сохранение conditions_score максимальным независимо от несоответствия | Кандидат-врач (`HRA-EVAL-V2-000020`) для вакансии «Специалист по разметке данных» с зарплатными ожиданиями 200 000 при бюджете 60 000–120 000: best LoRA выставила conditions_score=15/15; base Qwen для той же пары также conditions_score=15/15 | `generation_test_report.json`: best_lora results, index 6, parsed_output.conditions_score=15.0; base_qwen results, index 6, parsed_output.conditions_score=15.0; `data/test.jsonl`/`data/train.jsonl`: `HRA-EVAL-V2-000020` vacancy salary_min=60000, salary_max=120000, candidate salary_expectation=200000 |
-
-**Каталог категорий hard negative и edge case:**
-
-### Hard Negative категории
-
-| # | Название категории | Структура добавляемых данных | Проверяемая исследовательская гипотеза | Цель проверки гипотезы | Приоритет |
-|---|--------------------|------------------------------|----------------------------------------|----------------------|-----------|
-| HN-1 | Полностью нерелевантная профессия (non-IT в IT) | Кандидаты из профессий, не связанных с IT (например, медицина, юриспруденция, продажи), сопоставленные с IT-вакансиями | Расширение представленности полностью нерелевантных профилей проверяет влияние таких примеров на снижение положительных решений | Проверить, снижается ли доля положительных решений на профилях без профильных компетенций | Обязательная |
-| HN-2 | Смежная роль без обязательных навыков | Кандидаты из смежных областей (например, бизнес-аналитик для системного аналитика, контент-менеджер для AI-специалиста) без ключевых hard skills вакансии | Расширение представленности смежных ролей проверяет различение тождественных и смежных профессий | Проверить, корректнее ли модель оценивает role_score и skills_score в смежных ролях | Обязательная |
-| HN-3 | Совпадение по общим словам без совпадения по компетенциям | Пары, где названия профессий или навыков пересекаются лексически, но компетенции не совпадают (например, «аналитик данных» vs «системный аналитик», «менеджер проектов» vs «продуктовый менеджер») | Расширение таких пар проверяет влияние лексических совпадений на итоговый score | Проверить, снижается ли влияние лексических совпадений на итоговое решение | Обязательная |
-| HN-4 | Сильный профиль в нерелевантной специализации | Кандидаты с сильным профилем и высоким опытом, но в специализации, отличной от вакансии | Расширение таких пар проверяет влияние общей силы профиля на итоговую релевантность | Проверить, изменяется ли доля положительных решений на сильных, но нерелевантных профилях | Обязательная |
-| HN-5 | Одиночное совпадение навыка без основного профиля | Кандидаты, обладающие одним-двумя навыками из требований вакансии, но без основного профиля и комплексной базы | Расширение таких пар проверяет влияние единичных совпадений навыков на decision | Проверить, требует ли модель комплексного набора компетенций для положительного решения | Обязательная |
-| HN-6 | Разница в уровне опыта (junior vs senior) | Пары, где кандидат имеет junior-уровень опыта, а вакансия требует senior-уровень, при прочей релевантности | Расширение таких пар проверяет влияние уровня опыта на оценку релевантности | Проверить, изменяется ли распределение score в зависимости от уровня опыта | Желательная |
-| HN-7 | Разница в функциональной роли (управленческая vs исполнительская) | Пары, где кандидат имеет управленческий опыт, а вакансия — исполнительская роль, или наоборот | Расширение таких пар проверяет влияние функциональной роли на оценку релевантности | Проверить, различает ли модель управленческий и исполнительский опыт | Желательная |
-| HN-8 | Дисбаланс soft skills и hard skills | Кандидаты с развитыми soft skills (коммуникация, внимательность, грамотность), но без обязательной технической базы, требуемой вакансией | Расширение таких пар проверяет влияние соотношения soft и hard skills на итоговое решение | Проверить, как teacher dataset влияет на баланс между оценкой soft и hard skills | Обязательная |
-
-### Edge Case категории
-
-| # | Название категории | Структура добавляемых данных | Проверяемая исследовательская гипотеза | Цель проверки гипотезы | Приоритет |
-|---|--------------------|------------------------------|----------------------------------------|----------------------|-----------|
-| EC-1 | Неоднозначные пограничные случаи (score около 60) | Пары с эталонным score в диапазоне 50–65 и разными решениями match/no_match, включая вариации по роли, навыкам, опыту и условиям | Расширение пограничных кейсов проверяет влияние таких примеров на границу между match и no_match | Проверить стабильность решения на границе порога | Обязательная |
-| EC-3 | Формально похожее название должности при несовместимом содержании | Пары, где названия должностей или навыков пересекаются формально, но содержание работы несовместимо | Расширение таких пар проверяет влияние названия на итоговое решение | Проверить, оценивает ли модель содержание компетенций, а не только название должности | Обязательная |
-| EC-4 | Несоответствие по условиям при сильном профиле | Пары, где кандидат сильно релевантен по роли/навыкам, но имеет критичное несоответствие по зарплате, городу или формату работы | Расширение таких пар проверяет влияние conditions_score на итоговое решение | Проверить, сохраняет ли модель корректную оценку условий при сильном профиле | Обязательная |
-
-**Исключённая категория:**
-
-- **EC-2 «Некорректный / неполный вход»** — исключена из каталога Experiment 003. Данная категория относится к runtime-валидации обработки входных данных и API-контура, а не к проверке гипотезы о влиянии состава teacher dataset на качество LoRA-модели. В рамках Experiment 003 изменяемой переменной является состав teacher dataset; корректность обработки повреждённого или неполного входа выходит за рамки этой гипотезы.
-
-**Данные, необходимые на Этапе 4 для принятия решения об объёме:**
-
-Для каждой категории при планировании объёма на Этапе 4 требуется учитывать:
-
-1. **Текущее распределение классов** — соотношение match/no_match в train/validation/test после добавления hard negatives.
-2. **Число типов ошибок** — сколько подкатегорий внутри каждой категории требуется покрыть, чтобы модель обобщила паттерн.
-3. **Объём train/validation/test** — доля новых примеров в каждом split при стратегии вариант Б (исходный test set сохраняется).
-4. **Репрезентативность split** — сохранение стратификации и отсутствие дисбаланса в пользу одной категории.
-5. **Доступные профессии и вакансии** — из каких областей можно реалистично составить примеры, не дублируя существующие кейсы.
-6. **Judge-ёмкость** — сколько новых примеров можно качественно разметить одним Judge-проходом.
-
-**Финальная проверка согласованности Этапа 3:**
-
-После внесения изменений выполнена проверка:
-- ✅ Все hard negative-категории описывают структуру добавляемых данных, а не ожидаемое поведение модели.
-- ✅ Все failure mode сформулированы через наблюдаемые факты из `generation_test_report.json`.
-- ✅ Исследовательская терминология используется единообразно: колонка «Цель проверки гипотезы» применена во всех таблицах каталога.
-- ✅ Edge case-категории ограничены влиянием состава teacher dataset; EC-2 исключена как относящаяся к runtime/API.
-- ✅ Этап 3 согласован с исследовательской гипотезой Experiment 003: все категории направлены на проверку влияния состава teacher dataset на качество обработки сложных отрицательных сценариев.
-
-Дополнительных редакционных замечаний к Этапу 3 не выявлено.
-
-**Условие перехода:** ✅ выполнено. Каждая новая категория проверяет конкретный тип ошибки.
-
-**Итоговые перечни:**
-
-**Утверждённые категории hard negative:**
-- HN-1: Полностью нерелевантная профессия (non-IT в IT)
-- HN-2: Смежная роль без обязательных навыков
-- HN-3: Совпадение по общим словам без совпадения по компетенциям
-- HN-4: Сильный профиль в нерелевантной специализации
-- HN-5: Одиночное совпадение навыка без основного профиля
-- HN-6: Разница в уровне опыта (junior vs senior)
-- HN-7: Разница в функциональной роли (управленческая vs исполнительская)
-- HN-8: Дисбаланс soft skills и hard skills
-
-**Edge case-категории:**
-- EC-1: Неоднозначные пограничные случаи
-- EC-3: Формально похожее название должности при несовместимом содержании
-- EC-4: Несоответствие по условиям при сильном профиле
-
-**Исключённая из каталога категория:**
-- EC-2: Некорректный / неполный вход — исключена, так как относится к runtime/API, а не к проверке гипотезы о влиянии состава teacher dataset.
-
-**Выявленные неопределённости:**
-
-| # | Неопределённость | Этап решения |
-|---|------------------|--------------|
-| 1 | Точное количество примеров в каждой категории | Этап 4 |
-| 2 | Будет ли Judge сохранять тот же strictness для hard negatives, как для исходных кейсов | Этап 6 |
-| 3 | Достаточно ли 8 hard negative категорий для покрытия всех failure mode Experiment 002 | Этап 14 (по результатам) |
-
-**Вопросы, которые должны быть решены на Этапе 4:**
-
-1. Как распределить hard negative примеры между train и validation при сохранении исходного test set?
-2. Какое минимальное количество примеров нужно в каждой обязательной категории для обучения устойчивого паттерна?
-3. Сколько edge case-примеров включить в validation для контроля переобучения?
-4. Нужен ли отдельный hard negative holdout, и если да, то из каких категорий?
-5. Как сохранить стратификацию и баланс match/no_match после добавления новых примеров?
-
----
-
-### Этап 4. Определить стратегию датасета и split
-
-**Статус:** ✅ Выполнено.
-
-**Действия:**
-- На основании утверждённого контракта (Этап 1), результатов аудита Experiment 002 (Этап 2) и каталога категорий (Этап 3) сформулирована инженерная стратегия формирования teacher dataset Experiment 003.
-- Проверена техническая реализуемость split-стратегии с учётом фиксированных путей в `scripts/train_lora.py` и необходимости параметризации на Этапе 7.
-- Определены принципы распределения новых примеров по train/validation/original test/hard negative holdout. Runtime smoke set описан как отдельный инженерный артефакт эксплуатационной проверки, не входящий в teacher dataset.
-
-**Утверждённая стратегия split — вариант Б (сохранение исходного test set):**
-
-Исходный teacher dataset Experiment 002 (90 записей) остаётся неизменным в части test set. Новые hard negative и edge case-примеры добавляются преимущественно в train и validation. Hard negative holdout используется для независимой оценки способности модели обобщать на ранее не встречавшиеся hard negative-сценарии. Runtime smoke set — отдельный инженерный артефакт эксплуатационной проверки после завершения обучения, он не является частью teacher dataset и не входит в split.
-
-| Split | Назначение | Содержание | Источник |
-|-------|-----------|------------|----------|
-| train | Обучение модели | Исходный train (72 записи) + новые hard negatives/edge cases | `data/train.jsonl` + новые примеры |
-| validation | Выбор best checkpoint, ранняя остановка | Исходный validation (9 записей) + репрезентативные новые hard negatives/edge cases | `data/validation.jsonl` + новые примеры |
-| original test | Прямое сравнение с Experiment 002 | Исходный test set Experiment 002 без изменений | `data/test.jsonl` |
-| hard negative holdout | Независимая оценка способности модели обобщать на ранее не встречавшиеся hard negative-сценарии | Новые hard negatives/edge cases, отсутствующие в train/validation | Новые примеры |
-| runtime smoke set *(не часть teacher dataset)* | Runtime-валидация API после обучения | Фиксированный набор позитивных, очевидных негативных, hard negative и edge case-запросов | Новые + часть существующих примеров |
-
-**1. Стратегия формирования dataset**
-
-*Баланс между существующими и новыми примерами.*
-
-Существующие 90 записей образуют стабильную основу, на которой уже обучалась Experiment 002. Они покрывают:
-- три вакансии: Prompt Engineer / AI Automation Specialist, Системный аналитик, Специалист по разметке данных;
-- три группы: obvious_match, obvious_no_match, borderline;
-- стратифицированный split 72/9/9.
-
-Новые примеры должны:
-- дополнять, а не заменять существующие записи;
-- обеспечить покрытие всех утверждённых обязательных категорий hard negatives и edge cases в train/validation;
-- не нарушать общую структуру и формат teacher dataset;
-- сохранять воспроизводимость разметки тем же Judge с `temperature = 0`.
-
-Принцип баланса: новые hard negative-примеры добавляются в объёме, достаточном для представления каждой обязательной категории разнообразными сценариями, но без доминирования над существующими записями и без искажения исходного соотношения match/no_match. Конкретное число новых примеров определяется на Stage 5 по мере генерации реалистичных кейсов, но не может быть произвольно назначено заранее.
-
-*Баланс категорий.*
-
-Каждая обязательная категория Stage 3 должна быть представлена в train. Обязательные категории:
-- HN-1, HN-2, HN-3, HN-4, HN-5, HN-8 (hard negatives);
-- EC-1, EC-3, EC-4 (edge cases).
-
-Желательные категории HN-6 и HN-7 включаются при наличии естественных кейсов, но не требуются для закрытия эксперимента.
-
-Балансировка между категориями строится не по равному количеству, а по покрытию сценариев: каждая категория должна быть представлена разнообразием профессий, вакансий, причин отказа и уровней опыта, достаточным для проверки соответствующей гипотезы. Никакая отдельная категория не должна доминировать над остальными по новым примерам.
-
-*Обоснование проверки гипотезы.*
-
-Гипотеза Experiment 003 утверждает, что расширение teacher dataset за счёт hard negative и edge case-примеров улучшит прохождение runtime negative smoke test без существенного ухудшения остальных метрик. Стратегия варианта Б позволяет проверить это утверждение инженерно корректно:
-- сохранение исходного test set обеспечивает прямое сравнение Experiment 002 и Experiment 003 по одним и тем же кейсам;
-- добавление hard negatives в train/validation направлено именно на изменение состава teacher dataset — единственной изменяемой переменной;
-- hard negative holdout обеспечивает независимую оценку способности модели обобщать на ранее не встречавшиеся hard negative-сценарии;
-- runtime smoke set, не входящий в teacher dataset, отделяет эксплуатационную валидацию от offline-метрик.
-
-Если модель Experiment 003 покажет улучшение на hard negative holdout, который служит для независимой оценки способности модели обобщать на ранее не встречавшиеся hard negative-сценарии, и на runtime smoke set при сохранении метрик на original test, гипотеза будет подтверждена.
-
-**2. Принципы распределения по split**
-
-*Обязательное присутствие категорий.*
-
-| Split | Требование к категориям |
-|-------|-------------------------|
-| train | Все обязательные hard negative и edge case категории (HN-1–5, HN-8, EC-1, EC-3, EC-4) должны быть представлены разнообразием исследовательских сценариев, покрывающих разные профессии, вакансии и причины отказа. |
-| validation | Каждая обязательная категория должна быть представлена в объёме, достаточном для контроля переобучения и измерения generalization. |
-| original test | Не изменяется; содержит исходные кейсы Experiment 002. |
-| hard negative holdout | Каждая обязательная категория должна быть представлена кейсами, отсутствующими в train/validation, для независимой оценки способности модели обобщать на ранее не встречавшиеся hard negative-сценарии. |
-| runtime smoke set *(не часть teacher dataset)* | Runtime-валидация API после обучения | Должен включать позитивные, очевидные негативные, hard negative и edge case-запросы, зафиксированные до обучения. |
-
-*Ограничения и правила исключения leakage.*
-
-1. Исходный test set Experiment 002 (`data/test.jsonl`) остаётся без изменений. Никакие его `case_code`, резюме или вакансии не добавляются в train/validation.
-2. Hard negative holdout полностью отделён от train/validation: его `case_code` не пересекаются с обучающей выборкой. Назначение holdout — независимая оценка способности модели обобщать на ранее не встречавшиеся hard negative-сценарии.
-3. Новые примеры в train и validation не должны быть лексическими перефразировками существующих тестовых кейсов.
-4. Если один кандидат используется для разных вакансий, каждая пара «резюме–вакансия» считается отдельной записью; при этом одна и та же пара не может одновременно находиться в train/validation и в holdout.
-5. Runtime smoke set не входит в teacher dataset и не используется при обучении; его `case_code` могут пересекаться с original test или holdout только как фиксированные запросы для эксплуатационной проверки.
-
-*Сопоставимость с Experiment 002.*
-
-- Original test set идентичен.
-- Базовая модель, LoRA-параметры, параметры обучения, метрика выбора чекпоинта — неизменны.
-- Скрипты обучения и evaluation будут параметризованы на Этапе 7, но логика оценки остаётся прежней.
-- Все сравнения выполняются на одном и том original test set и на одном hard negative holdout, который служит для независимой оценки способности модели обобщать на ранее не встречавшиеся hard negative-сценарии.
-
-**3. Критерии достаточности для каждой категории**
-
-Достаточность категории определяется не числом примеров, а покрытием исследовательских сценариев.
-
-| Категория | Критерий достаточности |
-|-----------|------------------------|
-| HN-1 | Покрыты разные non-IT профессии (медицина, юриспруденция, продажи, бухгалтерия и др.); каждая из трёх целевых вакансий представлена; причины отказа разнообразны (отсутствие IT-профиля, отсутствие hard skills, несовместимость отрасли). |
-| HN-2 | Покрыты разные пары смежных ролей (например, бизнес-аналитик → системный аналитик, контент-менеджер → prompt engineer); для каждой пары явно указаны недостающие обязательные навыки; представлены разные вакансии. |
-| HN-3 | Есть примеры лексического совпадения названий должностей или навыков без совпадения компетенций; покрыты разные домены; продемонстрировано, что формальное сходство не означает релевантность. |
-| HN-4 | Покрыты сильные профили (серьёзный опыт, релевантные достижения) в специализациях, отличных от целевых вакансий; разные нерелевантные специализации и вакансии; общая сила профиля не компенсирует отсутствие профильной базы. |
-| HN-5 | Покрыты случаи, когда у кандидата есть отдельные навыки из требований вакансии, но отсутствует основной профиль; разные вакансии; совпадение навыков является инцидентным, а не фундаментальным. |
-| HN-6 | Покрыты пары с разницей в уровне опыта (junior-кандидат на senior-роль и наоборот); при прочей релевантности поля опыт и требования вакансии формируют отказ. |
-| HN-7 | Покрыты пары управленческий/исполнительский опыт; разные вакансии; функциональная роль кандидата не соответствует роли вакансии. |
-| HN-8 | Покрыты кандидаты с развитыми soft skills, но без обязательной технической базы; разные вакансии; явно прослеживается дисбаланс между soft и hard skills. |
-| EC-1 | Покрыты пограничные случаи с эталонным score в диапазоне 50–65; представлены как match-, так и no_match-решения; разные факторы (роль, навыки, опыт, условия) балансируют на границе порога. |
-| EC-3 | Покрыты пары с формально похожими названиями должностей, но несовместимым содержанием; разные домены; модель должна оценивать содержание, а не только название. |
-| EC-4 | Покрыты пары с сильным профилем по роли/навыкам, но критичным несоответствием по зарплате, городу или формату; разные типы несоответствий. |
-
-**4. Ограничения на новые данные**
-
-| # | Ограничение | Формулировка |
-|---|-------------|--------------|
-| 1 | Отсутствие дубликатов | Новые `case_code` не пересекаются с существующими. Новые пары «резюме–вакансия» не дублируют существующие по содержанию. |
-| 2 | Отсутствие противоречий с Judge-разметкой | Если новый кейс похож на существующий, его reference decision и score должны быть логически согласованы с существующей разметкой. |
-| 3 | Единый формат | Все новые записи следуют структуре `messages` (system/user/assistant) и metadata, идентичной исходному dataset. |
-| 4 | Сохранение структуры teacher dataset | Соотношение полей `role_score`/`skills_score`/`experience_score`/`conditions_score`/`score`/`decision`/`reason` сохраняется; reference score вычисляется по той же шкале. |
-| 5 | Отсутствие неоднозначной трактовки | Каждый новый кейс имеет однозначное ожидаемое решение и обоснование, проверяемое через Judge contract. |
-| 6 | Анонимизация | Все резюме и вакансии синтетические или анонимизированные; не используются реальные данные. |
-| 7 | Устойчивые идентификаторы | Новые `case_code` следуют схеме `HRA-EVAL-V2-XXXXXX` и не пересекаются с существующими ID. |
-
-**5. Критерии качества Experiment 003 dataset**
-
-Dataset считается готовым к передаче на Stage 5, если выполнены следующие условия:
-
-| # | Критерий | Признак готовности |
-|---|----------|--------------------|
-| 1 | Полнота категорий | В train представлены все обязательные hard negative и edge case категории разнообразием исследовательских сценариев; в validation и hard negative holdout каждая обязательная категория представлена в объёме, достаточном для независимой оценки обобщения на ранее не встречавшиеся hard negative-сценарии. |
-| 2 | Отсутствие leakage | Нет пересечений `case_code` между train/validation и original test/hard negative holdout. Runtime smoke set не входит в teacher dataset. |
-| 3 | Структурная валидность | Все записи teacher dataset проходят JSON-валидацию и соответствуют schema исходного dataset. |
-| 4 | Согласованность разметки | Все reference решения согласованы с Judge contract; нет внутренних противоречий внутри категории. |
-| 5 | Разумное распределение match/no_match | Новые примеры не смещают общее соотношение match/no_match в сторону, необоснованную содержанием кейсов. |
-| 6 | Покрытие вакансий | Новые hard negative примеры распределены по трём целевым вакансиям без необоснованного перекоса в одну вакансию. |
-| 7 | Документирование | Составлен manifest с перечнем новых записей teacher dataset, их категорий и назначением в split. |
-
-**6. Открытые вопросы Stage 5**
-
-Следующие вопросы должны быть решены непосредственно при подготовке новых примеров:
-
-| # | Вопрос | Почему важен |
-|---|--------|--------------|
-| 1 | Финальное количество примеров в каждой категории | Количество определяется на основе реалистично генерируемых кейсов и критериев достаточности, а не назначается заранее. |
-| 2 | Конкретные профессии и вакансии для каждой категории | Нужно обеспечить разнообразие и избежать дублирования с существующими case_code. |
-| 3 | Покрытие трёх целевых вакансий в каждой категории | Для проверки generalization hard negatives должны быть применимы ко всем целевым вакансиям, где это содержательно возможно. |
-| 4 | Обработка кейсов, комбинирующих несколько категорий | Нужно определить primary category для разметки и убедиться, что такие кейсы не искажают баланс категорий. |
-| 5 | Сохранение strictness Judge для hard negatives | Нужно убедиться, что Judge при `temperature = 0` сохраняет ту же строгость для сложных отрицательных примеров, что и для исходных. |
-| 6 | Состав runtime smoke set | Нужно зафиксировать конкретные case_code и вакансии до обучения, чтобы избежать подбора тестов под результат. |
-| 7 | Поведение при неоднозначных Judge-ответах | Если Judge выдаёт inconsistent decision при повторном прогоне, нужно либо исключить кейс, либо задокументировать причину. |
-
-**Условие перехода:** ✅ выполнено. Исключена утечка тестовых примеров в обучение: исходный test set сохраняется, hard negative holdout отделён от train/validation, зафиксированы правила предотвращения leakage.
-
----
-
-### Этап 5. Подготовить новые примеры
-
-**Статус:** ✅ Выполнено и верифицировано по модели данных Experiment 002.
-
-**Верификация модели данных (выполнена перед финализацией Stage 5):**
-
-Перед финализацией Stage 5 восстановлена фактическая структура teacher dataset Experiment 002 по первоисточникам:
-
-| Проверяемый вопрос | Установленный факт | Источник |
-|--------------------|--------------------|----------|
-| Первичный объект Experiment 002 | **Кандидат** (таблица `eval_prompt_cases`) | `extract_teacher_dataset.py:83`, схема PostgreSQL |
-| Значение `case_code` | Идентификатор **одного кандидата**, не пары «резюме–вакансия» | `data/*.jsonl`: 30 уникальных `case_code`, каждый повторяется 3 раза |
-| Число Judge-оценок на кандидата | **3 оценки** — по одной на каждую из трёх вакансий | JSONL: 30 candidates × 3 vacancies = 90 records; БД: 30 candidates, 90 pairs |
-| Способ формирования train/validation/test | Стратификация по группе кандидата (`case_type`); каждый `case_code` целиком в одном split | `extract_teacher_dataset.py:212-243`, `teacher_dataset_report.md` |
-| Сопоставление кандидатов с вакансиями | Каждый кандидат оценивается **по всем трём вакансиям** | БД-запрос: `COUNT(pcv.id)` для каждого `case_code` = 3 |
-
-**Выявленное расхождение:** первичная версия Stage 5 проектировала 30 record-level кейсов, присваивая каждому собственный `case_code` и одну целевую вакансию. Это противоречит архитектуре Experiment 002, где `case_code` — это кандидат, а вакансия — измерение, по которому кандидат оценивается трижды.
-
-**Корректировка:** Stage 5 приведён в соответствие с моделью данных Experiment 002. Спецификация теперь проектирует **новых кандидатов**, а сопоставление с тремя вакансиями отнесено на Stage 6, где каждый кандидат сгенерирует 3 записи teacher dataset (по аналогии с формированием `data/*.jsonl` для Experiment 002).
-
-**Действия:**
-- На основании каталога категорий Stage 3 и стратегии split Stage 4 подготовлена спецификация новых кандидатов.
-- Определены уникальные идентификаторы `case_code` в диапазоне `HRA-EVAL-V2-000101`–`HRA-EVAL-V2-000111`, не пересекающиеся с существующими кандидатами Experiment 002 (`HRA-EVAL-V2-000001`–`HRA-EVAL-V2-000030`).
-- Каждому кандидату присвоена primary category из утверждённого каталога и назначение split (train / validation / hard negative holdout).
-- Для каждого кандидата зафиксировано краткое описание профиля, обязательные присутствующие и отсутствующие особенности резюме, а также исследовательская цель.
-- Выполнены проверки покрытия категорий, отсутствия конфликтов с существующим dataset и реалистичности.
-
-**1. Спецификация новых кандидатов**
-
-| # | case_code | Primary Category | Назначение | Краткое описание кандидата | Обязательно присутствует в резюме | Обязательно отсутствует в резюме | Исследовательская цель | Ожидаемое поведение по вакансиям (Stage 6) |
-|---|-----------|------------------|------------|------------------------------|-----------------------------------|----------------------------------|------------------------|-------------------------------------------|
-| 1 | HRA-EVAL-V2-000101 | HN-1 | train | Врач-терапевт с 7-летним опытом в поликлинике | Медицинский профиль, клинический опыт, soft skills | IT-профиль, prompt engineering, n8n, LLM, JSON, BPMN, SQL | Проверить снижение положительных решений на профилях без IT-компетенций | HN-1 для всех трёх вакансий |
-| 2 | HRA-EVAL-V2-000102 | HN-2 / EC-3 | train | Бизнес-аналитик с 3-летним опытом, знает BPMN и UML | BPMN, UML, требования, бизнес-процессы | Prompt engineering, n8n, LLM, deep REST API, SQL | Проверить различение смежной роли и влияние формального сходства названий | HN-2 для Системного аналитика; EC-3 для Prompt Engineer («аналитик»); HN-1 для Специалиста по разметке |
-| 3 | HRA-EVAL-V2-000103 | HN-3 / EC-3 | train | Data analyst с опытом SQL, Python и BI | SQL, Python, BI, визуализация данных | Prompt engineering, n8n, LLM-интеграции, автоматизация бизнес-процессов, BPMN, UML | Проверить влияние лексического совпадения «аналитик» на итоговый score | HN-3 / EC-3 для Prompt Engineer («аналитик»); HN-2 для Системного аналитика (смежная роль без hard skills); HN-1 для Специалиста по разметке |
-| 4 | HRA-EVAL-V2-000104 | HN-4 | train | Сильный Python backend-разработчик (5 лет), backend/API | Python, backend, API, серьёзный опыт разработки | Prompt engineering, n8n, LLM-интеграции, автоматизация бизнес-процессов | Проверить, компенсирует ли общая сила профиля отсутствие специализации | HN-4 для Prompt Engineer; HN-2 для Системного аналитика; HN-1 для Специалиста по разметке |
-| 5 | HRA-EVAL-V2-000105 | HN-5 | train | Копирайтер с опытом текстов и базовым знанием JSON из курсов | Копирайтинг, базовое знание JSON | Prompt engineering, n8n, LLM, основной профиль в AI/IT | Проверить, приводит ли единичное совпадение навыка к завышенному score | HN-5 для Prompt Engineer; HN-1 для остальных |
-| 6 | HRA-EVAL-V2-000106 | HN-8 | train | Коммьюнити-менеджер с сильными коммуникационными навыками, организация мероприятий | Коммуникация, организация мероприятий, soft skills | Prompt engineering, n8n, LLM, JSON, BPMN, SQL, ML | Проверить баланс между оценкой soft и hard skills | HN-8 для всех трёх вакансий |
-| 7 | HRA-EVAL-V2-000107 | EC-1 / EC-4 | train | Middle-кандидат с частичным соответствием по навыкам и несоответствием по условиям | Частичный набор hard skills, релевантный опыт | Полное соответствие требованиям, соответствие зарплате/формату | Проверить границу порога и сохранение оценки условий | EC-1 для одной-двух вакансий (score около 60); EC-4 для вакансии с критичным mismatch по условиям |
-| 8 | HRA-EVAL-V2-000108 | HN-6 | validation | Junior Python-разработчик (1 год), базовые скрипты | Python, базовые скрипты | Опыт prompt engineering, n8n, LLM-интеграций на senior-уровне | Проверить влияние уровня опыта на оценку релевантности | HN-6 для Prompt Engineer и Системного аналитика; HN-1 для Специалиста по разметке |
-| 9 | HRA-EVAL-V2-000109 | EC-1 | validation | Пограничный кандидат с частичным соответствием по роли/навыкам | Часть hard skills вакансии, релевантный опыт | Полное покрытие всех требований | Проверить стабильность решения на границе порога 60 | EC-1 для одной вакансии (match/no_match около 60); HN-2/HN-3 для других |
-| 10 | HRA-EVAL-V2-000110 | HN-7 | holdout | IT-руководитель / project manager с управленческим опытом | Управление командами, проектами, стейкхолдерами | Исполнительский prompt engineering, n8n, hands-on BPMN/UML | Проверить различение управленческой и исполнительской ролей | HN-7 для Prompt Engineer и Системного аналитика; HN-1 для Специалиста по разметке |
-| 11 | HRA-EVAL-V2-000111 | EC-4 / EC-3 | holdout | Сильный специалист в смежной области с критичным несоответствием по условиям и формально похожим профилем | Сильный профиль по роли/навыкам | Соответствие зарплате/формату; для EC-3 — отсутствие реальной компетенции под маской похожего названия | Проверить оценку условий при сильном профиле и влияние формального сходства | EC-4 для вакансии с несоответствием по условиям; EC-3 для вакансии с формально похожим названием; HN-1/HN-4 для остальных |
-
-**2. Распределение по split (на уровне кандидатов)**
-
-| Split | Кандидаты | Записей после Stage 6 (×3 вакансии) | Комментарий |
-|-------|-----------|-------------------------------------|-------------|
-| train | 000101–000107 | 21 | Основной объём hard negatives; покрыты HN-1, HN-2, HN-3, HN-4, HN-5, HN-8, EC-1, EC-4 и EC-3 (как вторичный эффект) |
-| validation | 000108–000109 | 6 | Контроль переобучения; HN-6 и EC-1 |
-| hard negative holdout | 000110–000111 | 6 | Независимая оценка обобщения; HN-7, EC-4, EC-3 |
-| original test | — | 9 (без изменений) | Исходный test set Experiment 002 |
-
-**3. Покрытие категорий**
-
-| Категория | Где представлена | Покрытие трёх вакансий |
-|-----------|------------------|------------------------|
-| HN-1 | ✅ Train (000101) + secondary во многих кандидатах | ✅ Все три вакансии через 000101 |
-| HN-2 | ✅ Train (000102) | ✅ Через 000102 (Системный аналитик) |
-| HN-3 | ✅ Train (000103) | ✅ Через 000103 (Prompt Engineer, Системный аналитик) |
-| HN-4 | ✅ Train (000104) | ✅ Через 000104 (Prompt Engineer) |
-| HN-5 | ✅ Train (000105) | ✅ Через 000105 (Prompt Engineer) |
-| HN-6 | ✅ Validation (000108) | ✅ Через 000108 (Prompt Engineer, Системный аналитик) |
-| HN-7 | ✅ Holdout (000110) | ✅ Через 000110 (Prompt Engineer, Системный аналитик) |
-| HN-8 | ✅ Train (000106) | ✅ Все три вакансии через 000106 |
-| EC-1 | ✅ Train (000107) + Validation (000109) | ✅ Через 000107 и 000109 |
-| EC-3 | ✅ Train (000102, 000103) + Holdout (000111) | ✅ Через 000102, 000103, 000111 |
-| EC-4 | ✅ Train (000107) + Holdout (000111) | ✅ Через 000107 и 000111 |
-
-**4. Проверка отсутствия конфликтов**
-
-| Проверка | Результат |
-|----------|-----------|
-| Уникальность `case_code` | ✅ Все новые ID (`000101`–`000111`) не пересекаются с существующими (`000001`–`000030`). |
-| Отсутствие дубликатов по содержанию | ✅ Новые профили (врач, бизнес-аналитик, data analyst, Python-разработчик, копирайтер, коммьюнити-менеджер, middle-кандидат, junior разработчик, IT-руководитель, специалист со смежным профилем) не дублируют существующих 30 кандидатов. |
-| Отсутствие перефразировок | ✅ Каждый новый кандидат имеет отличный от существующих профессиональный профиль. |
-| Согласованность с Judge-разметкой | ✅ Ожидаемые решения логически согласованы с существующей разметкой: нерелевантные профили — no_match, смежные без hard skills — no_match, пограничные — около порога. |
-| Отсутствие leakage в original test | ✅ Новые `case_code` не пересекаются с `data/test.jsonl`. |
-| Разделение train/validation/holdout | ✅ Каждый кандидат зафиксирован в одном split; его будущие 3 записи (по вакансиям) не смешиваются между split. |
-
-**5. Проверка реалистичности**
-
-| Требование | Результат |
-|------------|-----------|
-| Без «идеально» отрицательных примеров | ✅ Все кандидаты — реальные профессии с правдоподобным опытом, без искусственного нагромождения несоответствий. |
-| Без очевидных случаев | ✅ Ни один профиль не сводится к одному ключевому слову; для каждого есть содержательное обоснование отказа. |
-| Правдоподобные сочетания | ✅ Все профессии и переходы (data analyst ↔ prompt engineer, QA ↔ data annotation, PM ↔ системный аналитик) встречаются на рынке. |
-| Рыночная обоснованность | ✅ Junior на senior, управленец на исполнительскую роль, несоответствие зарплаты/формата — типичные ситуации. |
-
-**6. Готовность к Stage 6**
-
-Для каждого кандидата спецификация содержит:
-- `case_code` — устойчивый ID кандидата (не пары «резюме–вакансия»);
-- primary category — для разметки и контроля баланса;
-- назначение split — для последующей сборки dataset;
-- краткое описание профиля — основу для генерации резюме;
-- обязательно присутствующие особенности — что должно быть в резюме;
-- обязательно отсутствующие особенности — что не должно быть в резюме, чтобы не размыть hard negative;
-- исследовательскую цель — какую гипотезу проверяет кандидат;
-- ожидаемое поведение по вакансиям — для понимания, какой категории будет соответствовать каждая из 3 будущих записей.
-
-Этой информации достаточно для генерации полноценного резюме, отправки в Judge по трём вакансиям и получения однозначной teacher-разметки без возврата к проектированию.
-
-### 7. Обоснование объёма Stage 5 и соотнесение с первичной record-level версией
-
-**Первичная версия Stage 5** спроектировала 30 record-level кейсов (`HRA-EVAL-V2-000101`–`HRA-EVAL-V2-000130`), каждый со своим `case_code` и одной целевой вакансией. Эта версия не прошла верификацию модели данных Experiment 002, так как в фактическом teacher dataset первичным объектом является **кандидат**, а `case_code` идентифицирует кандидата, а не пару «резюме–вакансия».
-
-**Корректировка** перевела спецификацию с record-level кейсов на candidate-level кандидатов. После корректировки Stage 5 содержит **11 новых кандидатов** (`HRA-EVAL-V2-000101`–`HRA-EVAL-V2-000111`). Каждый кандидат будет оценён Judge по всем трём вакансиям на Stage 6, что даст **33 новые записи** teacher dataset (11 × 3).
-
-**Исследовательское основание для числа 11:**
-
-- Этапы 1–4 не фиксировали количество новых кандидатов или записей заранее. Это задокументировано в ограничениях Stage 3 («не назначать произвольное количество новых примеров») и Stage 4 («не определять произвольные количественные значения без обоснования»; «конкретное число новых примеров определяется на Stage 5 по мере генерации реалистичных кейсов, но не может быть произвольно назначено заранее»).
-- Число 11 определено исключительно покрытием категорий Stage 3 критериями достаточности Stage 4: каждая обязательная и доступная желательная категория получила реалистичного, отличного от существующих кандидата, а количество не доминирует над существующими 90 записями.
-- В терминах записей teacher dataset объём не уменьшился, а слегка увеличился: 30 record-level записей → 33 candidate-level записи. Разница в единице измерения (кандидат vs запись) создала видимое уменьшение с 30 до 11, но оно не является сокращением исследовательского объёма.
-
-**Вывод:** уменьшение с 30 до 11 — побочный эффект восстановления правильной модели данных, а не исследовательское решение. Окончательный объём Stage 5 — **11 новых кандидатов (33 записи teacher dataset)**, определённый покрытием категорий и не противоречащий исследовательскому контракту, критериям Stage 4 и сопоставимости с Experiment 002.
-
-**Условие перехода:** ✅ выполнено. Спецификация каждого кандидата содержит достаточно информации для генерации резюме, Judge-разметки по 3 вакансиям и включения в teacher dataset с сохранением модели данных Experiment 002. Конфликтов с существующим dataset не выявлено, все обязательные категории покрыты, кандидаты реалистичны. Объём Stage 5 (11 кандидатов / 33 записи) задокументирован и согласован с моделью данных Experiment 002.
-
----
-
-### Этап 6. Получить teacher-разметку
-
-**Статус:** ✅ Выполнен. Judge отработал, все 123 пары размечены, teacher dataset экспортирован.
-
-**Архитектурные предпосылки (утверждены и неизменны):**
-
-- Experiment 003 — самостоятельный эксперимент.
-- В него входят 30 существующих кандидатов Experiment 002 и 11 новых кандидатов Stage 5.
-- Каждый кандидат оценивается по тем же трём вакансиям.
-- Итого: 41 candidate × 3 vacancies = **123 candidate-vacancy pairs**.
-- Повторная Judge-разметка существующих 90 пар является частью архитектуры Experiment 003.
-
-**Анализ существующего pipeline Experiment 002**
-
-| Компонент | Роль | Источник |
-|-----------|------|----------|
-| `eval_prompt_datasets` | Хранит версию датасета тестовых кейсов | `database/02-prompt-evaluation.sql:24` |
-| `eval_prompt_cases` | Хранит кандидата как тестовый кейс (`case_code`, `case_type`, `candidate_json`) | `database/02-prompt-evaluation.sql:44` |
-| `eval_prompt_case_vacancies` | Хранит пары candidate × vacancy и reference-разметку Judge | `database/02-prompt-evaluation.sql:66` |
-| `eval_prompt_experiments` | Определяет эксперимент (prompt, Judge model, temperature) | `database/02-prompt-evaluation.sql:88` |
-| `eval_prompt_runs` | Хранит запуски judge / A / B | `database/02-prompt-evaluation.sql:130` |
-| `eval_prompt_results` | Хранит результаты по каждой паре (не используется для формирования teacher dataset) | `database/02-prompt-evaluation.sql:152` |
-| workflow `HRA Prompt Evaluation Experiment` | Запускает Judge: получает пары, вызывает OpenAI, сохраняет reference_* | `workflows/HRA Prompt Evaluation Experiment.json` |
-| `extract_teacher_dataset.py` | Экспортирует все размеченные пары эксперимента в `train.jsonl`, `validation.jsonl`, `test.jsonl` | `finetuning/scripts/extract_teacher_dataset.py` |
-
-**Как формируются candidate-vacancy pairs:**
-
-1. `eval_prompt_cases` заполняется кандидатами, привязанными к `dataset_id`.
-2. `eval_prompt_case_vacancies` заполняется `CROSS JOIN` между `eval_prompt_cases` и `vacancies` со статусом `open` (см. `database/03-seed-eval-dataset-v2.sql:316-338`).
-3. Для Experiment 002 это дало 30 кандидатов × 3 вакансии = 90 пар.
-
-**Как пары передаются Judge:**
-
-1. Workflow `HRA Prompt Evaluation Experiment` создаёт Judge Run в `eval_prompt_runs`.
-2. Узел `PG: Get Pairs Without Reference` выбирает из `eval_prompt_case_vacancies` пары с `reference_score IS NULL`.
-3. Каждая пара преобразуется в OpenAI-запрос: system message = `judge_prompt_text`, user message = `candidate_json` + `vacancy_json`.
-4. Ответ парсится в JSON-структуру `role_score`, `skills_score`, `experience_score`, `conditions_score`, `score`, `decision`, `reason`.
-
-**Как сохраняются reference_* поля:**
-
-Узел `PG: Update Reference Fields` выполняет:
-
-```sql
-UPDATE eval_prompt_case_vacancies
-SET reference_score = ...,
-    reference_decision = ...,
-    reference_reason = ...,
-    reference_role_score = ...,
-    reference_skills_score = ...,
-    reference_experience_score = ...,
-    reference_conditions_score = ...,
-    reference_raw_response_json = ...,
-    reference_model = ...,
-    reference_latency_ms = ...,
-    reference_generated_at = NOW()
-WHERE id = <case_vacancy_id>;
-```
-
-**Ограничения, уже существующие в схеме:**
-
-- `reference_score` CHECK 0–100.
-- `reference_decision` CHECK `'match' | 'no_match'`.
-- Детальные score CHECK: role 0–30, skills 0–35, experience 0–20, conditions 0–15 (см. `database/06-extend-judge-reference-fields.sql`).
-- FK `case_vacancies.case_id -> cases.id ON DELETE CASCADE`.
-- FK `cases.dataset_id -> datasets.id ON DELETE CASCADE`.
-- FK `experiments.dataset_id -> datasets.id ON DELETE CASCADE`.
-
-**Pipeline Stage 6 для Experiment 003**
-
-Для воспроизводимости Experiment 003 создан отдельный dataset `HRA-EVAL-V3` и отдельный эксперимент `HRA-EXP-V3`, которые максимально переиспользуют конфигурацию `HRA-EXP-V2`:
-
-1. Создать `eval_prompt_datasets` запись `HRA-EVAL-V3`.
-2. Скопировать в `HRA-EVAL-V3` 30 существующих кандидатов из `HRA-EVAL-V2`.
-3. Добавить 11 новых hard negative / edge case кандидатов Stage 5.
-4. Создать `CROSS JOIN` всех 41 кандидатов с 3 открытыми вакансиями → 123 пары в `eval_prompt_case_vacancies`.
-5. Создать эксперимент `HRA-EXP-V3`, скопировав prompt/model/temperature из `HRA-EXP-V2`.
-6. Запустить workflow `HRA Prompt Evaluation Experiment` с параметрами `experiment_code = 'HRA-EXP-V3'`, `dataset_code = 'HRA-EVAL-V3'`, `expected_pairs = 123`.
-7. После Judge выполнить `extract_teacher_dataset.py` (параметризованный под `HRA-EXP-V3`), чтобы получить `train/validation/test` JSONL.
-
-**Подготовленные SQL-скрипты**
-
-| Файл | Назначение |
-|------|------------|
-| `database/07-create-experiment-v3.sql` | Создание `HRA-EVAL-V3`, копирование 30 старых кандидатов, добавление 11 новых, создание 123 пар, создание `HRA-EXP-V3` |
-| `database/08-validate-experiment-v3-pre-judge.sql` | Проверки перед запуском Judge |
-| `database/09-validate-experiment-v3-post-judge.sql` | Проверки после завершения Judge |
-| `database/10-extract-teacher-dataset-v3.sql` | Быстрая проверка готовности 123 пар к экспорту |
-
-**Изменения Python**
-
-Для поддержки Experiment 003 `extract_teacher_dataset.py` параметризован:
-
-- добавлен CLI-аргумент `--experiment-code` с дефолтом `'HRA-EXP-V2'` для сохранения обратной совместимости;
-- добавлен аргумент `--dataset-code` (автоматически выводится из experiment_code);
-- добавлены аргументы `--output-dir` и `--report-path`;
-- добавлена валидация ожидаемого количества записей (`--expected-records`);
-- `borderline_cases` для Experiment 002 сохранены в коде, для других экспериментов определяются автоматически;
-- добавлены `HOLDOUT_CANDIDATES` и `SPLIT_CONFIG` для `HRA-EXP-V3` с явным сохранением исходного V2 test set и выделением hard negative holdout;
-- при экспорте `HRA-EXP-V3` формируются `train.jsonl`, `validation.jsonl`, `test.jsonl` и `holdout.jsonl`;
-- файл расположен в `finetuning/scripts/extract_teacher_dataset.py`.
-
-Переиспользуется вся логика форматирования сообщений и стратифицированного split. Копирование кода не добавлено: исходный `finetuning/scripts/extract_teacher_dataset.py` параметризован на месте.
-
-**Последовательность выполнения Stage 6**
-
-| # | Шаг | Исполнитель | Ожидаемый результат |
-|---|-----|-------------|---------------------|
-| 1 | Подготовить БД и убедиться, что `HRA-EXP-V2` и `HRA-EVAL-V2` существуют | Пользователь / Claude Code | `SELECT` возвращает 1 experiment и 1 dataset |
-| 2 | Выполнить `database/07-create-experiment-v3.sql` | Пользователь | Созданы `HRA-EVAL-V3` (41 кандидат, 123 пары) и `HRA-EXP-V3` |
-| 3 | Выполнить `database/08-validate-experiment-v3-pre-judge.sql` | Пользователь | Все проверки `passed = true` |
-| 4 | Запустить workflow `HRA Prompt Evaluation Experiment` с Run Config `experiment_code='HRA-EXP-V3'`, `dataset_code='HRA-EVAL-V3'`, `expected_pairs=123` | Пользователь | 123 пар размечены Judge, `reference_*` заполнены |
-| 5 | Выполнить `database/09-validate-experiment-v3-post-judge.sql` | Пользователь | Все проверки `passed = true` |
-| 6 | Выполнить `database/10-extract-teacher-dataset-v3.sql` для подтверждения готовности | Пользователь | `missing_pairs = 0` |
-| 7 | Запустить параметризованный `finetuning/scripts/extract_teacher_dataset.py` | Claude Code | Сформированы `train.jsonl`, `validation.jsonl`, `test.jsonl`, `holdout.jsonl` и манифест для Experiment 003 |
-
-**Проверки до запуска Judge** (`database/08-validate-experiment-v3-pre-judge.sql`)
-
-- Dataset `HRA-EVAL-V3` существует.
-- Experiment `HRA-EXP-V3` существует.
-- Ровно 41 кандидат.
-- Ровно 123 пары.
-- У каждого кандидата ровно 3 вакансии.
-- Нет дубликатов `case_code`.
-- Нет дубликатов case-vacancy.
-- Нет NULL в `candidate_json` / `vacancy_json`.
-- Используются ровно 3 целевые вакансии.
-- Нет orphan-записей.
-- Конфигурация Judge совпадает с `HRA-EXP-V2`.
-- Итоговая строка `all_checks_passed = true`.
-
-**Проверки после завершения Judge** (`database/09-validate-experiment-v3-post-judge.sql`)
-
-- Все 123 пары имеют `reference_score` и `reference_decision`.
-- Все детальные `reference_*` поля заполнены.
-- `reference_raw_response_json` — валидный JSON object.
-- `role + skills + experience + conditions = score` для всех пар.
-- Score находится в диапазоне 0–100.
-- Дубликатов пар нет.
-- Распределение решений выглядит правдоподобно.
-- Новые hard-negative кандидаты в основном `no_match`.
-- Проверка `score >= 60` ↔ `decision = 'match'` возвращает `passed = false` для трёх пограничных пар, где Judge выставил `score >= 60`, но решение `no_match`. Это известное поведение пограничных случаев и не блокирует экспорт.
-- Итоговая строка `all_checks_passed`: из-за указанных пограничных пар — `false`, однако все критические проверки (полнота разметки, JSON-валидность, диапазон score, отсутствие дубликатов) пройдены.
-
-**Входы Judge**
-
-- Все 123 candidate-vacancy pairs из `eval_prompt_case_vacancies` для `HRA-EVAL-V3`, где `reference_score IS NULL`.
-- System prompt: `judge_prompt_text` из `HRA-EXP-V3` (идентичен `HRA-EXP-V2`).
-- Model: `gpt-4.1-2025-04-14`.
-- Temperature: `0`.
-- Output contract: JSON schema с `role_score`, `skills_score`, `experience_score`, `conditions_score`, `score`, `decision`, `reason`.
-
-**Выходы / итоговый teacher dataset Experiment 003**
-
-После Judge и запуска параметризованного `extract_teacher_dataset.py`:
-
-| Split | Записи | Состав |
-|-------|--------|--------|
-| train | 93 | исходный train 72 + новые train-кандидаты 21 |
-| validation | 15 | исходный validation 9 + новые validation-кандидаты 6 |
-| test | 9 | исходный test Experiment 002 без изменений |
-| hard negative holdout | 6 | новые holdout-кандидаты |
-| **итого teacher dataset** | **123** | все 41 кандидат × 3 вакансии |
-
-**Эксплуатационное наблюдение: инцидент с минутным лимитом OpenAI API (Judge, gpt-4.1-2025-04-14)**
-
-Во время выполнения Judge workflow на модели `gpt-4.1-2025-04-14` остановился из-за превышения минутного лимита TPM (tokens per minute).
-
-- Установленный лимит: **30 000 токенов в минуту**.
-- Фактическое потребление на момент остановки: **29 005 токенов**.
-- Следующий запрос требовал: **1 221 токен**.
-- В результате workflow прервался до обработки всех 123 пар.
-
-**Повторный запуск:**
-
-- Retry **не произошёл автоматически**.
-- Пользователь вручную повторно запустил workflow через **Execute Workflow**.
-- При повторном запуске workflow обработал **только оставшиеся пары** с `reference_score IS NULL`.
-- Уже размеченные пары не оценивались заново.
-- В `eval_prompt_runs` зафиксированы два Judge-запуска (`run_type = 'judge'`) для `HRA-EXP-V3`, оба со статусом `completed`.
-
-**Вывод:**
-
-- Идемпотентность повторного запуска подтверждена: прогресс сохраняется между запусками, частичные результаты не теряются.
-- Фактическим узким местом по пропускной способности оказался **Judge на `gpt-4.1`**, а не генерация ответов моделями A/B (семейство mini), где аналогичных ограничений не наблюдалось.
-- Данное прерывание не повлияло на результаты: после ручного перезапуска все 123 пары были размечены.
-
-**Post-Judge проверки по базе данных:**
-
-- Все 123 пары имеют `reference_score` и `reference_decision`.
-- Все детальные `reference_*` поля заполнены.
-- `reference_raw_response_json` — валидный JSON object.
-- Арифметика score соблюдена: `role + skills + experience + conditions = score`.
-- Score находится в диапазоне 0–100.
-- Дубликатов пар нет.
-- Распределение решений: `match` — 21 (17.07%), `no_match` — 102 (82.93%).
-- Новые hard-negative кандидаты (`HRA-EVAL-V2-000101`–`HRA-EVAL-V2-000111`): 29 `no_match` / 4 `match` (87.88% no_match).
-
-**Оговорка по score/decision:**
-
-Три пары имеют `score >= 60` при `decision = 'no_match'`:
-
-- `HRA-EVAL-V2-000024` / Prompt Engineer / AI Automation Specialist — score 64
-- `HRA-EVAL-V2-000026` / Системный аналитик — score 62
-- `HRA-EVAL-V2-000103` / Системный аналитик — score 69
-
-Это пограничные случаи (borderline), в которых Judge выставил суммарный score выше порога 60, но принял решение `no_match` по содержательным причинам. Данное поведение не является ошибкой dataset: оно отражает субъективную границу порога и сохранено как есть. В `database/09-validate-experiment-v3-post-judge.sql` это приводит к `passed = false` для проверки `score/decision`, но не блокирует дальнейшую обработку.
-
-**Изменения `extract_teacher_dataset.py` после Judge:**
-
-Для поддержки split-стратегии варианта Б с сохранением исходного test set и выделением hard negative holdout:
-
-- Добавлен список `HOLDOUT_CANDIDATES` для `HRA-EXP-V3`.
-- Добавлена `SPLIT_CONFIG` для `HRA-EXP-V3` с явным списком test-кандидатов и train/val count per group.
-- Функция `stratified_split` теперь возвращает 4 кортежа и поддерживает holdout.
-- Функция `generate_report` отображает holdout в отчёте.
-- При экспорте `HRA-EXP-V3` дополнительно создаётся `holdout.jsonl`.
-
-**Результат экспорта:**
-
-| Split | Записи | Кандидаты | Файл |
-|-------|--------|-----------|------|
-| train | 93 | 31 | `finetuning/data/train.jsonl` |
-| validation | 15 | 5 | `finetuning/data/validation.jsonl` |
-| test | 9 | 3 | `finetuning/data/test.jsonl` |
-| hard negative holdout | 6 | 2 | `finetuning/data/holdout.jsonl` |
-| **итого** | **123** | **41** | — |
-
-Test set совпадает с Experiment 002: `HRA-EVAL-V2-000010`, `HRA-EVAL-V2-000020`, `HRA-EVAL-V2-000030`.
-
-Holdout: `HRA-EVAL-V2-000110`, `HRA-EVAL-V2-000111`.
-
-Манифест dataset сохранён в `finetuning/data/manifest_experiment_003.json`.
-
-**Условие перехода:** ✅ выполнено. Stage 6 завершён. Все 123 пары размечены, teacher dataset сформирован, holdout выделен, JSONL-файлы валидны.
-
----
-
-### Этап 7. Сформировать launch contract и подготовить пакет запуска
-
-**Статус:** ✅ Выполнено.
-
-**Действия:**
-- Создан `configs/experiment_003.yaml` — единый launch contract с путями `/workspace/hra-finetuning`, параметрами модели/LoRA/обучения, seed=42, командами и списком ожидаемых артефактов.
-- Параметризованы скрипты: `scripts/train_lora.py`, `scripts/evaluate_generation_test.py`, `scripts/evaluate_test.py`, `api/hra_qwen_api.py`, `api/hra_qwen_api_lora.py` — теперь читают launch contract через `--config`.
-- Создан фиксированный runtime smoke set `data/smoke_set.jsonl` (7 кейсов: positive, obvious_negative, hard_negative ×2, edge_case, invalid_input, stability_repeat).
-- Создан автоматический локальный smoke test `scripts/runtime_smoke_test.py`.
-- Подготовлен `configs/experiment_003_winscp_transfer.md` — точный список файлов для ручного копирования VPS → RunPod.
-- Подготовлен `runpod_operation_manual.md` — пошаговая инструкция для RunPod Claude Code.
-
-**Результат:** launch contract и весь пакет запуска готовы к передаче на RunPod.
-
-**Условие перехода:** ✅ выполнено. Пользователь скопировал файлы на RunPod.
-
----
-
-### Этап 8. Провести локальную preflight-проверку
-
-**Статус:** ✅ Выполнено.
-
-**Действия:**
-- Структурная preflight выполнена на VPS: проверены line counts JSONL, отсутствие пересечений `case_code` между splits, валидность JSONL, соответствие `manifest_experiment_003.json`, неизменность LoRA-параметров относительно Experiment 002.
-- GPU-preflight выполнена RunPod Claude Code: Pod активен, NVIDIA RTX A5000 24 GB доступна, Python venv работает, базовая модель кэширована, Experiment 001/002 не перезаписываются.
-
-**Результат:** статус READY FOR GPU зафиксирован в `OPERATION_LOG.md`.
-
-**Условие перехода:** ✅ выполнено.
-
----
-
-### Этап 9. Скопировать файлы на RunPod и подготовить GPU-среду
-
-**Статус:** ✅ Выполнено.
-
-**Действия:**
-- Пользователь скопировал файлы через WinSCP по списку `experiment_003_winscp_transfer.md`.
-- RunPod Claude Code проверил наличие всех файлов, работу Python venv, GPU, загрузку базовой модели.
-- Создан `runs/experiment_003/OPERATION_LOG.md`.
-
-**Подтверждённые факты (из OPERATION_LOG.md):**
-- Python 3.12.3, torch 2.6.0+cu124, CUDA available, 1 device.
-- NVIDIA RTX A5000, 24 GB VRAM, driver 580.159.04.
-- `/workspace/hra-finetuning/runs/experiment_001/best_adapter/` и `/workspace/hra-finetuning/runs/experiment_002/best_adapter/` сохранены.
-
-**Условие перехода:** ✅ выполнено.
-
----
-
-### Этап 10. Обучить Experiment 003
-
-**Статус:** ✅ Выполнено.
-
-**Действия:**
-- RunPod Claude Code запустил обучение одной командой из launch contract.
-- Обучение завершено 5 эпох, лучший чекпоинт выбран по `eval_loss`.
-
-**Результаты обучения (из `training_report.json` / `trainer_state.json`):**
+## 7. Результаты обучения
 
 | Метрика | Значение |
 |---------|----------|
 | Experiment ID | `experiment_003` |
-| Базовая модель | `Qwen/Qwen2.5-1.5B-Instruct` |
-| Лучший чекпоинт | `checkpoint-48` |
-| Лучшая эпоха | 2.0 |
-| Best eval_loss | **0.3108** |
+| Лучший чекпоинт | `checkpoint-48` (конец эпохи 2) |
+| Best `eval_loss` | **0.3108** |
 | Train epochs | 5 |
-| Время обучения | 180.47 с (~3 мин) |
-| Peak VRAM | 7397.2 MB (~7.4 GB) |
-| Best adapter сохранён | `runs/experiment_003/best_adapter/` |
+| Время обучения | ~180 секунд |
+| Peak VRAM | ~7.4 GB |
+| GPU | NVIDIA RTX A5000 (RunPod) |
 
-**Наблюдения:**
-- Early convergence: лучший чекпоинт на эпохе 2; дальнейшие эпохи не улучшили validation loss.
-- Checkpoints сохранены: 24, 48, 72, 96, 120.
-
-**Условие перехода:** ✅ выполнено.
+Early convergence: лучший чекпоинт достигается на эпохе 2; дальнейшие эпохи не улучшают validation loss.
 
 ---
 
-### Этап 11. Провести offline evaluation
+## 8. Offline evaluation
 
-**Статус:** ✅ Выполнено (с оговоркой по holdout).
+### 8.1. Generation test (original test set, 9 записей)
 
-**Действия:**
-- RunPod Claude Code запустил `scripts/evaluate_generation_test.py` и `scripts/evaluate_test.py` на исходном `data/test.jsonl`.
-- Оценивались base Qwen и best LoRA Experiment 003 на том же original test set, что и Experiment 002, для прямого сравнения.
-- Offline evaluation hard negative holdout не был сгенерирован отдельным отчётом; его роль частично перекрыта runtime smoke test.
+| Модель | valid_json_rate | decision_accuracy | MAE_score |
+|--------|-----------------|-------------------|-----------|
+| Base Qwen | 1.000 | 0.222 | 38.33 |
+| LoRA Experiment 002 | 1.000 | 0.778 | 21.89 |
+| **LoRA Experiment 003** | **1.000** | **0.667** | **22.22** |
 
-**Generation test — сравнительная таблица (original test set, 9 записей):**
+### 8.2. Интерпретация offline-метрик
 
-| Модель | valid_json_rate | decision_accuracy | MAE_score | MAE_role | MAE_skills | MAE_experience | MAE_conditions |
-|--------|-----------------|-------------------|-----------|----------|------------|----------------|----------------|
-| **Base Qwen (Exp 003)** | 1.0 | 0.222 | 38.33 | — | — | — | — |
-| **LoRA Exp 003** | 1.0 | 0.667 | 22.22 | 7.33 | 6.67 | 5.56 | 4.89 |
-| Base Qwen (Exp 002) | 1.0 | 0.444 | 38.78 | — | — | — | — |
-| LoRA Exp 002 | 1.0 | 0.778 | 21.89 | 5.67 | 7.00 | 4.56 | 4.89 |
-
-**Test loss evaluation (из `test_evaluation/test_metrics.json`):**
-
-| Модель | eval_loss |
-|--------|-----------|
-| Base Qwen | 7.8971 |
-| LoRA Exp 003 | 8.2578 |
-
-**Интерпретация:**
-- LoRA Exp 003 значительно улучшает decision accuracy относительно base Qwen (+0.444) и снижает MAE (−16.11).
-- Относительно LoRA Exp 002 decision accuracy на original test set снизилась с 0.778 до 0.667 (−11.1 pp), MAE выросла незначительно (+0.33).
-- Test loss выше у LoRA, чем у base Qwen, но на выборке всего 9 записей loss не является ведущей бизнес-метрикой.
-
-**Условие перехода:** ✅ выполнено с оговоркой (holdout не оценён offline, но покрыт runtime smoke).
+- LoRA Exp 003 значительно превосходит base Qwen, но уступает Exp 002 по decision accuracy (−11.1 pp).
+- Главный эффект виден не в метриках, а в **runtime negative smoke test**: Exp 003 впервые проходит его.
+- Появились ложные отрицательные решения на genuine match-кейсах (`HRA-EVAL-V2-000010` системный аналитик, `HRA-EVAL-V2-000030` специалист по разметке). Это не ошибка обучения, а **индикатор дисбаланса dataset**: модель научилась штрафовать за отсутствие ключевых слов, но не сохранила способность признавать наличие соответствия.
 
 ---
 
-### Этап 12. Провести runtime smoke test
-
-**Статус:** ✅ Выполнено — **7/7 passed, 0 unexpected matches**.
-
-**Действия:**
-- RunPod Claude Code запустил `hra_qwen_api_lora.py` с адаптером Experiment 003 и `scripts/runtime_smoke_test.py`.
-- Smoke set `data/smoke_set.jsonl` включает 7 кейсов, зафиксированных до обучения.
-
-**Результаты по категориям:**
+## 9. Runtime validation
 
 | Категория | Cases | Passed | Failed |
 |-----------|-------|--------|--------|
@@ -966,105 +231,177 @@ Holdout: `HRA-EVAL-V2-000110`, `HRA-EVAL-V2-000111`.
 | stability_repeat | 1 | 1 | 0 |
 | **Итого** | **7** | **7** | **0** |
 
-**Latency:** 6566 мс — 19161 мс (высокая задержка связана с инференсом на CPU/offloading; не production-метрика).
-
-**Ключевой вывод:** все заранее зафиксированные отрицательные и edge-case сценарии, включая hard negative, корректно отклонены. Это главное отличие от Experiment 002, где runtime negative smoke test не пройден.
-
-**Условие перехода:** ✅ выполнено.
+**Ключевой вывод:** все заранее зафиксированные отрицательные и edge-case сценарии корректно отклонены; unexpected matches отсутствуют. Это главное достижение Experiment 003.
 
 ---
 
-### Этап 13. Подготовить артефакты к возврату и остановить RunPod
+## 10. Дополнительная валидация: каталог ошибок
 
-**Статус:** ✅ Выполнено.
+### 10.1. Почему нужен был каталог ошибок
 
-**Действия:**
-- RunPod Claude Code финализировал `OPERATION_LOG.md`, проверил наличие всех ожидаемых артефактов.
-- Пользователь скопировал tar-архив `runs/experiment_003_essential.tar.gz` с RunPod на VPS.
-- VPS Claude Code распаковал архив в `finetuning/runs/experiment_003/` и проверил наличие всех обязательных файлов.
+До Experiment 003 runtime negative smoke test в Exp 002 провалился, но не было структурированного понимания, **какие именно типы кейсов ломают модель**. Hard negatives — это не просто «сложные негативы», а классы ошибок, которые повторяются в production matching. Без их формализации невозможно было:
 
-**Проверка артефактов на VPS:**
+- систематически генерировать teacher dataset;
+- измерить, научилась ли модель конкретному паттерну;
+- понять, какие паттерны остаются непокрытыми.
 
-| Артефакт | Статус |
-|----------|--------|
-| `runs/experiment_003/best_adapter/adapter_config.json` | ✅ |
-| `runs/experiment_003/best_adapter/adapter_model.safetensors` | ✅ |
-| `runs/experiment_003/trainer_state.json` | ✅ |
-| `runs/experiment_003/training_report.json` | ✅ |
-| `runs/experiment_003/generation_test/generation_test_report.json` | ✅ |
-| `runs/experiment_003/test_evaluation/test_metrics.json` | ✅ |
-| `runs/experiment_003/runtime_smoke_report.json` | ✅ |
-| `runs/experiment_003/OPERATION_LOG.md` | ✅ |
+### 10.2. Hard-negative категории HN1–HN8
 
-**Условие перехода:** ✅ выполнено.
+| Категория | Название | Что проверяет | Пример | Урок для модели |
+|-----------|----------|---------------|--------|-----------------|
+| **HN-1** | Полностью нерелевантная профессия (non-IT в IT) | Снижает ли модель положительные решения на профилях без IT-компетенций | Врач-терапевт для вакансии Prompt Engineer | Название должности и soft skills не компенсируют отсутствие профильной базы |
+| **HN-2** | Смежная роль без обязательных навыков | Различает ли модель тождественные и смежные профессии | Бизнес-аналитик с BPMN/UML, но без SQL/API, для системного аналитика | Формальная близость названий недостаточна; нужны конкретные hard skills |
+| **HN-3** | Совпадение по общим словам без совпадения по компетенциям | Снижает ли модель влияние лексических совпадений | Data analyst для Prompt Engineer («аналитик» в названии) | Содержание компетенций важнее лексического сходства |
+| **HN-4** | Сильный профиль в нерелевантной специализации | Не завышает ли общая сила профиля релевантность | Python backend-разработчик для Prompt Engineer | Глубокий опыт в смежной области ≠ релевантность для целевой роли |
+| **HN-5** | Одиночное совпадение навыка без основного профиля | Требует ли модель комплексного набора компетенций | Копирайтер со знанием JSON для Prompt Engineer | Один-два навыка из требований не делают профиль подходящим |
+| **HN-6** | Разница в уровне опыта (junior vs senior) | Учитывает ли модель уровень опыта при прочей релевантности | Junior разработчик для senior-роли | Релевантность зависит от уровня ответственности в вакансии |
+| **HN-7** | Разница в функциональной роли (управленческая vs исполнительская) | Различает ли модель управленческий и исполнительский опыт | IT-руководитель / PM для исполнительской роли | Управленческий опыт не заменяет hands-on навыки |
+| **HN-8** | Дисбаланс soft skills и hard skills | Сохраняет ли модель баланс между soft и hard skills | Коммьюнити-менеджер с сильными коммуникациями для технической роли | Сильные soft skills не компенсируют отсутствие технической базы |
 
----
+### 10.3. Edge-case категории EC1 / EC3 / EC4
 
-### Этап 14. Принять исследовательское решение
+| Категория | Название | Что проверяет | Пример | Урок для модели |
+|-----------|----------|---------------|--------|-----------------|
+| **EC-1** | Неоднозначные пограничные случаи (score около 60) | Стабильна ли граница между match и no_match | Кандидат с частичным соответствием и разными решениями по вакансиям | Порог 60 — не единственный критерий; нужен content-aware анализ |
+| **EC-3** | Формально похожее название должности при несовместимом содержании | Оценивает ли модель содержание, а не только название | «Аналитик данных» vs «Системный аналитик» | Название должности может вводить в заблуждение |
+| **EC-4** | Несоответствие по условиям при сильном профиле | Сохраняет ли модель оценку условий при сильном профиле | Сильный кандидат с зарплатными ожиданиями вне бюджета | Conditions_score должен работать независимо от силы профиля |
 
-**Статус:** ✅ Выполнено.
+### 10.4. Failure modes Experiment 002, которые исправил Experiment 003
 
-**Исследовательское решение:**
+| # | case_code | Вакансия | Проблема Exp 002 | Почему это важно | Какая категория покрывает |
+|---|-----------|----------|------------------|------------------|---------------------------|
+| 1 | `HRA-EVAL-V2-000020` | Специалист по разметке данных | False positive: врач получил `match` (score 72) | Модель использовала нерелевантные soft skills («внимательность») как обоснование высокого score | HN-1, HN-8 |
+| 2 | `HRA-EVAL-V2-000020` | Prompt Engineer | Завышенный score (57 при reference 19) | Модель придавала вес общим словам без проверки профильной базы | HN-1, HN-3 |
+| 3 | `HRA-EVAL-V2-000020` | Системный аналитик | conditions_score максимален при salary mismatch | Модель игнорировала условия при сильном профиле | EC-4 |
+| 4 | `HRA-EVAL-V2-000030` | Специалист по разметке данных | Borderline case нестабилен | Пограничные кейсы требуют явного обучения | EC-1 |
 
-> **Гипотеза подтверждена частично.**
+### 10.5. Over-correction: новые ошибки, которые выявил Experiment 003
 
-**Обоснование:**
+Добавление hard negatives решило старые проблемы, но создало новые. Модель стала слишком консервативной:
 
-| Критерий | Exp 002 | Exp 003 | Оценка |
-|----------|---------|---------|--------|
-| Runtime negative smoke test | ❌ Fail | ✅ Pass | **Улучшение подтверждено** |
-| Runtime positive smoke test | ✅ Pass | ✅ Pass | Сохранено |
-| valid_json_rate | 1.0 | 1.0 | Сохранено |
-| decision_accuracy (original test) | 0.778 | 0.667 | Умеренное снижение (−11.1 pp) |
-| MAE_score (original test) | 21.89 | 22.22 | Незначительное ухудшение (+0.33) |
-| Best eval_loss | 0.44 | 0.31 | Улучшение (−29%) |
+| case_code | Вакансия | reference | Exp 003 LoRA | Дельта | Причина over-correction |
+|-----------|----------|-----------|--------------|--------|-------------------------|
+| `HRA-EVAL-V2-000010` | Prompt Engineer / AI Automation Specialist | match (60) | no_match (54) | −6 | Модель стала штрафовать системного аналитика за отсутствие prompt engineering навыков |
+| `HRA-EVAL-V2-000010` | Системный аналитик | match (98) | no_match (43) | −55 | Игнорирование совпадения по названию должности и заявленных навыков |
+| `HRA-EVAL-V2-000030` | Специалист по разметке данных | match (64) | no_match (45) | −19 | Content manager не распознаётся как подходящий для разметки данных |
 
-**Что подтвердилось:**
-1. Расширение teacher dataset hard negative примерами позволило модели корректно обрабатывать сложные отрицательные сценарии в runtime smoke test.
-2. Базовая архитектура (Qwen 1.5B + LoRA r=16) достаточна для обучения на новом dataset; validation loss улучшилась.
-3. JSON-генерация осталась стабильной (valid_json_rate = 1.0).
+Эти кейсы показали, что **hard negatives без компенсирующих positive/borderline примеров ведут к over-correction**. Модель научилась искать отсутствие ключевых слов, но потеряла способность признавать наличие соответствия на смежных профилях.
 
-**Что не подтвердилось полностью:**
-1. Утверждение "без существенного ухудшения остальных метрик" нарушается на original test set: decision accuracy снизилась, появились ложные отрицательные решения на genuine match-кейсах (системный аналитик).
-2. Модель стала более консервативной (over-correction): она исправила false positives на нерелевантных профилях, но стала отклонять частично/полностью подходящих кандидатов.
-3. Hard negative holdout не был оценён offline отдельным отчётом; обобщение подтверждено только runtime smoke.
+### 10.6. Почему high validation accuracy не гарантирует production-качество
 
-**Производственное решение:**
+Experiment 003 прошёл runtime smoke test, но не стал production-ready. Почему:
 
-> **Модель Experiment 003 не является production-ready.**
+- **Малый test set** (9 записей) не позволяет надёжно измерить recall.
+- **Дисбаланс в сторону no_match** (84.3% в train+val) делает модель консервативной.
+- **Отсутствие positive/borderline примеров** для смежных ролей не даёт модели научиться распознавать genuine match в сложных случаях.
+- **Offline-метрики не покрывают production-like hard-negative сценарии**: runtime smoke test проверяет 7 кейсов, а реальный Telegram-контур содержит десятки граничных профилей.
 
-Следующий цикл должен решить проблему баланса между precision и recall: либо добавить больше качественных positive/borderline примеров, либо скорректировать prompt/threshold, либо изменить Loss-функцию/обучающую стратегию.
-
-**Условие перехода:** ✅ выполнено.
-
----
-
-### Этап 15. Зафиксировать результаты в репозитории
-
-**Статус:** ✅ Выполнено.
-
-**Обновлённые документы:**
-
-| Документ | Что добавлено/изменено |
-|----------|------------------------|
-| `finetuning/Experiment_003_Report.md` | Этапы 7–15 с фактами, таблицами, Stage 14 решение, Stage 15 список обновлений |
-| `finetuning/Experiment_003.md` | Статус "Этапы 1–15 завершены — гипотеза подтверждена частично, не production-ready" |
-| `finetuning/FINETUNING_ENGINEERING_REPORT.md` | Раздел Experiment 003, сравнительная таблица Experiments 001–003, обновлённое производственное решение |
-| `docs/PROJECT_STATE.md` | Актуальный статус экспериментального ML-контура, риск "precision/recall trade-off" |
-| `finetuning/README.md` | Текущий статус Experiment 003, результаты runtime smoke, следующие шаги |
-| `docs/EXPERIMENTAL_ML_PIPELINE.md` | Примечание о hard-negative dataset и результате runtime smoke |
-| `task_history/2026-07-22_task-experiment-003-stages-14-15.md` | Файл завершения задачи |
-
-**Результат:** репозиторий содержит полную документацию Experiment 003, достаточную для воспроизведения и интерпретации результатов.
+Эти ограничения стали инженерным основанием для Experiment 004.
 
 ---
 
-## 9. Открытые вопросы и риски
+## 11. Интерпретация
 
-| # | Вопрос / Риск | Этап | Статус |
-|---|---------------|------|--------|
-| 1 | Требуется подтверждение неизменяемых параметров и критериев успеха Пользователем | 1 | ✅ Закрыто |
-| 2 | Необходим детальный список кейсов runtime negative smoke test Experiment 002 | 2 | ✅ Закрыто. Подтверждено, что в Experiment 002 runtime validation проводилась, однако формализованный runtime smoke set как отдельный инженерный артефакт проекта отсутствовал. Выводы основывались на результатах реального Telegram → n8n → RunPod → LoRA тестирования, зафиксированных в проектной документации и статусе проекта. |
-| 3 | Подтвердить стратегию split (вариант Б) | 4 | ✅ Закрыто |
-| 4 | Проверить корректность модели данных Stage 5 (case_code = кандидат, 3 вакансии на кандидата) | 5 | ✅ Закрыто. Верификация по первоисточникам подтвердила: первичный объект Experiment 002 — кандидат, 30 case_code × 3 вакансии = 90 записей, split на уровне кандидата. Stage 5 скорректирован: 11 новых кандидатов, каждый будет оценён по 3 вакансиям на Stage 6. |
-| 5 | Подтвердить, что hard negatives улучшат runtime negative smoke без ухудшения других метрик | 14 | ⚠️ Частично закрыто. Runtime negative smoke пройден, но на original test set появились ложные отрицательные решения — модель стала более консервативной. Требуется следующий цикл для баланса precision/recall. |
+### 11.1. Что показал эксперимент
+
+1. **Hard negatives — рабочий инструмент.** Модель действительно научилась корректно отклонять сложные отрицательные сценарии, которые ломали Exp 002.
+2. **Dataset engineering сильнее adapter tuning.** Гиперпараметры LoRA неизменны с Exp 002. Всё изменение качества связано с составом teacher dataset.
+3. **Over-correction — реальный риск.** Добавление negative примеров без компенсирующих positive примеров снижает recall на genuine match.
+4. **Нужна типология ошибок.** Без категорий HN1–HN8 и EC1/EC3/EC4 невозможно систематически генерировать dataset и измерять прогресс по конкретным failure modes.
+
+### 11.2. Почему offline и runtime результаты расходятся
+
+- Offline test set (9 записей) показывает снижение decision accuracy — это проявление over-correction.
+- Runtime smoke test (7 кейсов) показывает успех — hard negatives работают.
+- Расхождение объясняется **разным покрытием сценариев**: offline test не содержит production-like hard negatives, а runtime smoke set специально их включает.
+
+### 11.3. Главный урок
+
+> Hard negatives необходимы, но недостаточны. Чтобы получить production-ready модель, нужно одновременно:
+> - сохранить hard-negative достижения;
+> - добавить positive/borderline примеры для смежных ролей;
+> - расширить test set;
+> - ввести stratified метрики по категориям ошибок.
+
+Этот урок стал основанием для Experiment 004.
+
+---
+
+## 12. Вердикт
+
+> **Гипотеза частично подтверждена.**
+
+| Критерий | Результат |
+|----------|-----------|
+| Hard negatives улучшают runtime negative smoke | ✅ Подтверждено — 7/7 passed, 0 unexpected matches |
+| JSON-генерация остаётся стабильной | ✅ Подтверждено — valid_json_rate = 1.0 |
+| Качество на original test set не ухудшается критически | ⚠️ Частично — decision_accuracy снизилась с 0.778 до 0.667 |
+| Модель production-ready | ❌ Нет |
+
+**Практический смысл:** Experiment 003 доказал, что проблема Experiment 002 — в dataset, а не в модели. Он дал первую системную типологию ошибок (HN1–HN8, EC1/EC3/EC4) и показал, что hard negatives работают. Однако он же выявил новое ограничение — over-correction — которое требует следующего цикла.
+
+---
+
+## 13. Следующий эксперимент
+
+Выводы Experiment 003 непосредственно ведут к **Experiment 004**. Цель следующего цикла — устранить over-correction, сохранив достижения по hard negatives.
+
+### 13.1. Что исправить
+
+1. **Пересбалансировать teacher dataset в сторону positive/borderline.** Довести долю match в train+val до 25–30% при сохранении 33 hard-negative записей.
+2. **Добавить positive примеры для смежных профилей**, которые ломаются:
+   - Системный аналитик с SQL/BPMN/REST API;
+   - AI Automation Specialist / Prompt Engineer с релевантным опытом;
+   - Специалист по разметке данных с прямым опытом annotation/ML.
+3. **Добавить borderline примеры** со score 55–65 и обоими решениями (match/no_match) для калибровки порога.
+4. **Расширить test set** до ≥15 записей с сохранением стратификации.
+
+### 13.2. Что оставить неизменным
+
+- Базовая модель `Qwen/Qwen2.5-1.5B-Instruct`;
+- LoRA параметры (`r=16`, `alpha=32`, `target_modules`);
+- Параметры обучения (5 эпох, batch=1, grad_accum=4, lr=2e-4);
+- Runtime-контур;
+- Teacher Judge GPT-4.1, `temperature = 0`;
+- Все 33 hard-negative записи Experiment 003.
+
+### 13.3. Критерии следующего цикла
+
+- `decision_accuracy` ≥ 0.75 на расширенном test set;
+- `MAE_score` ≤ 22;
+- `valid_json_rate` = 1.0;
+- runtime smoke test 7/7 passed;
+- нет false positives на obvious_no_match;
+- нет false negatives на obvious_match.
+
+Эти критерии были реализованы в Experiment 004.
+
+---
+
+## 14. Источники и артефакты
+
+### 14.1. Публичные конфигурации и скрипты
+
+- [`configs/experiment_003.yaml`](configs/experiment_003.yaml) — launch contract;
+- [`scripts/train_lora.py`](scripts/train_lora.py) — обучение;
+- [`scripts/evaluate_generation_test.py`](scripts/evaluate_generation_test.py) — generation test;
+- [`scripts/evaluate_test.py`](scripts/evaluate_test.py) — eval loss;
+- [`scripts/runtime_smoke_test.py`](scripts/runtime_smoke_test.py) — runtime smoke;
+- [`../api/hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py) — runtime API.
+
+### 14.2. Отчёты и данные
+
+- [`TECHNICAL_FOUNDATION.md`](TECHNICAL_FOUNDATION.md) — техническая основа;
+- [`Experiment_002_Report.md`](Experiment_002_Report.md) — предыдущий эксперимент;
+- [`Experiment_004_Report.md`](Experiment_004_Report.md) — следующий эксперимент, реализующий выводы Exp 003;
+- [`reports/teacher_dataset_report.md`](reports/teacher_dataset_report.md) — анализ teacher dataset;
+- [`data_sample/example.jsonl`](data_sample/example.jsonl) — обезличенный пример формата данных.
+
+### 14.3. Идентификаторы запуска
+
+- Experiment ID: `experiment_003`;
+- Dataset code: `HRA-EVAL-V3`;
+- Experiment code: `HRA-EXP-V3`;
+- Best checkpoint: `checkpoint-48` (эпоха 2), выбран по `eval_loss = 0.3108`.
+
+Первичные артефакты запусков (weights, raw metrics, evaluation JSON, operation logs) хранятся в закрытом рабочем контуре и не публикуются в репозитории. В публичной документации представлены агрегированные метрики, конфигурации и код.

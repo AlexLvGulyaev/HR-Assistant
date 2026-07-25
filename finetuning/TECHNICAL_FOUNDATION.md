@@ -1,278 +1,421 @@
-# Техническая основа
+# Техническая основа fine-tuning
 
-## Базовая модель
+Этот документ описывает воспроизводимую техническую основу всей серии экспериментов по fine-tuning в HR Assistant. Здесь собраны неизменные параметры модели, инфраструктуры, пайплайна, датасетов, метрик и runtime-контракта. Конкретные результаты и история отдельных циклов находятся в отчётах `Experiment_001_Report.md` … `Experiment_004_Report.md`.
 
-**Модель:** Qwen/Qwen2.5-1.5B-Instruct
+---
 
-**Обоснование:**
-- Лёгкая (1.5B параметров) — влезает в GPU-память с запасом для LoRA
-- Instruction-tuned — подходит для структурированного JSON вывода
-- Хорошее соотношение качество/размер для экспериментов
-- Активная разработка и поддержка сообществом
+## 1. Модель и метод
 
-**Hugging Face Hub:** https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct
+### 1.1. Базовая модель
 
-## Инфраструктура
+| Параметр | Значение |
+|----------|----------|
+| Модель | `Qwen/Qwen2.5-1.5B-Instruct` |
+| Размер | 1.5B параметров |
+| Тип | instruction-tuned causal LM |
+| Hugging Face Hub | https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct |
 
-**Платформа:** RunPod GPU Pod
+**Обоснование выбора:**
+- Модель влезает в GPU-память с запасом для LoRA-адаптера.
+- Поддерживает структурированный JSON-вывод и русский язык.
+- Достаточно лёгкая для быстрых итераций экспериментов на RTX A5000.
 
-**Железо:**
-- GPU: NVIDIA RTX A5000 (24GB VRAM)
-- CUDA: Проверено, работает
-- Хранилище: Временное рабочее пространство (`/workspace/`)
+### 1.2. Метод адаптации
 
-**Окружение:**
-- Рабочий каталог: `/workspace/hra-finetuning`
-- Python: 3.10+
-- PyTorch: 2.0+ (CUDA support)
-- Transformers: Latest stable
+Основной метод — **LoRA (Low-Rank Adaptation)** через библиотеку `peft`:
+- Веса базовой модели заморожены.
+- Обучаются только низкоранговые адаптер-слои, вставленные в целевые attention и MLP-модули.
+- Адаптер легко сохранять, переключать и загружать поверх базовой модели.
 
-**Проверенный статус:**
-- CUDA работает
-- Модель Qwen загружается успешно
-- Inference smoke test пройден
+### 1.3. Конфигурация LoRA
 
-## Метод обучения
+| Параметр | Значение |
+|----------|----------|
+| `r` (rank) | `16` |
+| `lora_alpha` | `32` |
+| `lora_dropout` | `0.05` |
+| `bias` | `none` |
+| `task_type` | `CAUSAL_LM` |
+| `target_modules` | `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj` |
 
-**Основной:** LoRA (Low-Rank Adaptation)
+Конфигурация зафиксирована в launch contract (`configs/experiment_003.yaml`, `configs/experiment_004.yaml`) и является неизменной для Experiments 003–004. Experiment 001 использовал меньший rank (`r=8`, 4 target modules); Experiment 002 перешёл к конфигурации выше.
 
-**Почему LoRA:**
-- Замораживает веса базовой модели
-- Обучает только адаптер-слои (rank decomposition)
-- ~100x меньше, чем full finetuning
-- Быстрые итерации обучения
-- Легко переключать адаптеры
+### 1.4. Tokenizer и формат обучения
 
-**Будущее:** QLoRA (Quantized LoRA)
-- 4-bit квантование базовой модели
-- Ещё меньшее потребление памяти
-- Требует дополнительной настройки (bitsandbytes)
+Используется стандартный tokenizer модели `Qwen/Qwen2.5-1.5B-Instruct`:
 
-### Конфигурация LoRA (предварительная)
-
-```yaml
-# Черновик — требует тюнинга
-lora_r: 8              # Rank LoRA
-lora_alpha: 32        # Scaling factor
-lora_dropout: 0.1      # Dropout probability
-target_modules:       # Модули для адаптации
-  - q_proj
-  - v_proj
-  - k_proj
-  - o_proj
+```python
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 ```
 
-## Стратегия данных
+Данные для обучения подаются в формате чат-сообщений (`messages`) и преобразуются в текст через `tokenizer.apply_chat_template(..., tokenize=False, add_generation_prompt=False)`.
 
-### Датасет: HRA-EXP-V1
+Пример структуры записи см. в [`data_sample/example.jsonl`](data_sample/example.jsonl).
 
-**Источник:** 90 эталонных кейсов из результатов эксперимента HRA-EXP-V1
-**Файл:** `docs/prompt_evaluation/FULL_RESULTS_DETAIL.md`
+### 1.5. Assistant-only masking
 
-**Структура кейса:**
-- Вход: Резюме кандидата + Описание вакансии
-- Выход: Структурированный JSON с оценками и решением
+В репозитории есть два варианта обучающих скриптов:
+- `scripts/train_lora.py` — стандартный SFTTrainer (канонический пайплайн для Experiments 003–004);
+- `scripts/train_lora_assistant_only.py` — экспериментальный вариант с assistant-only loss (обучение только на токенах ответа ассистента).
 
-**Важно:**
-- System prompt: **Prompt A (production)** из эксперимента
-- Target output: **Judge (gpt-4.1)** оценки как ground truth
-- **НЕ использовать Prompt A или Prompt B результаты как эталон**
+Канонический пайплайн использует `train_lora.py`. Assistant-only masking оставлен как альтернативная гипотеза для будущих циклов.
 
-### Разбиение данных
+### 1.6. Модельный JSON-контракт
 
-**Всего:** 90 кейсов
+Модель должна возвращать валидный JSON-объект со следующими полями:
 
-**Пропорции:**
-- Train: 72 кейса (80%)
-- Validation: 9 кейсов (10%)
-- Test: 9 кейсов (10%)
+| Поле | Диапазон | Назначение |
+|------|----------|------------|
+| `role_score` | 0–30 | Соответствие должности / роли |
+| `skills_score` | 0–35 | Соответствие навыкам |
+| `experience_score` | 0–20 | Соответствие опыту |
+| `conditions_score` | 0–15 | Соответствие условиям (зарплата, город, формат) |
+| `score` / `total_score` | 0–100 | Итоговый взвешенный score |
+| `decision` | `match` / `no_match` | Решение по кандидату |
+| `reason` | строка | Краткое обоснование score |
 
-### Стратификация
+Правило decision:
+- `score >= 60` → `match`;
+- `score < 60` → `no_match`.
 
-Кейсы разделены на три группы по сложности matching:
+Системный prompt и схема score описаны в [`reports/teacher_dataset_report.md`](reports/teacher_dataset_report.md).
 
-| Группа | Описание | Количество | Train | Validation | Test |
-|--------|----------|------------|-------|------------|------|
-| **Obvious Match** | Явное совпадение | 30 | 24 | 3 | 3 |
-| **Borderline** | Пограничный случай | 30 | 24 | 3 | 3 |
-| **Obvious No-Match** | Явное несовпадение | 30 | 24 | 3 | 3 |
+---
 
-**Стратификация обеспечивает:**
-- Сбалансированное представление по уровням сложности
-- Ни одна группа не перепредставлена в любом разбиении
-- Надёжные метрики валидации и теста
+## 2. Инфраструктура
 
-### Использование Validation vs. Test
+### 2.1. Платформа
 
-**Validation Set (9 кейсов):**
-- Используется во время обучения для выбора чекпоинта
-- Выбор лучшей эпохи по validation loss
-- Можно тюнить гиперпараметры по валидации
+| Компонент | Значение |
+|-----------|----------|
+| Провайдер | RunPod GPU Pod |
+| GPU | NVIDIA RTX A5000, 24 GB VRAM |
+| CUDA | 13.0 |
+| Driver | 580.159.04 |
+| Рабочий каталог | `/workspace/hra-finetuning` |
+| Кэш моделей | `/root/.cache/huggingface` |
 
-**Test Set (9 кейсов):**
-- Используется **только один раз** после выбора финальной модели
-- Даёт несмещённую оценку обобщающей способности
-- Никогда не используется для выбора модели или тюнинга
+RunPod используется **только как инженерный стенд** для обучения и runtime-проверок. Production-контур HR Assistant использует OpenAI GPT-4o-mini.
 
-## Структура эксперимента
+### 2.2. Подтверждённые версии software stack
 
-**Единица работы:** Experiment
+| Компонент | Версия |
+|-----------|--------|
+| Python | 3.12.3 |
+| PyTorch | 2.6.0+cu124 |
+| Transformers | 5.12.1 |
+| TRL | 1.7.0 |
+| Datasets | 5.0.0 |
+| Tokenizers | 0.22.2 |
+| PEFT | совместимая с указанными версиями |
+| Accelerate | совместимая с указанными версиями |
 
-Каждый эксперимент определяется:
-1. Конфигурационным файлом (`configs/experiment_XXX.yaml`)
-2. Разбиением датасета (train/validation/test)
-3. Прогоном обучения с чекпоинтами
-4. Результатами валидации (метрики по эпохам)
-5. Результатами теста (финальная оценка)
-6. Отчётом (`reports/experiment_XXX.md`)
+Версии подтверждены в ходе запусков Experiments 003–004. Для воспроизведения рекомендуется использовать тот же stack.
 
-### Жизненный цикл эксперимента
+### 2.3. Зависимости Python
+
+Список зависимостей — [`requirements.txt`](requirements.txt). Основные пакеты:
+
+```text
+torch
+transformers
+datasets
+accelerate
+peft
+trl
+bitsandbytes
+safetensors
+sentencepiece
+protobuf
+scikit-learn
+pandas
+numpy
+tqdm
+```
+
+Для воспроизводимости конкретные версии нужно зафиксировать в окружении (см. раздел «Правила воспроизводимости»).
+
+### 2.4. Runtime-серверы
+
+Runtime-файлы физически находятся в корневом каталоге `api/` уровня кейса, но по смыслу и использованию принадлежат подсистеме fine-tuning: все они созданы для serving Qwen/LoRA на RunPod и вызываются только из fine-tuning-контура.
+
+**Канонический runtime Experiments 003–004** — FastAPI-совместимый сервер на базе Transformers + PEFT:
+- [`../api/hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py) — LoRA-адаптер;
+- [`../api/hra_qwen_api.py`](../api/hra_qwen_api.py) — базовая Qwen для baseline-сравнений.
+
+Сервер разворачивается на RunPod и вызывается из n8n workflow `HR Processing Worker - Multi Provider Test` через OpenAI-compatible endpoint.
+
+**Исследованные альтернативные реализации serving** (не являются каноническими):
+- [`../api/hra_qwen_api_lora_4bit.py`](../api/hra_qwen_api_lora_4bit.py) — экспериментальный runtime с 4-bit NF4-квантизацией (`bitsandbytes`) для снижения потребления VRAM;
+- [`../api/hra_qwen_api_lora_vllm.py`](../api/hra_qwen_api_lora_vllm.py) — экспериментальный OpenAI-compatible runtime на базе `vLLM` для снижения latency.
+
+Оба файла относятся к инфраструктурным исследованиям и не заменяют основной runtime-контракт. Все сравнительные метрики Experiments 003–004 получены на каноническом FastAPI-сервере.
+
+---
+
+## 3. Общий экспериментальный пайплайн
+
+Каждый цикл (Experiment) проходит общую последовательность этапов. Этапы 1–8 и 11 являются **обязательными** для каждого цикла. Этапы 9–10 (baseline comparison, external / real-world validation) применяются **дополнительно**, когда гипотеза эксперимента требует сравнения с baseline или проверки на независимой выборке. Отчёты по конкретным экспериментам описывают только изменения и отклонения от этого общего пайплайна.
 
 ```
-1. Подготовка датасета → train.jsonl, validation.jsonl, test.jsonl
-2. Конфигурация эксперимента → configs/experiment_XXX.yaml
-3. Обучение модели → runs/experiment_XXX/checkpoint-*
-4. Валидация → выбор лучшего чекпоинта
-5. Тест → оценка на отложенном тесте
-6. Отчёт → сравнение base vs adapter vs GPT
+Teacher Dataset
+    ↓
+Структурная проверка + split
+    ↓
+Launch contract (configs/experiment_NNN.yaml)
+    ↓
+GPU preflight на RunPod
+    ↓
+Обучение LoRA
+    ↓
+Выбор best checkpoint
+    ↓
+Offline evaluation
+    ↓
+Runtime smoke test
+    ↓
+Baseline comparison (опционально)
+    ↓
+External / real-world validation (опционально)
+    ↓
+Вердикт и решение о следующем цикле
 ```
 
-### Соглашение об именовании
+### 3.1. Этапы пайплайна
 
-- Configs: `experiment_001.yaml`, `experiment_002.yaml`, ...
-- Runs: `runs/experiment_001/`, `runs/experiment_002/`, ...
-- Reports: `reports/experiment_001.md`, `reports/experiment_002.md`, ...
+| # | Этап | Вход | Инструмент | Исполнитель | Выходной артефакт | Критерий завершения |
+|---|------|------|------------|-------------|-------------------|---------------------|
+| 1 | Формирование teacher dataset | Размеченные пары candidate × vacancy из PostgreSQL | n8n workflow `HRA Prompt Evaluation Experiment` + `scripts/extract_teacher_dataset.py` | Пользователь / VPS Claude Code | `data/train.jsonl`, `data/validation.jsonl`, `data/test.jsonl`, `data/holdout.jsonl`, `data/manifest_experiment_NNN.json` | Ожидаемое число записей, отсутствие leakage, валидный JSON |
+| 2 | Структурная проверка + split | JSONL-файлы, манифест | SQL-валидаторы + Python preflight | VPS Claude Code | Отчёт о проверке, подтверждение split | Все проверки `passed = true` |
+| 3 | Launch contract | Гипотеза, параметры, пути | `configs/experiment_NNN.yaml` | VPS Claude Code | YAML-файл launch contract | Все неизменяемые параметры зафиксированы, единственная изменяемая переменная выделена |
+| 4 | GPU preflight | Launch contract, файлы на RunPod | `scripts/01_environment_check.py` + ручные проверки | RunPod Claude Code | Запись в operation log со статусом READY FOR GPU | GPU доступна, Python venv работает, CUDA available, базовая модель кэширована |
+| 5 | Обучение LoRA | `train.jsonl`, `validation.jsonl`, launch contract | `scripts/train_lora.py --config configs/experiment_NNN.yaml` | RunPod Claude Code | Чекпоинты в `runs/experiment_NNN/checkpoint-*`, `training_report.json`, `trainer_state.json` | Обучение завершилось без ошибок, eval_loss зафиксирован |
+| 6 | Выбор best checkpoint | `trainer_state.json`, чекпоинты | Логика `load_best_model_at_end=True`, `metric_for_best_model=eval_loss` | RunPod Claude Code | `runs/experiment_NNN/best_adapter/` | Лучший чекпоинт однозначно определён |
+| 7 | Offline evaluation | `data/test.jsonl`, best adapter | `scripts/evaluate_generation_test.py`, `scripts/evaluate_test.py` | RunPod Claude Code | `generation_test/generation_test_report.json`, `test_evaluation/test_metrics.json` | valid_json_rate, decision_accuracy, MAE_score зафиксированы |
+| 8 | Runtime smoke test | `data/smoke_set.jsonl`, API с адаптером | `scripts/runtime_smoke_test.py` + `hra_qwen_api_lora.py` | RunPod Claude Code | `runtime_smoke_report.json` | Все кейсы smoke set пройдены с ожидаемыми решениями |
+| 9 | Baseline comparison *(опционально)* | Test/holdout записи, LoRA, GPT-4o-mini | `scripts/compare_with_gpt.py` | RunPod Claude Code | `gpt_comparison_report.json` | Метрики LoRA и baseline зафиксированы на одной выборке |
+| 10 | External / real-world validation *(опционально)* | Внешний датасет или Telegram-анкеты | `scripts/compare_external_validation.py` + n8n Telegram workflow | RunPod Claude Code / Пользователь | `external_validation_report.json`, Telegram smoke report | Результаты на независимой выборке зафиксированы |
+| 11 | Вердикт | Все метрики и отчёты | Инженерный анализ | Пользователь / Claude Code | `Experiment_NNN_Report.md` с вердиктом | Гипотеза подтверждена / частично / не подтверждена; принято решение о следующем цикле |
 
-## Формат данных
+### 3.2. Стабильные роли
 
-### Формат входа (messages)
+| Роль | Ответственность |
+|------|-------------------|
+| **Пользователь / Владелец решения** | Утверждает гипотезу, split-стратегию, критерии остановки, принимает вердикт |
+| **VPS Claude Code** | Подготовка кода, конфигураций, SQL, launch contract, структурная preflight, offline evaluation на VPS |
+| **RunPod Claude Code** | GPU-preflight, обучение, выбор checkpoint, runtime smoke, baseline comparison, external validation на RunPod |
+| **Judge (GPT-4.1)** | Генерация reference labels для teacher dataset |
+| **Baseline (GPT-4o-mini)** | Production baseline для сравнения с LoRA |
+| **Telegram Bot / n8n** | Runtime-контур для real-world validation |
+
+Подробная сводка ролей находится в [`README.md`](README.md).
+
+---
+
+## 4. Датасеты и схемы
+
+### 4.1. Teacher dataset
+
+Teacher dataset формируется из reference dataset уровня Prompt Evaluation. Candidate-vacancy пары генерируются в PostgreSQL CROSS JOIN'ом кандидатов и открытых вакансий, а reference labels производит Judge workflow с моделью `gpt-4.1` и `temperature=0` по production Prompt A. Затем `scripts/extract_teacher_dataset.py` экспортирует пары в JSONL-файлы.
+
+### 4.2. Структура записи
+
+Каждая запись — объект с массивом `messages`:
 
 ```json
 {
   "messages": [
-    {
-      "role": "system",
-      "content": "Ты HR matching assistant..."
-    },
-    {
-      "role": "user",
-      "content": "КАНДИДАТ:\n[резюме]\n\nВАКАНСИЯ:\n[описание]"
-    },
-    {
-      "role": "assistant",
-      "content": "{\"role_score\": 30, \"skills_score\": 33, ...}"
-    }
+    { "role": "system", "content": "Ты HR matching assistant..." },
+    { "role": "user", "content": "КАНДИДАТ:\n[резюме]\n\nВАКАНСИЯ:\n[описание]" },
+    { "role": "assistant", "content": "{\"role_score\": 30, ...}" }
   ]
 }
 ```
 
-### Формат выхода (JSON)
+Полная структура и анонимизированный пример — [`data_sample/example.jsonl`](data_sample/example.jsonl).
 
-```json
-{
-  "role_score": 8,
-  "skills_score": 7,
-  "experience_score": 6,
-  "conditions_score": 9,
-  "total_score": 7.5,
-  "decision": "MATCH",
-  "reasoning": "Strong technical skills match requirements..."
-}
+### 4.3. Reference fields
+
+Judge сохраняет в БД детальные reference-оценки:
+
+| Поле | Тип | Диапазон |
+|------|-----|----------|
+| `reference_role_score` | numeric | 0–30 |
+| `reference_skills_score` | numeric | 0–35 |
+| `reference_experience_score` | numeric | 0–20 |
+| `reference_conditions_score` | numeric | 0–15 |
+| `reference_score` | numeric | 0–100 |
+| `reference_decision` | text | `match` / `no_match` |
+| `reference_reason` | text | обоснование |
+
+### 4.4. Split
+
+| Split | Назначение |
+|-------|-----------|
+| `train` | Обучение модели |
+| `validation` | Выбор best checkpoint, ранняя остановка |
+| `test` | Отложенная оценка (используется только один раз) |
+| `holdout` | Независимая проверка на ранее не встречавшихся hard negatives |
+
+Стратификация ведётся по группам кандидатов: `obvious_match`, `borderline`, `obvious_no_match`. `case_code` — идентификатор кандидата; каждый кандидат оценивается по трём вакансиям, что даёт 3 записи teacher dataset.
+
+### 4.5. Case codes
+
+Формат идентификаторов: `HRA-EVAL-V2-XXXXXX`.
+
+Примеры диапазонов:
+- `000001`–`000030` — исходные кандидаты Experiment 002;
+- `000101`–`000111` — hard negative кандидаты Experiment 003;
+- `000201`–`000213` — positive/borderline кандидаты Experiment 004;
+- `000301`–`000334` — кандидаты external validation set HRA-EVAL-V5-EXT.
+
+### 4.6. External validation set
+
+Отдельный внешний датасет `HRA-EVAL-V5-EXT` (102 пары, 34 новых кандидата). Reference labels генерирует `gpt-4o` вместо `gpt-4.1`, чтобы проверить обобщение на независимый judge. Подробнее — [`reports/external_validation_report.md`](reports/external_validation_report.md).
+
+### 4.7. Production smoke set
+
+Real-world validation проводится через Telegram Bot и n8n workflow. Smoke set формируется из реальных анкет и edge-кейсов, не входящих в teacher dataset. Результаты фиксируются в отчёте соответствующего эксперимента.
+
+---
+
+## 5. Метрики
+
+### 5.1. Метрики обучения
+
+| Метрика | Назначение |
+|---------|-----------|
+| `eval_loss` | Основная метрика выбора best checkpoint (minimize) |
+| `train_loss` | Динамика обучения |
+| `token_accuracy` | Точность предсказания токенов (опционально) |
+
+### 5.2. Метрики offline evaluation
+
+| Метрика | Назначение |
+|---------|-----------|
+| `valid_json_rate` | Доля записей, для которых модель вернула валидный JSON |
+| `decision_accuracy` | Доля совпадений `decision` с reference |
+| `MAE_score` | Средняя абсолютная ошибка по итоговому `score` |
+| `MAE_role` / `MAE_skills` / `MAE_experience` / `MAE_conditions` | MAE по компонентным score |
+| `FPR` | Доля ложных положительных решений |
+| `FNR` | Доля ложных отрицательных решений |
+
+### 5.3. Runtime и production метрики
+
+| Метрика | Назначение |
+|---------|-----------|
+| `latency_p50` / `latency_p95` / `latency_avg` | Время ответа API в миллисекундах |
+| `stratified_accuracy` | Accuracy внутри групп `obvious_match`, `borderline`, `obvious_no_match` |
+| `hard_negative_fpr` | False-positive rate на hard-negative/edge кейсах |
+
+### 5.4. Baseline comparison
+
+LoRA сравнивается с двумя baseline:
+- **Base Qwen** — zero-shot inference базовой модели без адаптера;
+- **GPT-4o-mini** — production-модель HR Assistant.
+
+Сравнение выполняется на одной и той же выборке, чтобы метрики были сопоставимы.
+
+---
+
+## 6. Runtime validation
+
+### 6.1. Загрузка adapter и serving
+
+Runtime API загружает базовую модель и LoRA-адаптер:
+
+```python
+model = AutoModelForCausalLM.from_pretrained(base_model_id, ...)
+model = PeftModel.from_pretrained(model, adapter_path)
 ```
 
-### Рубрика оценивания
+Путь к адаптеру задаётся в launch contract (`output.best_adapter_dir`).
 
-Каждая оценка: шкала 1-10 (или по критериям)
+### 6.2. JSON extraction
 
-| Оценка | Интерпретация |
-|--------|---------------|
-| 1-3 | Плохое соответствие |
-| 4-6 | Умеренное соответствие |
-| 7-9 | Хорошее соответствие |
-| 10 | Идеальное соответствие |
+Модель может генерировать JSON с markdown-обёртками или артефактами. API извлекает первый валидный JSON-объект из ответа:
 
-**Total Score:** Взвешенное среднее или простое среднее (TBD в конфиге эксперимента)
+- Удаляет префиксы ```` ```json ```` и ```` ``` ````;
+- Ищет первую открывающую фигурную скобку `{`;
+- Парсит через `json.JSONDecoder.raw_decode`.
 
-**Decision:** `MATCH` | `NO_MATCH` | `NEED_MORE_INFO`
+### 6.3. Graceful fallback
 
-## Метрики
+Поведение при неудаче парсинга JSON зависит от runtime:
 
-### Метрики обучения
-- Loss (cross-entropy)
-- Perplexity
+- **Канонический LoRA runtime** [`hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py) реализует graceful fallback и **не** возвращает HTTP 422. Вместо этого ответ сохраняется как строка, а API возвращает HTTP 200 с телом вида:
 
-### Метрики валидации
-- Loss (primary для выбора чекпоинта)
-- Token accuracy (опционально)
-- JSON validity rate
+  ```json
+  {
+    "error": "invalid_json",
+    "raw_response": "..."
+  }
+  ```
 
-### Метрики теста
-- Exact match accuracy
-- Score correlation (Pearson/Spearman)
-- Decision accuracy
-- Reasoning quality (human evaluation или GPT-judge)
+  Это позволяет offline-скриптам продолжать обработку и фиксировать `valid_json_rate` корректно.
 
-### Точки сравнения
+- **Базовый runtime** [`hra_qwen_api.py`](../api/hra_qwen_api.py) использует более строгую стратегию: при отсутствии валидного JSON он возвращает HTTP 422.
 
-Сравниваем три модели:
-1. **Base Qwen:** Zero-shot baseline
-2. **Qwen + LoRA:** Finetuned адаптер
-3. **GPT Baseline:** Эталонное качество (например, GPT-4o-mini)
+Описанный graceful fallback относится именно к LoRA runtime, а не ко всем реализациям API.
 
-## Файлы для исключения из Git
+### 6.4. max_tokens
 
-Согласно `.gitignore`:
+Для русскоязычных reasoning-ответов может потребоваться `max_tokens >= 512`. Значение `300` приводит к обрезанию длинных ответов и ошибкам парсинга. В каноническом пайплайне используется `max_tokens = 512` для LoRA и baseline.
 
-```
-data/              # Содержит реальные HRA кейсы (могут содержать PII)
-runs/              # Артефакты обучения (большие файлы)
-models/            # Загруженные/адаптированные модели (большие файлы)
-.venv/             # Виртуальное окружение
-__pycache__/       # Python кэш
-*.safetensors      # Веса моделей
-*.pt               # PyTorch чекпоинты
-*.bin              # Бинарные веса
-.env               # Переменные окружения (ключи)
-.cache/            # HF кэш
-```
+### 6.5. Latency measurement
 
-## Зависимости
+Latency измеряется на стороне клиента (n8n / скрипт сравнения) как время от отправки запроса до получения полного ответа. Все latency-замеры фиксируются в JSON-отчётах.
 
-Основные требования (будут уточняться):
+---
 
-```
-torch>=2.0
-transformers>=4.36
-peft>=0.7
-datasets>=2.14
-accelerate>=0.24
-bitsandbytes>=0.41  # Для QLoRA
-trl>=0.7
-wandb>=0.16         # Опционально: трекинг экспериментов
-```
+## 7. Правила воспроизводимости
 
-## Безопасность и приватность
+Каждый run должен фиксировать следующие артефакты:
 
-**Обработка данных:**
-- Анонимизация имён кандидатов и контактной информации
-- Удаление идентифицирующей информации о компаниях
-- Хранение реальных данных только в `data/` (gitignored)
+| Категория | Что фиксировать | Где хранится |
+|-----------|-----------------|--------------|
+| **Config** | Launch contract YAML (`configs/experiment_NNN.yaml`) | в репозитории |
+| **Manifest** | `data/manifest_experiment_NNN.json` — состав датасета, split, case codes | в закрытом рабочем контуре |
+| **Operation log** | Журнал запуска — шаги, версии, команды, замечания | в закрытом рабочем контуре |
+| **Metrics** | `training_report.json`, `generation_test_report.json`, `test_metrics.json`, `runtime_smoke_report.json` | в закрытом рабочем контуре |
+| **Outputs** | Чекпоинты, best adapter, отчёты сравнения | в закрытом рабочем контуре |
+| **Checkpoint selection** | Запись о том, какой чекпоинт выбран и почему (`eval_loss`, эпоха) | в журнале запуска и `trainer_state.json` |
+| **Environment versions** | Python, PyTorch, CUDA, Transformers, TRL, Datasets, Tokenizers, GPU driver | в журнале запуска |
 
-**API ключи:**
-- Никогда не коммитить `.env` файлы
-- Использовать переменные окружения для HuggingFace токенов
-- Продакшен API (`/workspace/hra_qwen_api.py`) не затрагивается
+### 7.1. Что публикуется в GitHub
 
-## Следующие технические решения
+- Документация (`README.md`, `TECHNICAL_FOUNDATION.md`, `Experiment_*_Report.md`, отчёты).
+- Конфигурации без секретов (`configs/experiment_*.yaml`).
+- Скрипты обучения и evaluation (`scripts/`).
+- Обезличенный пример формата данных (`data_sample/example.jsonl`).
+- `requirements.txt`.
 
-1. **Learning Rate:** Требует тюнинга (предлагаю начать с 1e-4)
-2. **Batch Size:** Зависит от памяти (попробовать 4-8 с gradient accumulation)
-3. **Epochs:** 3-5 типично для LoRA, валидация early stopping
-4. **Prompt Template:** Финализировать system prompt для HRA задачи
-5. **JSON Schema:** Валидация выходного JSON во время inference
+### 7.2. Что остаётся вне GitHub
 
-## Ссылки
+- Реальные датасеты (`data/`), включая манифесты.
+- Артефакты обучения (`runs/`, `models/`).
+- Checkpoints и adapter-веса (`*.safetensors`, `*.pt`, `*.bin`).
+- API-ключи и переменные окружения (`.env`).
+- HuggingFace кэш (`.cache/`).
 
-- PEFT документация: https://huggingface.co/docs/peft
-- LoRA paper: https://arxiv.org/abs/2106.09685
-- QLoRA paper: https://arxiv.org/abs/2305.14314
+Эти каталоги исключены через [`.gitignore`](.gitignore).
+
+### 7.3. Параметризация
+
+Все скрипты читают пути и параметры из launch contract через `--config`. Жёстко зашитые пути к конкретным экспериментам исключены. Это обеспечивает воспроизводимость без правки кода.
+
+---
+
+## Связанные документы
+
+| Документ | Назначение |
+|----------|-----------|
+| [`README.md`](README.md) | Точка входа в подсистему fine-tuning |
+| [`Experiment_001_Report.md`](Experiment_001_Report.md) | Базовый LoRA baseline, проверка технического пайплайна |
+| [`Experiment_002_Report.md`](Experiment_002_Report.md) | Улучшение параметров LoRA, runtime negative failure |
+| [`Experiment_003_Report.md`](Experiment_003_Report.md) | Hard negative teacher dataset, runtime smoke, precision/recall trade-off |
+| [`Experiment_004_Report.md`](Experiment_004_Report.md) | Balanced dataset, GPT-4o-mini comparison, external validation, Telegram smoke test |
+| [`reports/teacher_dataset_report.md`](reports/teacher_dataset_report.md) | Состав и структура teacher dataset |
+| [`reports/external_validation_report.md`](reports/external_validation_report.md) | Состав внешнего датасета HRA-EVAL-V5-EXT |
