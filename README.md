@@ -132,9 +132,9 @@ graph TD
 ### Текущий статус
 
 - **Prompt Evaluation:** Активный, HRA-EXP-V1 завершён
-- **Fine-tuning:** Экспериментальный, experiment_002 — лучший результат
+- **Fine-tuning:** Экспериментальный, Experiments 001–004 завершены; Experiment 004 — последний цикл
 - **Runtime Validation:** Инженерный стенд (Multi Provider Test workflow)
-- **Production Ready:** **Нет** — модель не прошла negative smoke test
+- **Production Ready:** **Нет** — LoRA не обгоняет GPT-4o-mini на real-world hard negatives
 
 **Подробно:** [Архитектура экспериментального контура](docs/ARCHITECTURE.md#экспериментальный-ml-контур)
 
@@ -148,23 +148,23 @@ graph TD
 
 - **Teacher Dataset:** Формируется из reference dataset (Judge оценки)
 - **Обучение:** LoRA на Qwen/Qwen2.5-1.5B-Instruct
-- **Валидация:** Offline validation на отложенном тесте
+- **Валидация:** Offline evaluation + external validation
 - **Тестирование:** Runtime smoke validation через Multi Provider Test workflow
 
-### Результаты experiment_002
+### История экспериментов
 
-| Метрика | Base Qwen | Qwen + LoRA | GPT-4o-mini (baseline) |
-|---------|-----------|-------------|------------------------|
-| Offline Quality | ✅ Улучшение | ✅ Значительное улучшение | Reference |
-| Runtime Test | ✅ Базовый | ❌ **Failed negative test** | N/A |
+| Эксперимент | Что проверяли | Ключевой результат |
+|-------------|---------------|-------------------|
+| **001** | Технический baseline | Обучение стабильно, JSON генерируется |
+| **002** | Параметрическая оптимизация | `decision_accuracy=0.778`, но runtime negative test failed |
+| **003** | Hard negatives в teacher dataset | Runtime negative smoke **7/7 pass**, offline accuracy снизилась до 0.667 |
+| **004** | Positive/borderline примеры + GPT-4o-mini comparison | Internal 0.933 / external 0.931 decision accuracy; real-world Telegram smoke 35 % vs GPT-4o-mini 43 % |
 
-**Вывод:** LoRA улучшает offline качество, но модель не готова к production (пропускает negative cases).
+**Вывод:** LoRA — рабочий on-premise / edge кандидат; production-контур по-прежнему использует GPT-4o-mini.
 
 ### Следующий цикл
 
-**Приоритет:** Расширение teacher dataset (hard negative examples)
-
-**Не приоритет:** Изменение архитектуры модели
+**Приоритет:** Teacher-label audit и production smoke set для hard negatives / edge cases.
 
 **Подробно:** [finetuning/README.md](finetuning/README.md)
 
@@ -238,9 +238,9 @@ psql -U hr_user -d hr_assistant -f database/schema_hr_assistant.sql
 | Компонент | Статус |
 |-----------|--------|
 | Prompt Evaluation | ✅ Active (HRA-EXP-V1) |
-| Fine-tuning | ⚠️ Experimental (experiment_002 best) |
+| Fine-tuning | ⚠️ Experimental (Experiments 001–004 completed; Experiment 004 latest) |
 | Runtime Validation | ⚠️ Engineering test only |
-| LoRA Production | ❌ Not ready (failed negative test) |
+| LoRA Production | ❌ Not ready (underperforms GPT-4o-mini on real-world hard negatives) |
 
 **Подробно:** [PROJECT_STATE](docs/PROJECT_STATE.md)
 
@@ -268,11 +268,16 @@ hr-assistant/
 ├── workflows/                       # Workflow n8n
 ├── database/                         # Схемы БД
 ├── finetuning/                      # Модуль Fine-tuning (LoRA)
+│   ├── README.md                    # Точка входа в подсистему
+│   ├── TECHNICAL_FOUNDATION.md      # Технический фундамент
+│   ├── Experiment_001_Report.md     # Отчёт Experiment 001
+│   ├── Experiment_002_Report.md     # Отчёт Experiment 002
+│   ├── Experiment_003_Report.md     # Отчёт Experiment 003
+│   ├── Experiment_004_Report.md     # Отчёт Experiment 004
 │   ├── configs/                     # Конфигурации экспериментов
 │   ├── scripts/                     # Скрипты обучения
-│   ├── data/                        # Teacher dataset
-│   ├── runs/                        # Результаты экспериментов
-│   └── reports/                     # Отчёты
+│   ├── data_sample/               # Обезличенный пример формата данных
+│   └── reports/                     # Вспомогательные отчёты
 ├── api/                             # Runtime API (Qwen)
 └── task_history/                    # История задач
 ```

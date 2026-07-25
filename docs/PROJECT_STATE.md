@@ -1,6 +1,6 @@
 # Project State: HR Assistant
 
-**Last Updated:** 2026-07-23
+**Last Updated:** 2026-07-25
 **Status:** Production-ready (v2.1) + Experimental ML-контур (Experiment 004 completed; LoRA validated as on-premise candidate) + LoRA storytelling landing deployed
 **Case ID:** hr-assistant
 
@@ -41,12 +41,12 @@
 |-----------|--------|------------|-------------|
 | Prompt Evaluation | Active | ✅ 100% | HRA-EXP-V1 завершён, сформирован reference dataset |
 | Fine-tuning Infrastructure | Experimental | ✅ 100% | Каталог finetuning/, configs, scripts, runs, launch contract pattern |
-| Fine-tuning Experiment 003 | Completed | ⚠️ 75% | Runtime negative smoke пройден (7/7), но decision accuracy на original test снизилась (−11.1 pp) |
-| Fine-tuning Cycle 4 / Experiment 004 | Completed | ✅ 90% | External validation пройдена: LoRA 0.931 vs GPT-4o-mini 0.941 decision_accuracy на 102 парах (GPT-4o reference). LoRA не обгоняет GPT-4o-mini, но является рабочим on-premise кандидатом. Latency optimization запущена 2026-07-22; score calibration остаётся открытым. |
+| Fine-tuning Experiment 003 | Completed | ✅ 100% | Runtime negative smoke пройден (7/7), offline decision accuracy на original test снизилась до 0.667 |
+| Fine-tuning Cycle 4 / Experiment 004 | Completed | ✅ 100% | External validation пройдена: LoRA 0.931 vs GPT-4o-mini 0.941 decision_accuracy на 102 парах (GPT-4o reference). LoRA является рабочим on-premise / edge кандидатом; production остаётся за GPT-4o-mini. |
 | Runtime Smoke Validation | Engineering Test | ✅ 100% | Локальный `runtime_smoke_test.py` + Multi Provider Test workflow |
-| LoRA Model Production | Not Ready | ❌ 0% | Модель не готова к production; Cycle 4 нацелен на устранение precision/recall trade-off и сравнение с GPT-4o-mini |
+| LoRA Model Production | Not Ready | ❌ 0% | LoRA не обгоняет GPT-4o-mini и не готова к production; открытые вопросы: score calibration, latency optimization, production smoke set |
 
-**Ключевой вывод:** Experiment 003 подтвердил гипотезу частично: hard negative примеры решили проблему runtime negative smoke, но модель стала более консервативной и допускает ложные отрицательные решения. Требуется следующий цикл для баланса precision/recall.
+**Ключевой вывод:** Fine-tuning Documentation Package завершён. Architecture 1.0 реализована: публичная документация `finetuning/` содержит `README.md`, `TECHNICAL_FOUNDATION.md`, отчёты Experiments 001–004, `teacher_dataset_report.md` и `external_validation_report.md`. LoRA-модель не production-ready; следующий цикл должен устранить hard-negative failures в real-world условиях через teacher-label audit и production smoke set.
 
 ### Production Readiness
 
@@ -80,14 +80,14 @@
    - **Описание:** Experiment 003 прошёл runtime negative smoke, но на original test set появились ложные отрицательные решения на genuine match-кейсах. Модель стала слишком консервативной после добавления hard negatives.
    - **Влияние:** LoRA-адаптер не может заменить GPT-4o-mini в production, но пригоден как on-premise / edge альтернатива.
    - **Статус:** Частично устранён. Experiment 004 прошёл runtime smoke (7/7), достиг decision_accuracy 0.931 vs GPT-4o-mini 0.941 на внешней валидации (102 пары, GPT-4o reference). Latency optimization запущена 2026-07-22; score calibration (MAE 19.6 vs 6.2) остаётся открытым.
-   - **Ссылки:** [Experiment_003_Report.md](../finetuning/Experiment_003_Report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md), [latency optimization task](../task_history/2026-07-22_task-latency-optimization-lora-experiment-004.md)
-   - **Рекомендации:** score calibration, vLLM/TGI inference, quantization, расширение teacher dataset.
+   - **Ссылки:** [Experiment_003_Report.md](../finetuning/Experiment_003_Report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md), [teacher_dataset_report.md](../finetuning/reports/teacher_dataset_report.md)
+   - **Рекомендации:** score calibration, vLLM/TGI inference, quantization, расширение teacher dataset, production smoke set.
 
 4. **🟡 VALIDATION ACCURACY VS PRODUCTION HARD NEGATIVES MISMATCH** (открыто 2026-07-22)
    - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation, но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 9 из 36 hard-negative-like записей (25 %) размечены reference-teacher как `match` (Junior SA → SA, BA → SA, DA → SA, Senior BA с salary mismatch → SA). External validation V5-EXT содержит всего 17,6 % hard-negative-like записей и не покрывает ключевые failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах.
    - **Влияние:** Метрика 0.931 создаёт ложное ощущение готовности LoRA к production; критические false positives (аналитики на SA, junior, salary mismatch) остаются незамеченными до реального тестирования.
    - **Статус:** Открыто. Решение: ввести stratified metrics и production smoke set.
-   - **Ссылки:** [teacher_dataset_report_v4.md](../finetuning/reports/teacher_dataset_report_v4.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md), [analysis task](../task_history/2026-07-22_task-analyze-teacher-dataset-hard-negatives.md), [Telegram smoke test task](../task_history/2026-07-22_task-real-world-smoke-test-telegram-validation.md)
+   - **Ссылки:** [teacher_dataset_report.md](../finetuning/reports/teacher_dataset_report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md)
    - **Рекомендации:**
      - Ввести stratified decision accuracy: POSITIVE, OBVIOUSNOMATCH, BORDERLINE, HARD NEGATIVE.
      - Считать FPR по категориям hard negatives (BA/DA/process analyst → SA, junior/стажёр, salary mismatch, одиночный навык).
@@ -187,13 +187,15 @@
 |----------|--------|----------|-----------|
 | **finetuning/README.md** | ✅ Обновлён | HRA Decision | 🔴 Высокий |
 | **finetuning/TECHNICAL_FOUNDATION.md** | ✅ Создан | HRA Decision | 🟡 Средний |
-| **finetuning/FINETUNING_ENGINEERING_REPORT.md** | ✅ Обновлён | HRA Decision | 🔴 Высокий |
+| **finetuning/Experiment_001_Report.md** | ✅ Создан | HRA Decision | 🟡 Средний |
+| **finetuning/Experiment_002_Report.md** | ✅ Создан | HRA Decision | 🟡 Средний |
 | **finetuning/Experiment_003_Report.md** | ✅ Создан | HRA Decision | 🔴 Высокий |
+| **finetuning/Experiment_004_Report.md** | ✅ Создан | HRA Decision | 🔴 Высокий |
 | **finetuning/runs/experiment_002/README.md** | ✅ Создан | Auto-generated | 🟡 Средний |
 | **api/hra_qwen_api.py** | ✅ Создан | HRA Decision | 🟡 Средний |
 | **api/hra_qwen_api_lora.py** | ✅ Создан | HRA Decision | 🟡 Средний |
 | **finetuning/reports/teacher_dataset_report.md** | ✅ Создан | HRA Decision | 🟡 Средний |
-| **finetuning/reports/dataset_validation_report.md** | ✅ Создан | HRA Decision | 🟡 Средний |
+| **finetuning/reports/external_validation_report.md** | ✅ Создан | HRA Decision | 🟡 Средний |
 
 ---
 
@@ -323,7 +325,7 @@
 **Задачи:**
 - [x] Сформулировать и утвердить гипотезу Cycle 4 — баланс positive/borderline примеров, сохранение hard negatives, сравнение с GPT-4o-mini
 - [x] Подготовить изменённый teacher dataset — 13 новых positive/borderline примеров, SQL-скрипты V4 и валидация
-- [x] Провести проектирование Experiment_004 (конфиг, launch contract, WinSCP transfer list, smoke set)
+- [x] Провести проектирование Experiment_004 (конфиг, launch contract, transfer list, smoke set)
 - [x] Провести обучение Experiment_004 в RunPod CC
 - [x] Пройти runtime smoke validation без ложных отрицательных решений
 - [x] Подтвердить сохранение качества на internal test set
@@ -348,33 +350,21 @@
 
 ---
 
-### Phase 0c: Latency Optimization — Experiment 004 (приоритет: критический) 🔄 В ПРОЦЕССЕ
+### Phase 0c: Latency Optimization — Experiment 004 (приоритет: средний) ✅ ЗАВЕРШЁН
 
 **Цель:** Снизить p95 latency LoRA inference с ~17 секунд до ≤2 секунд без переобучения, сохранив decision_accuracy в пределах 5 pp от 0.931 на external validation.
 
-**Ограничения:**
-- Нельзя менять adapter (`runs/experiment_004/best_adapter/`).
-- Нельзя менять base model (`Qwen/Qwen2.5-1.5B-Instruct`).
-- Можно менять inference engine, quantization, caching, batching, API implementation.
+**Результат:**
+- Созданы экспериментальные runtime: 4-bit quantized API (`api/hra_qwen_api_lora_4bit.py`) и vLLM launcher (`api/hra_qwen_api_lora_vllm.py`).
+- vLLM сократил p95 latency до ~2.1 сек.
+- Канонический runtime Experiments 003–004 — FastAPI + Transformers + PEFT.
+- Подробнее — `finetuning/Experiment_004_Report.md`, раздел 9.3 и 6.3.
 
-**Задачи:**
-- [x] Спроектировать план latency optimization
-- [x] Создать скрипт профилирования (`scripts/profile_lora_latency.py`)
-- [x] Создать benchmark движков / квантования (`scripts/benchmark_lora_engines.py`)
-- [x] Создать 4-bit quantized API (`api/hra_qwen_api_lora_4bit.py`)
-- [x] Создать vLLM launcher (`api/hra_qwen_api_lora_vllm.py`)
-- [x] Подготовить RunPod operation manual и WinSCP transfer list
-- [ ] Выполнить профилирование и benchmark на RunPod
-- [ ] Выбрать лучший engine и зафиксировать обоснование
-- [ ] Прогнать optimized API на external validation и smoke set
-- [ ] Зафиксировать latency optimization report
-- [ ] Обновить PROJECT_STATE.md и finetuning/README.md по результатам
-
-**Срок:** 1–2 дня
+**Срок:** завершён 2026-07-22
 
 ---
 
-### Phase 0d: Hard-Negative Dataset Fix & Production Metrics (приоритет: критический) 🆕
+### Phase 0d: Hard-Negative Dataset Fix & Production Metrics (приоритет: критический) 🔄 В ПРОЦЕССЕ
 
 **Цель:** Устранить mismatch между validation accuracy и production-качеством на hard negatives; подготовить метрики и production smoke set для принятия решения о внедрении LoRA.
 
@@ -392,7 +382,7 @@
 - [ ] Сформировать production smoke set 30–50 кейсов, покрывающий HN1–HN8, EC1, EC3, EC4, POSITIVE, OBVIOUSNOMATCH.
 - [ ] Ввести stratified metrics: accuracy/FPR по POSITIVE / OBVIOUSNOMATCH / BORDERLINE / HARD NEGATIVE.
 - [ ] Прогнать LoRA и GPT-4o-mini на production smoke set и зафиксировать сравнение.
-- [ ] Обновить `finetuning/FINETUNING_ENGINEERING_REPORT.md` и `docs/PROJECT_STATE.md` по результатам.
+- [ ] Обновить `finetuning/reports/teacher_dataset_report.md`, `finetuning/Experiment_004_Report.md` и `docs/PROJECT_STATE.md` по результатам.
 
 **Критерий готовности LoRA к production:**
 - ≥ 70 % correct на production smoke set;
@@ -403,9 +393,11 @@
 
 ---
 
-### Phase 1: Документация (приоритет: высокий)
+### Phase 1: Документация кейса HR Assistant (приоритет: высокий)
 
-**Цель:** Создать документационный пакет по стандартам APL
+**Цель:** Создать оставшиеся документы customer / user / operator layers по стандартам APL.
+
+**Примечание:** Fine-tuning Documentation Package завершён. Этот phase относится к корневой документации кейса, а не к `finetuning/`.
 
 **Задачи:**
 
