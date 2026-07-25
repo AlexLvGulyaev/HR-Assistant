@@ -38,7 +38,7 @@
 | `task_type` | `CAUSAL_LM` |
 | `target_modules` | `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj` |
 
-Конфигурация зафиксирована в launch contract (`configs/experiment_003.yaml`, `configs/experiment_004.yaml`) и является неизменной для Experiments 003–004. Experiment 001 использовал меньший rank (`r=8`, 4 target modules); Experiment 002 перешёл к конфигурации выше.
+Конфигурация зафиксирована в launch contract (`configs/experiment_003.yaml`, `configs/experiment_004.yaml`) и является неизменной для Experiments 003–004. Experiment 001 использовал меньший адаптер (`r=8`, 4 target modules); Experiment 002 проверил гипотезу о недостаточной ёмкости и перешёл к конфигурации выше (`r=16`, 7 target modules).
 
 ### 1.4. Tokenizer и формат обучения
 
@@ -190,27 +190,30 @@ External / real-world validation (опционально)
 | 1 | Формирование teacher dataset | Размеченные пары candidate × vacancy из PostgreSQL | n8n workflow `HRA Prompt Evaluation Experiment` + `scripts/extract_teacher_dataset.py` | Пользователь / VPS Claude Code | `data/train.jsonl`, `data/validation.jsonl`, `data/test.jsonl`, `data/holdout.jsonl`, `data/manifest_experiment_NNN.json` | Ожидаемое число записей, отсутствие leakage, валидный JSON |
 | 2 | Структурная проверка + split | JSONL-файлы, манифест | SQL-валидаторы + Python preflight | VPS Claude Code | Отчёт о проверке, подтверждение split | Все проверки `passed = true` |
 | 3 | Launch contract | Гипотеза, параметры, пути | `configs/experiment_NNN.yaml` | VPS Claude Code | YAML-файл launch contract | Все неизменяемые параметры зафиксированы, единственная изменяемая переменная выделена |
-| 4 | GPU preflight | Launch contract, файлы на RunPod | `scripts/01_environment_check.py` + ручные проверки | RunPod Claude Code | Запись в operation log со статусом READY FOR GPU | GPU доступна, Python venv работает, CUDA available, базовая модель кэширована |
-| 5 | Обучение LoRA | `train.jsonl`, `validation.jsonl`, launch contract | `scripts/train_lora.py --config configs/experiment_NNN.yaml` | RunPod Claude Code | Чекпоинты в `runs/experiment_NNN/checkpoint-*`, `training_report.json`, `trainer_state.json` | Обучение завершилось без ошибок, eval_loss зафиксирован |
-| 6 | Выбор best checkpoint | `trainer_state.json`, чекпоинты | Логика `load_best_model_at_end=True`, `metric_for_best_model=eval_loss` | RunPod Claude Code | `runs/experiment_NNN/best_adapter/` | Лучший чекпоинт однозначно определён |
-| 7 | Offline evaluation | `data/test.jsonl`, best adapter | `scripts/evaluate_generation_test.py`, `scripts/evaluate_test.py` | RunPod Claude Code | `generation_test/generation_test_report.json`, `test_evaluation/test_metrics.json` | valid_json_rate, decision_accuracy, MAE_score зафиксированы |
-| 8 | Runtime smoke test | `data/smoke_set.jsonl`, API с адаптером | `scripts/runtime_smoke_test.py` + `hra_qwen_api_lora.py` | RunPod Claude Code | `runtime_smoke_report.json` | Все кейсы smoke set пройдены с ожидаемыми решениями |
-| 9 | Baseline comparison *(опционально)* | Test/holdout записи, LoRA, GPT-4o-mini | `scripts/compare_with_gpt.py` | RunPod Claude Code | `gpt_comparison_report.json` | Метрики LoRA и baseline зафиксированы на одной выборке |
-| 10 | External / real-world validation *(опционально)* | Внешний датасет или Telegram-анкеты | `scripts/compare_external_validation.py` + n8n Telegram workflow | RunPod Claude Code / Пользователь | `external_validation_report.json`, Telegram smoke report | Результаты на независимой выборке зафиксированы |
+| 4 | GPU preflight | Launch contract, файлы на RunPod | `scripts/01_environment_check.py` + ручные проверки | RunPod Claude Code *(Exp 003–004)* / Пользователь *(Exp 001–002)* | Запись в operation log со статусом READY FOR GPU | GPU доступна, Python venv работает, CUDA available, базовая модель кэширована |
+| 5 | Обучение LoRA | `train.jsonl`, `validation.jsonl`, launch contract | `scripts/train_lora.py --config configs/experiment_NNN.yaml` | RunPod Claude Code *(Exp 003–004)* / Пользователь вручную на RunPod *(Exp 001–002)* | Чекпоинты в `runs/experiment_NNN/checkpoint-*`, `training_report.json`, `trainer_state.json` | Обучение завершилось без ошибок, eval_loss зафиксирован |
+| 6 | Выбор best checkpoint | `trainer_state.json`, чекпоинты | Логика `load_best_model_at_end=True`, `metric_for_best_model=eval_loss` | RunPod Claude Code *(Exp 003–004)* / Пользователь вручную на RunPod *(Exp 001–002)* | `runs/experiment_NNN/best_adapter/` | Лучший чекпоинт однозначно определён |
+| 7 | Offline evaluation | `data/test.jsonl`, best adapter | `scripts/evaluate_generation_test.py`, `scripts/evaluate_test.py` | RunPod Claude Code *(Exp 003–004)* / Пользователь вручную на RunPod *(Exp 001–002)* | `generation_test/generation_test_report.json`, `test_evaluation/test_metrics.json` | valid_json_rate, decision_accuracy, MAE_score зафиксированы |
+| 8 | Runtime smoke test | `data/smoke_set.jsonl`, API с адаптером | `scripts/runtime_smoke_test.py` + `hra_qwen_api_lora.py` | RunPod Claude Code *(Exp 003–004)* / Пользователь вручную на RunPod *(Exp 001–002)* | `runtime_smoke_report.json` | Все кейсы smoke set пройдены с ожидаемыми решениями |
+| 9 | Baseline comparison *(опционально)* | Test/holdout записи, LoRA, GPT-4o-mini | `scripts/compare_with_gpt.py` | RunPod Claude Code *(Exp 004)* | `gpt_comparison_report.json` | Метрики LoRA и baseline зафиксированы на одной выборке |
+| 10 | External / real-world validation *(опционально)* | Внешний датасет или Telegram-анкеты | `scripts/compare_external_validation.py` + n8n Telegram workflow | RunPod Claude Code *(Exp 004)* / Пользователь *(Exp 001–002)* | `external_validation_report.json`, Telegram smoke report | Результаты на независимой выборке зафиксированы |
 | 11 | Вердикт | Все метрики и отчёты | Инженерный анализ | Пользователь / Claude Code | `Experiment_NNN_Report.md` с вердиктом | Гипотеза подтверждена / частично / не подтверждена; принято решение о следующем цикле |
+
+**Эволюция исполнителя GPU-этапов.** В Experiments 001–002 код пайплайна разрабатывался в диалоге с ChatGPT, а запуск и операционное управление на RunPod выполнял пользователь вручную. В Experiments 003–004 Claude Code был развёрнут непосредственно на RunPod и взял на себя GPU-preflight, обучение, выбор checkpoint, runtime smoke и валидацию — это следующий этап развития экспериментального процесса, а не просто смена инструмента. Исходный рабочий пайплайн, сформированный в Experiments 001–002, был сохранён и развит.
 
 ### 3.2. Стабильные роли
 
 | Роль | Ответственность |
 |------|-------------------|
-| **Пользователь / Владелец решения** | Утверждает гипотезу, split-стратегию, критерии остановки, принимает вердикт |
-| **VPS Claude Code** | Подготовка кода, конфигураций, SQL, launch contract, структурная preflight, offline evaluation на VPS |
-| **RunPod Claude Code** | GPU-preflight, обучение, выбор checkpoint, runtime smoke, baseline comparison, external validation на RunPod |
+| **Пользователь / Владелец решения** | Утверждает гипотезу, split-стратегию, критерии остановки; запускает обучение и контролирует процесс на RunPod в Experiments 001–002; принимает вердикт |
+| **ChatGPT** | Подготовка кода экспериментального пайплайна, launch contract и документации в диалоге с пользователем в Experiments 001–002 |
+| **VPS Claude Code** | Подготовка кода, конфигураций, SQL, launch contract, структурная preflight, offline evaluation на VPS в Experiments 003–004 |
+| **RunPod Claude Code** | GPU-preflight, обучение, выбор checkpoint, runtime smoke, baseline comparison, external validation на RunPod в Experiments 003–004 |
 | **Judge (GPT-4.1)** | Генерация reference labels для teacher dataset |
 | **Baseline (GPT-4o-mini)** | Production baseline для сравнения с LoRA |
 | **Telegram Bot / n8n** | Runtime-контур для real-world validation |
 
-Подробная сводка ролей находится в [`README.md`](README.md).
+Подробная сводка ролей и эволюция инженерного процесса находятся в [`README.md`](README.md).
 
 ---
 

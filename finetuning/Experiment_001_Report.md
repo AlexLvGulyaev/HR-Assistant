@@ -60,10 +60,10 @@ Experiment 001 — первый цикл fine-tuning в кейсе. Измене
 | Stratification | obvious_match / borderline / obvious_no_match, 30 записей каждая |
 | Hard-negative категории | не формализованы |
 | Base model | `Qwen/Qwen2.5-1.5B-Instruct` |
-| LoRA rank | 16 |
+| LoRA rank | 8 |
 | LoRA alpha | 32 |
-| LoRA dropout | 0.05 |
-| Target modules | 7: `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj` |
+| LoRA dropout | 0.1 |
+| Target modules | 4: `q_proj`, `k_proj`, `v_proj`, `o_proj` |
 | Epochs | 5 |
 | Batch size | 1, gradient accumulation 4 |
 | Learning rate | 2e-4 |
@@ -141,22 +141,25 @@ Dataset сформирован из reference dataset Prompt Evaluation. Каж�
 
 | Роль | Ответственность |
 |------|-----------------|
-| **Пользователь** | Инициатор, владелец решения, утверждение гипотезы и критериев успеха. |
-| **VPS Claude Code** | Подготовка кода, датасетов, launch contract, документации. |
-| **RunPod Claude Code** | GPU-preflight, обучение, выбор checkpoint, возврат артефактов. |
+| **Пользователь** | Инициатор, владелец решения, утверждение гипотезы и критериев успеха; запуск обучения и контроль процесса на RunPod. |
+| **ChatGPT** | Подготовка кода экспериментального пайплайна, launch contract, документации в диалоге с пользователем. |
+| **RunPod** | Вычислительная среда для обучения и offline evaluation; Claude Code на RunPod **не использовался**. |
 | **GPT-4.1 (Teacher / Judge)** | Формирование reference labels для teacher dataset. |
 | **LoRA-модель** | Обучаемый адаптер Qwen + LoRA. |
+
+> **Примечание об авторстве и инструментарии.**
+> В Experiment 001 код пайплайна разрабатывался в диалоге с ChatGPT. Непосредственный запуск команд, обучение модели, контроль процесса и получение артефактов выполнял пользователь вручную на RunPod. RunPod использовался исключительно как GPU-стенд. Claude Code на RunPod не применялся.
 
 ### 6.2. Stage-by-stage исполнители
 
 | Этап | Вход | Инструмент | Исполнитель | Выходной артефакт | Критерий завершения |
 |------|------|------------|-------------|-------------------|---------------------|
-| 1. Пайплайн-контракт | Гипотеза | Markdown-шаблон отчёта | Пользователь + VPS Claude Code | `Experiment_001_Report.md` (Stage 1) | Гипотеза и критерии утверждены |
-| 2. Формирование teacher dataset | Reference dataset из Prompt Evaluation | `scripts/extract_teacher_dataset.py` | VPS Claude Code | `train.jsonl`, `validation.jsonl`, `test.jsonl` | Ожидаемое число записей, отсутствие leakage |
-| 3. Launch contract | Dataset + параметры | [`configs/experiment_001.yaml`](configs/experiment_001.yaml) | VPS Claude Code | YAML-файл launch contract | Все пути и параметры зафиксированы |
-| 4. Обучение | Dataset + launch contract | [`scripts/train_lora.py`](scripts/train_lora.py) | RunPod Claude Code | Чекпоинты, best adapter, `trainer_state.json` | Обучение завершилось без ошибок |
-| 5. Offline evaluation | `data/test.jsonl`, best adapter | [`scripts/evaluate_generation_test.py`](scripts/evaluate_generation_test.py) | RunPod Claude Code | `generation_test_report.json` | `valid_json_rate` = 1.0 |
-| 6. Документирование | Все метрики | Отчёт эксперимента | VPS Claude Code + Пользователь | `Experiment_001_Report.md` | Вердикт принят и задокументирован |
+| 1. Пайплайн-контракт | Гипотеза | Markdown-шаблон отчёта | Пользователь + ChatGPT | `Experiment_001_Report.md` (Stage 1) | Гипотеза и критерии утверждены |
+| 2. Формирование teacher dataset | Reference dataset из Prompt Evaluation | `scripts/extract_teacher_dataset.py` | ChatGPT + Пользователь | `train.jsonl`, `validation.jsonl`, `test.jsonl` | Ожидаемое число записей, отсутствие leakage |
+| 3. Launch contract | Dataset + параметры | [`configs/experiment_001.yaml`](configs/experiment_001.yaml) | ChatGPT + Пользователь | YAML-файл launch contract | Все пути и параметры зафиксированы |
+| 4. Обучение | Dataset + launch contract | [`scripts/train_lora.py`](scripts/train_lora.py) | Пользователь вручную на RunPod | Чекпоинты, best adapter, `trainer_state.json` | Обучение завершилось без ошибок |
+| 5. Offline evaluation | `data/test.jsonl`, best adapter | [`scripts/evaluate_generation_test.py`](scripts/evaluate_generation_test.py) | Пользователь вручную на RunPod | `generation_test_report.json` | `valid_json_rate` = 1.0 |
+| 6. Документирование | Все метрики | Отчёт эксперимента | ChatGPT + Пользователь | `Experiment_001_Report.md` | Вердикт принят и задокументирован |
 
 ---
 

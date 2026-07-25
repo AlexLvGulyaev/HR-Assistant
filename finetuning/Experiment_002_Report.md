@@ -20,8 +20,8 @@ Experiment 002 ставил цель **улучшить качество matchin
 
 Ключевые проверки:
 
-1. Увеличение LoRA rank с 8 до 16.
-2. Расширение target modules с attention-only (4) до attention + MLP (7).
+1. Увеличение LoRA rank с 8 до 16 (проверка гипотезы о недостаточной ёмкости адаптера Exp 001).
+2. Расширение target modules с attention-only (4) до attention + MLP (7) (проверка гипотезы о необходимости адаптации MLP-слоёв).
 3. Увеличение числа эпох и корректировка learning rate.
 4. Проверка поведения на runtime negative сценариях.
 
@@ -54,16 +54,16 @@ Experiment 002 — это **параметрическая оптимизаци�
 |-----------|----------------|----------------|
 | Teacher dataset | `HRA-EXP-V1`, 90 записей | `HRA-EXP-V2`, 90 записей (пересмотрен split) |
 | Train / Validation / Test | 72 / 9 / 9 | 72 / 9 / 9 |
-| LoRA rank | 16 | 16 |
+| LoRA rank | 8 | 16 |
 | LoRA alpha | 32 | 32 |
-| LoRA dropout | 0.05 | 0.05 |
-| Target modules | 7 | 7 |
+| LoRA dropout | 0.1 | 0.05 |
+| Target modules | 4 (`q_proj`, `k_proj`, `v_proj`, `o_proj`) | 7 (`q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj`) |
 | Learning rate | 2e-4 | 2e-4 |
 | Epochs (план) | 5 | 5 |
 | Epochs (факт) | 5 | 3 (early stopping) |
 | Best checkpoint | `checkpoint-72` (эпоха 4) | `checkpoint-54` (эпоха 3) |
 
-Фактически архитектура адаптера осталась той же, что и в Exp 001, но фокус сместился на качество matching и раннюю остановку по eval loss.
+Главное отличие Exp 002 от Exp 001 — увеличение ёмкости адаптера: rank 8 → 16 и расширение target modules с attention-only (4) до attention + MLP (7). Остальные гиперпараметры (alpha, learning rate, batch, grad_accum) сохранены для чистоты сравнения.
 
 ---
 
@@ -92,10 +92,10 @@ Experiment 002 сравнивается с Experiment 001 по качеству 
 | Аспект | Как контролируется |
 |--------|-------------------|
 | Сравнимость модели | Базовая модель `Qwen/Qwen2.5-1.5B-Instruct` неизменна. |
-| Сравнимость адаптера | LoRA rank, alpha, target modules совпадают с Exp 001. |
+| Контролируемая переменная | Rank и target modules изменены относительно Exp 001; alpha, learning rate, batch, grad_accum неизменны. |
 | Сравнимость обучения | Batch=1, grad_accum=4, lr=2e-4, `eval_loss` для выбора best checkpoint. |
 | Сравнимость dataset | 90 записей, стратификация по группам. |
-| Изменяемая переменная | Фактически — фокус на качестве matching и ранняя остановка; параметры адаптера совпадают с Exp 001. |
+| Изменяемая переменная | Ёмкость адаптера (rank 8 → 16, target modules 4 → 7) и фокус на качестве matching; alpha, lr, batch, grad_accum неизменны. |
 
 **Угрозы валидности и ограничения:**
 
@@ -146,26 +146,29 @@ Dataset пересмотрен относительно V1: сохранена �
 
 ### 6.1. Участники и роли
 
-| Роль | Ответветственность |
-|------|--------------------|
-| **Пользователь** | Инициатор, владелец решения, утверждение гипотезы и критериев успеха. |
-| **VPS Claude Code** | Подготовка кода, датасетов, launch contract, offline evaluation, документации. |
-| **RunPod Claude Code** | GPU-preflight, обучение, выбор checkpoint, runtime smoke, возврат артефактов. |
+| Роль | Ответственность |
+|------|-------------------|
+| **Пользователь** | Инициатор, владелец решения, утверждение гипотезы и критериев успеха; запуск обучения, runtime smoke и контроль процесса на RunPod. |
+| **ChatGPT** | Подготовка кода экспериментального пайплайна, launch contract и документации в диалоге с пользователем. |
+| **RunPod** | Вычислительная среда для обучения, offline evaluation и runtime smoke; Claude Code на RunPod **не использовался**. |
 | **GPT-4.1 (Teacher / Judge)** | Формирование reference labels для teacher dataset. |
 | **LoRA-модель** | Обучаемый адаптер Qwen + LoRA. |
 | **Telegram / n8n** | Runtime-контур для smoke validation. |
+
+> **Примечание об авторстве и инструментарии.**
+> В Experiment 002 код пайплайна разрабатывался в диалоге с ChatGPT. Непосредственный запуск команд, обучение модели, контроль процесса, runtime smoke и получение артефактов выполнял пользователь вручную на RunPod. RunPod использовался исключительно как GPU-стенд. Claude Code на RunPod не применялся.
 
 ### 6.2. Stage-by-stage исполнители
 
 | Этап | Вход | Инструмент | Исполнитель | Выходной артефакт | Критерий завершения |
 |------|------|------------|-------------|-------------------|---------------------|
-| 1. Параметрический контракт | Результаты Exp 001 | Markdown-шаблон отчёта | Пользователь + VPS Claude Code | `Experiment_002_Report.md` (Stage 1) | Гипотеза и критерии утверждены |
-| 2. Подготовка teacher dataset | Reference dataset V2 | `scripts/extract_teacher_dataset.py` | VPS Claude Code | `train.jsonl`, `validation.jsonl`, `test.jsonl` | Ожидаемое число записей, отсутствие leakage |
-| 3. Launch contract | Dataset + параметры | `configs/experiment_002.yaml` (планировался) | VPS Claude Code | YAML-файл launch contract или параметры из артефактов | Все неизменяемые параметры зафиксированы |
-| 4. Обучение и early stopping | Dataset + launch contract | [`scripts/train_lora.py`](scripts/train_lora.py) | RunPod Claude Code | Best adapter `checkpoint-54`, `trainer_state.json` | Best checkpoint выбран по eval_loss |
-| 5. Offline evaluation | `data/test.jsonl`, best adapter | [`scripts/evaluate_generation_test.py`](scripts/evaluate_generation_test.py) | RunPod Claude Code | `generation_test_report.json` | valid_json_rate, decision_accuracy, MAE зафиксированы |
-| 6. Runtime validation | Нерелевантные профили | [`scripts/runtime_smoke_test.py`](scripts/runtime_smoke_test.py) + [`../api/hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py) | RunPod Claude Code | Текстовые наблюдения smoke failures | Positive/negative/edge кейсы зафиксированы |
-| 7. Документирование | Все метрики + анализ | Отчёт эксперимента | VPS Claude Code + Пользователь | `Experiment_002_Report.md` | Вердикт принят и задокументирован |
+| 1. Параметрический контракт | Результаты Exp 001 | Markdown-шаблон отчёта | Пользователь + ChatGPT | `Experiment_002_Report.md` (Stage 1) | Гипотеза и критерии утверждены |
+| 2. Подготовка teacher dataset | Reference dataset V2 | `scripts/extract_teacher_dataset.py` | ChatGPT + Пользователь | `train.jsonl`, `validation.jsonl`, `test.jsonl` | Ожидаемое число записей, отсутствие leakage |
+| 3. Launch contract | Dataset + параметры | `configs/experiment_002.yaml` (планировался) | ChatGPT + Пользователь | YAML-файл launch contract или параметры из артефактов | Все неизменяемые параметры зафиксированы |
+| 4. Обучение и early stopping | Dataset + launch contract | [`scripts/train_lora.py`](scripts/train_lora.py) | Пользователь вручную на RunPod | Best adapter `checkpoint-54`, `trainer_state.json` | Best checkpoint выбран по eval_loss |
+| 5. Offline evaluation | `data/test.jsonl`, best adapter | [`scripts/evaluate_generation_test.py`](scripts/evaluate_generation_test.py) | Пользователь вручную на RunPod | `generation_test_report.json` | valid_json_rate, decision_accuracy, MAE зафиксированы |
+| 6. Runtime validation | Нерелевантные профили | [`scripts/runtime_smoke_test.py`](scripts/runtime_smoke_test.py) + [`../api/hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py) | Пользователь вручную на RunPod | Текстовые наблюдения smoke failures | Positive/negative/edge кейсы зафиксированы |
+| 7. Документирование | Все метрики + анализ | Отчёт эксперимента | ChatGPT + Пользователь | `Experiment_002_Report.md` | Вердикт принят и задокументирован |
 
 ---
 

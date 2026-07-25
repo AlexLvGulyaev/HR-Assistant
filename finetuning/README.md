@@ -51,15 +51,25 @@ Production Verdict
 
 | Роль | Ответственность | Участие в экспериментах |
 |------|-------------------|--------------------------|
-| **Пользователь / Владелец решения** | Инициирует цикл, утверждает гипотезу, split-стратегию, критерии успеха и остановки; принимает вердикт | Все эксперименты |
-| **VPS Claude Code** | Подготовка кода, конфигураций, SQL, launch contract, структурная preflight, offline evaluation на VPS | Все эксперименты |
-| **RunPod Claude Code** | GPU-preflight, запуск обучения, выбор checkpoint, runtime smoke, baseline comparison, external validation на GPU-среде | Все эксперименты |
+| **Пользователь / Владелец решения** | Инициирует цикл, утверждает гипотезу, split-стратегию, критерии успеха и остановки; в Experiments 001–002 запускает команды и контролирует процесс на RunPod вручную; принимает вердикт | Все эксперименты |
+| **ChatGPT** | Подготовка кода экспериментального пайплайна, launch contract, документации в диалоге с пользователем | Experiments 001–002 |
+| **VPS Claude Code** | Подготовка кода, конфигураций, SQL, launch contract, структурная preflight, offline evaluation на VPS | Experiments 003–004 |
+| **RunPod Claude Code** | GPU-preflight, запуск обучения, выбор checkpoint, runtime smoke, baseline comparison, external validation на GPU-среде | Experiments 003–004 |
 | **Judge (GPT-4.1)** | Teacher: генерация reference labels для teacher dataset | Все эксперименты |
 | **Baseline (GPT-4o-mini)** | Production baseline для сравнения с LoRA | Experiment 004 |
 | **LoRA-модель** | Обучаемый адаптер Qwen + LoRA | Все эксперименты |
 | **Telegram Bot / n8n** | Runtime-контур для real-world smoke test | Experiment 004 |
 
 Стабильные роли описаны здесь. В отчётах по экспериментам остаются только отклонения и конкретные исполнители этапов.
+
+### Эволюция инженерного процесса
+
+Эксперименты проходили в два принципиально разных режима работы:
+
+- **Experiments 001–002** — исходный рабочий пайплайн. Код разрабатывался в диалоге с ChatGPT. Запуск команд, обучение модели, контроль процесса и получение артефактов выполнял пользователь вручную на RunPod. RunPod использовался только как вычислительная среда; Claude Code на RunPod не применялся.
+- **Experiments 003–004** — следующий этап развития процесса. Claude Code был запущен непосредственно в среде RunPod и участвовал не только в подготовке кода на VPS, но и в работе с экспериментальным пайплайном внутри GPU-среды: GPU-preflight, обучение, выбор checkpoint, runtime smoke, baseline comparison, external validation.
+
+При этом Experiments 001–002 не обесцениваются: именно они сформировали исходный воспроизводимый пайплайн (dataset → launch contract → GPU preflight → обучение → checkpoint → offline evaluation), который затем был развит в Experiments 003–004.
 
 ---
 

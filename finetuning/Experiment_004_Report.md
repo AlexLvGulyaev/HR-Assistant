@@ -16,6 +16,8 @@ Experiment 004 — ответ на precision/recall trade-off, выявленн�
 
 Experiment 004 проверяет, можно ли восстановить recall, сохранив достижения Experiment 003, за счёт пересбалансирования teacher dataset в сторону high-quality positive и borderline примеров. Все параметры модели, LoRA и обучения остаются неизменными; единственная изменяемая переменная — состав teacher dataset.
 
+Как и Experiment 003, Experiment 004 выполнялся с Claude Code на VPS и на RunPod: GPU-preflight, обучение, выбор checkpoint, offline/runtime evaluation, baseline comparison и external validation проходили в среде RunPod под управлением Claude Code. Это продолжение эволюции процесса, начатой в Experiment 003.
+
 ---
 
 ## 2. Гипотеза
