@@ -136,12 +136,29 @@ finetuning/
 ├── scripts/                     # Скрипты пайплайна
 ├── data_sample/                 # Анонимизированный пример формата данных
 │   └── example.jsonl
+├── data/                        # Синтетические датасеты для воспроизведения экспериментов
+│   ├── train.jsonl
+│   ├── validation.jsonl
+│   ├── test.jsonl
+│   ├── holdout.jsonl
+│   ├── smoke_set.jsonl
+│   ├── external_validation.jsonl
+│   ├── external_validation_subset_20.jsonl
+│   ├── external_validation_subset_21.jsonl
+│   ├── manifest_experiment_003.json
+│   └── manifest_experiment_004.json
+├── data_sample/                 # Обезличенный пример формата данных
+│   └── example.jsonl
 └── reports/                     # Вспомогательные отчёты
     ├── teacher_dataset_report.md
     └── external_validation_report.md
 ```
 
-Каталоги `data/`, `runs/` и `models/` исключены из публичного репозитория через [`.gitignore`](.gitignore). Они содержат реальные датасеты, журналы обучения, чекпоинты и веса моделей. В публичном репозитории остаётся только обезличенный пример формата данных в [`data_sample/example.jsonl`](data_sample/example.jsonl) и конфигурации запусков в `configs/`.
+### Данные
+
+Каталог [`data/`](data/) содержит **синтетические** датасеты, использованные в экспериментах. HR Assistant никогда не запускался в реальном боевом режиме, поэтому все профили кандидатов, вакансии и reference-оценки были созданы искусственно для целей исследования. Включение `data/` в репозиторий позволяет воспроизвести каждое решение, принятое в отчётах, на конкретных `case_code`.
+
+Каталоги `runs/` и `models/` по-прежнему исключены через [`.gitignore`](.gitignore): они содержат журналы обучения, чекпоинты и веса моделей.
 
 ---
 

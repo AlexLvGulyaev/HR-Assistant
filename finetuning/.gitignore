@@ -1,6 +1,3 @@
-# Data (may contain PII)
-data/
-
 # Training runs (large files)
 runs/
 

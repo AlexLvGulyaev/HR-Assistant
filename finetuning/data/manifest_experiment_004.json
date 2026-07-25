@@ -1,0 +1,103 @@
+{
+  "experiment_code": "HRA-EXP-V4",
+  "dataset_code": "HRA-EVAL-V4",
+  "total_records": 162,
+  "splits": {
+    "train": {
+      "records": 114,
+      "candidates": 38,
+      "case_codes": [
+        "HRA-EVAL-V2-000001",
+        "HRA-EVAL-V2-000002",
+        "HRA-EVAL-V2-000003",
+        "HRA-EVAL-V2-000004",
+        "HRA-EVAL-V2-000005",
+        "HRA-EVAL-V2-000006",
+        "HRA-EVAL-V2-000007",
+        "HRA-EVAL-V2-000008",
+        "HRA-EVAL-V2-000009",
+        "HRA-EVAL-V2-000011",
+        "HRA-EVAL-V2-000012",
+        "HRA-EVAL-V2-000013",
+        "HRA-EVAL-V2-000014",
+        "HRA-EVAL-V2-000015",
+        "HRA-EVAL-V2-000016",
+        "HRA-EVAL-V2-000017",
+        "HRA-EVAL-V2-000018",
+        "HRA-EVAL-V2-000019",
+        "HRA-EVAL-V2-000021",
+        "HRA-EVAL-V2-000022",
+        "HRA-EVAL-V2-000023",
+        "HRA-EVAL-V2-000024",
+        "HRA-EVAL-V2-000025",
+        "HRA-EVAL-V2-000026",
+        "HRA-EVAL-V2-000027",
+        "HRA-EVAL-V2-000028",
+        "HRA-EVAL-V2-000029",
+        "HRA-EVAL-V2-000101",
+        "HRA-EVAL-V2-000102",
+        "HRA-EVAL-V2-000103",
+        "HRA-EVAL-V2-000104",
+        "HRA-EVAL-V2-000107",
+        "HRA-EVAL-V2-000109",
+        "HRA-EVAL-V2-000201",
+        "HRA-EVAL-V2-000202",
+        "HRA-EVAL-V2-000203",
+        "HRA-EVAL-V2-000204",
+        "HRA-EVAL-V2-000207"
+      ],
+      "case_type_distribution": {
+        "obvious_match": 39,
+        "obvious_no_match": 33,
+        "borderline": 42
+      }
+    },
+    "validation": {
+      "records": 27,
+      "candidates": 9,
+      "case_codes": [
+        "HRA-EVAL-V2-000105",
+        "HRA-EVAL-V2-000106",
+        "HRA-EVAL-V2-000108",
+        "HRA-EVAL-V2-000205",
+        "HRA-EVAL-V2-000206",
+        "HRA-EVAL-V2-000208",
+        "HRA-EVAL-V2-000209",
+        "HRA-EVAL-V2-000210",
+        "HRA-EVAL-V2-000213"
+      ],
+      "case_type_distribution": {
+        "obvious_match": 9,
+        "obvious_no_match": 9,
+        "borderline": 9
+      }
+    },
+    "test": {
+      "records": 15,
+      "candidates": 5,
+      "case_codes": [
+        "HRA-EVAL-V2-000010",
+        "HRA-EVAL-V2-000020",
+        "HRA-EVAL-V2-000030",
+        "HRA-EVAL-V2-000211",
+        "HRA-EVAL-V2-000212"
+      ],
+      "case_type_distribution": {
+        "obvious_match": 9,
+        "obvious_no_match": 3,
+        "borderline": 3
+      }
+    },
+    "holdout": {
+      "records": 6,
+      "candidates": 2,
+      "case_codes": [
+        "HRA-EVAL-V2-000110",
+        "HRA-EVAL-V2-000111"
+      ],
+      "case_type_distribution": {
+        "obvious_no_match": 6
+      }
+    }
+  }
+}

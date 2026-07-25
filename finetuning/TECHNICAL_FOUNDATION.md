@@ -223,6 +223,8 @@ External / real-world validation (опционально)
 
 Teacher dataset формируется из reference dataset уровня Prompt Evaluation. Candidate-vacancy пары генерируются в PostgreSQL CROSS JOIN'ом кандидатов и открытых вакансий, а reference labels производит Judge workflow с моделью `gpt-4.1` и `temperature=0` по production Prompt A. Затем `scripts/extract_teacher_dataset.py` экспортирует пары в JSONL-файлы.
 
+> **Важно:** HR Assistant никогда не работал в реальном боевом режиме. Все профили кандидатов и вакансий в `data/` — синтетические, созданные для экспериментов. Каталог `data/` включён в репозиторий, чтобы отчёты опирались на конкретные `case_code`, а не на голословные утверждения.
+
 ### 4.2. Структура записи
 
 Каждая запись — объект с массивом `messages`:
@@ -380,7 +382,8 @@ Latency измеряется на стороне клиента (n8n / скри�
 | Категория | Что фиксировать | Где хранится |
 |-----------|-----------------|--------------|
 | **Config** | Launch contract YAML (`configs/experiment_NNN.yaml`) | в репозитории |
-| **Manifest** | `data/manifest_experiment_NNN.json` — состав датасета, split, case codes | в закрытом рабочем контуре |
+| **Dataset** | `data/train.jsonl`, `data/validation.jsonl`, `data/test.jsonl`, `data/holdout.jsonl`, `data/smoke_set.jsonl`, `data/external_validation.jsonl`, `data/manifest_experiment_NNN.json` | в репозитории (синтетические данные) |
+| **Manifest** | `data/manifest_experiment_NNN.json` — состав датасета, split, case codes | в репозитории |
 | **Operation log** | Журнал запуска — шаги, версии, команды, замечания | в закрытом рабочем контуре |
 | **Metrics** | `training_report.json`, `generation_test_report.json`, `test_metrics.json`, `runtime_smoke_report.json` | в закрытом рабочем контуре |
 | **Outputs** | Чекпоинты, best adapter, отчёты сравнения | в закрытом рабочем контуре |
@@ -392,12 +395,12 @@ Latency измеряется на стороне клиента (n8n / скри�
 - Документация (`README.md`, `TECHNICAL_FOUNDATION.md`, `Experiment_*_Report.md`, отчёты).
 - Конфигурации без секретов (`configs/experiment_*.yaml`).
 - Скрипты обучения и evaluation (`scripts/`).
+- Синтетические датасеты (`data/`).
 - Обезличенный пример формата данных (`data_sample/example.jsonl`).
 - `requirements.txt`.
 
 ### 7.2. Что остаётся вне GitHub
 
-- Реальные датасеты (`data/`), включая манифесты.
 - Артефакты обучения (`runs/`, `models/`).
 - Checkpoints и adapter-веса (`*.safetensors`, `*.pt`, `*.bin`).
 - API-ключи и переменные окружения (`.env`).

@@ -431,4 +431,4 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 - External validation: `HRA-EVAL-V5-EXT` / `HRA-EXP-V5-EXT`;
 - Best checkpoint: `checkpoint-87` (эпоха 3), выбран по `eval_loss = 0.3273`.
 
-Первичные артефакты запусков (weights, raw metrics, evaluation JSON, operation logs) хранятся в закрытом рабочем контуре и не публикуются в репозитории. В публичной документации представлены агрегированные метрики, конфигурации и код.
+Датасет `HRA-EVAL-V4`, external validation set `HRA-EVAL-V5-EXT`, smoke set и манифесты включены в репозиторий в каталоге [`data/`](data/). Все профили в них синтетические: HR Assistant никогда не работал в реальном боевом режиме. Первичные артефакты обучения (weights, raw metrics, evaluation JSON, operation logs) хранятся в закрытом рабочем контуре и не публикуются.

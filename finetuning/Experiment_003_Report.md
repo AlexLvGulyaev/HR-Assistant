@@ -406,4 +406,4 @@ Experiment 003 прошёл runtime smoke test, но не стал production-re
 - Experiment code: `HRA-EXP-V3`;
 - Best checkpoint: `checkpoint-48` (эпоха 2), выбран по `eval_loss = 0.3108`.
 
-Первичные артефакты запусков (weights, raw metrics, evaluation JSON, operation logs) хранятся в закрытом рабочем контуре и не публикуются в репозитории. В публичной документации представлены агрегированные метрики, конфигурации и код.
+Датасет `HRA-EVAL-V3`, smoke set и манифест включены в репозиторий в каталоге [`data/`](data/). Все профили в них синтетические: HR Assistant никогда не работал в реальном боевом режиме. Первичные артефакты обучения (weights, raw metrics, evaluation JSON, operation logs) хранятся в закрытом рабочем контуре и не публикуются.
