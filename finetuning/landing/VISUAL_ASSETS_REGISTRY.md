@@ -8,14 +8,16 @@
 
 ## 0. Категории артефактов
 
-В реестре описаны две независимые категории SVG-файлов:
+В реестре описаны две независимые категории визуальных артефактов:
 
 | Категория | Где используется | Количество | Раздел |
 |-----------|------------------|------------|--------|
 | **SVG лендинга** | Непосредственно в `index.html` на сценах | 24 | [§1](#1-сцены-и-артефакты-лендинга) |
-| **Концептуальные иллюстрации Blueprint** | Только в [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md) для визуального усиления повествования | 7 | [§2](#2-концептуальные-иллюстрации-narrative-blueprint) |
+| **Иллюстрации Narrative Blueprint** | В [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md) для визуального усиления повествования | 16 | [§2](#2-иллюстрации-narrative-blueprint) |
 
 Каждый SVG лендинга привязан к конкретной сцене и решает одну повествовательную задачу. Цифры, подписи и цвета в SVG соответствуют данным из [`data/experimentData.js`](data/experimentData.js) и исходным JSON-артефактам в [`../runs/`](../runs/).
+
+Иллюстрации Blueprint — это те же SVG-графики landing и одна дополнительная схема эволюции Люмины, встроенные в документ как акценты повествования.
 
 ---
 
@@ -49,19 +51,28 @@
 
 ---
 
-## 2. Концептуальные иллюстрации Narrative Blueprint
+## 2. Иллюстрации Narrative Blueprint
 
-Эти SVG не входят в `index.html`. Они используются в [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md) для визуального усиления повествовательных акцентов: эволюция Люмины и переломные моменты истории.
+Эти артефакты используются в [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md) для визуального усиления повествовательных акцентов. Большинство из них — это те же SVG-графики landing, встроенные в текст документа. Дополнительно: одна схема эволюции Люмины.
 
-| SVG | Назначение |
-|-----|------------|
-| [`lumina-base.svg`](assets/visuals/lumina-base.svg) | Базовое состояние Люмины — потенциал без специализации |
-| [`lumina-shell.svg`](assets/visuals/lumina-shell.svg) | Консервативная оболочка после hard negatives |
-| [`lumina-balance.svg`](assets/visuals/lumina-balance.svg) | Сбалансированная форма |
-| [`lumina-production.svg`](assets/visuals/lumina-production.svg) | Production-ready состояние |
-| [`lumina-next.svg`](assets/visuals/lumina-next.svg) | Открытый финал, следующий цикл |
-| [`narrative-moment-tradeoff.svg`](assets/visuals/narrative-moment-tradeoff.svg) | Переломный момент: торговля precision/recall |
-| [`narrative-moment-balance.svg`](assets/visuals/narrative-moment-balance.svg) | Восстановление баланса |
+| Рисунок | SVG | Где в Blueprint | Назначение |
+|---------|-----|-----------------|------------|
+| 1 | [`lumina-evolution.svg`](assets/visuals/lumina-evolution.svg) | §3.3 | Девять состояний Люмины в прогрессии |
+| 2 | [`G-001-loss-curves.svg`](assets/visuals/G-001-loss-curves.svg) | Сцена 4 | Train/eval loss Exp 001 |
+| 3 | [`G-002-best-eval-loss.svg`](assets/visuals/G-002-best-eval-loss.svg) | Сцена 5 | Парадокс best eval loss |
+| 4 | [`G-021-base-vs-lora-exp001-exp002.svg`](assets/visuals/G-021-base-vs-lora-exp001-exp002.svg) | Сцена 6 | Base vs LoRA |
+| 5 | [`G-022-exp002-smoke-fail.svg`](assets/visuals/G-022-exp002-smoke-fail.svg) | Сцена 7 | Smoke Exp 002: negative fail |
+| 6 | [`G-023-dataset-evolution-exp001-003.svg`](assets/visuals/G-023-dataset-evolution-exp001-003.svg) | Сцена 8a | Эволюция датасета 90 → 123 |
+| 7 | [`G-024-precision-recall-tradeoff-scene8b.svg`](assets/visuals/G-024-precision-recall-tradeoff-scene8b.svg) | Сцена 8b | Precision/recall trade-off |
+| 8 | [`G-025-balance-dataset-and-metrics.svg`](assets/visuals/G-025-balance-dataset-and-metrics.svg) | Сцена 9 | Баланс датасета и метрик |
+| 9 | [`G-008-external-validation-scatter.svg`](assets/visuals/G-008-external-validation-scatter.svg) | Сцена 10 | External validation scatter |
+| 10 | [`G-015-before-after-truncation.svg`](assets/visuals/G-015-before-after-truncation.svg) | Сцена 12 | Before/after truncation fix |
+| 11 | [`G-012-latency-stage-breakdown.svg`](assets/visuals/G-012-latency-stage-breakdown.svg) | Сцена 13a | Latency stage breakdown |
+| 12 | [`G-011-engine-benchmark.svg`](assets/visuals/G-011-engine-benchmark.svg) | Сцена 13b | Benchmark inference-движков |
+| 13 | [`G-027-qwen-lora-vs-gpt.svg`](assets/visuals/G-027-qwen-lora-vs-gpt.svg) | Сцена 14 | Qwen-LoRA vs GPT-4o-mini |
+| 14 | [`G-016-best-epoch-markers.svg`](assets/visuals/G-016-best-epoch-markers.svg) | Сцена 18 | Best epoch markers |
+| 15 | [`D-010-dataset-change-log.svg`](assets/visuals/D-010-dataset-change-log.svg) | Сцена 19 | Dataset change log |
+| 16 | [`D-001-pipeline-schematic.svg`](assets/visuals/D-001-pipeline-schematic.svg) | Сцена 21 | Full pipeline |
 
 ---
 

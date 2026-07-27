@@ -55,22 +55,25 @@
 
 ### 3.2 Визуальный образ: Люмина
 
-Модель изображается как светящаяся структура из линий, узлов и связей — что-то между нейронной сетью, кристаллом и терминалом. Не мультяшная. Не человекоподобная.
+Модель изображается как светящийся персонаж Люмина — круглая структура с лицом, кольцами и антеннами. Это не мультяшный персонаж и не человекоподобный образ, но у него есть узнаваемые черты: глаза, рот, брови, свечение и связи. Люмина генерируется inline SVG в `js/app.js`; внешний вид меняется от сцены к сцене через девять состояний `data-lumina`.
 
-![Люмина в базовом состоянии — потенциал без специализации](assets/visuals/lumina-base.svg)
+### 3.3 Эволюция Люмины
 
-*Рис. 1. Базовое состояние Люмины: простая сфера из тонких линий, почти прозрачная. Символизирует потенциал без специализации.*
+![Эволюция Люмины: девять состояний от базовой модели до следующего цикла](assets/visuals/lumina-evolution.svg)
 
-| Состояние | Внешний вид | Что символизирует |
-|-----------|-------------|-------------------|
-| **Базовая модель** | Простая сфера из тонких линий, почти прозрачная, равномерно светится | Потенциал без специализации |
-| **После Exp 001** | Сфера покрывается простыми геометрическими паттернами | Умение повторять структуру без понимания смысла |
-| **После Exp 002** | Внутри сферы появляются первые направленные связи | Появление первой специализации |
-| **После hard negatives** | Сфера приобретает резкие грани, «оболочку» отказа | Консервативность как стадия роста |
-| **После trade-off** | Сфера сжимается, связи становятся осторожными | Цена отсева |
-| **После Exp 004** | Форма становится более сбалансированной | Баланс precision и recall |
-| **Production / latency** | Модель обрастает лёгкими «антеннами» и быстрыми контурами | Готовность к реальному миру |
-| **Next cycle** | Форма открыта, часть связей ещё не сформирована | Продолжение роста |
+*Рис. 1. Эволюция Люмины. Девять состояний в трёх рядах: `base`, `form`, `direction` (верхний); `shell`, `contracted`, `balance` (средний); `learning`, `production`, `next` (нижний). Каждое состояние соответствует реальному визуальному образу на лендинге.*
+
+| Состояние `data-lumina` | Сцены landing | Внешний вид | Что символизирует |
+|------------------------|---------------|-------------|-------------------|
+| `base` | 1, 2, 3 | Простая сфера с минимальными связями, спокойное лицо | Потенциал без специализации |
+| `form` | 4, 5 | Появляются первые внутренние кольца, нейтральное выражение | Умение повторять структуру без понимания смысла |
+| `direction` | 6, 7 | Первые направленные связи и антенны, взгляд целеустремлённый | Появление первой специализации |
+| `shell` | 8a | Резкие грани, красное свечение, строгое лицо | Консервативность как стадия роста |
+| `contracted` | 8b | Сфера сжалась, янтарное свечение, осторожное выражение | Цена отсева |
+| `balance` | 9, 10, 11 | Сбалансированная форма, ровное свечение, спокойное лицо | Баланс precision и recall |
+| `learning` | 12, 13a, 13b | Больше антенн, сфокусированный взгляд | Подготовка к production |
+| `production` | 14, 15, 18 | Максимум антенн, уверенное лицо, яркое свечение | Готовность к реальному миру |
+| `next` | 16, 17, 19, 20, 21 | Форма открыта, часть связей ещё не сформирована | Продолжение роста |
 
 Эволюция не должна быть мультяшной трансформацией. Это медленное нарастание сложности — как рост кристалла или развитие нервной системы.
 
@@ -207,6 +210,10 @@
 4. Generation test: valid JSON 100%, но decision accuracy 44% — как у base.
 5. Best checkpoint = epoch 4 / checkpoint-72.
 
+![Сцена 4 лендинга: кривые train/eval loss Experiment 001](assets/visuals/G-001-loss-curves.svg)
+
+*Рис. 2. Сцена 4: кривые train/eval loss Experiment 001. Eval loss достигает минимума раньше финала, но low loss не гарантирует качество решений.*
+
 **Ключевые артефакты:** [`G-001-loss-curves.svg`](assets/visuals/G-001-loss-curves.svg), DOM-метрики Exp 001.
 
 **Вывод:** модель может обучиться не тому, что нужно. Лучший момент обучения — не финал.
@@ -225,6 +232,10 @@
 1. Exp 001: best eval loss 0.235 — лучший, decision accuracy 44% — худший.
 2. Exp 002: best eval loss 0.444 — выше, decision accuracy 78% — лучше.
 3. Парадокс держится: language-modeling perplexity измеряет не то же самое, что HR-решения.
+
+![Сцена 5 лендинга: парадокс best eval loss](assets/visuals/G-002-best-eval-loss.svg)
+
+*Рис. 3. Сцена 5: парадокс best eval loss. Exp 001 имеет лучший loss, но худшую decision accuracy. Это центральное методологическое открытие кейса.*
 
 **Ключевые артефакты:** [`G-002-best-eval-loss.svg`](assets/visuals/G-002-best-eval-loss.svg), DOM-метрики Exp 001/002.
 
@@ -245,6 +256,10 @@
 2. Decision accuracy выросла 44% → 78%; MAE 38.8 → 21.9.
 3. Early stopping сработал: best checkpoint = epoch 3 / checkpoint-54.
 
+![Сцена 6 лендинга: сравнение Base, LoRA Exp 001 и LoRA Exp 002](assets/visuals/G-021-base-vs-lora-exp001-exp002.svg)
+
+*Рис. 4. Сцена 6: сравнение Base и LoRA по decision accuracy и MAE. Exp 002 делает качественный скачок, но hard negatives всё ещё ловят модель.*
+
 **Ключевые артефакты:** [`G-021-base-vs-lora-exp001-exp002.svg`](assets/visuals/G-021-base-vs-lora-exp001-exp002.svg), DOM-метрики Exp 002.
 
 **Вывод:** модель стала лучше улавливать matching-логику, но проблема hard negatives осталась.
@@ -264,9 +279,9 @@
 2. Negative smoke Exp 002: fail — hard negatives, edge cases, invalid input.
 3. Конкретный false positive: врач на вакансию специалиста по разметке данных, score 27 → 72, no_match → match.
 
-![Люмина после hard negatives — консервативная оболочка отказа](assets/visuals/lumina-shell.svg)
+![Сцена 7 лендинга: smoke Exp 002 — negative fail](assets/visuals/G-022-exp002-smoke-fail.svg)
 
-*Рис. 2. Сцена 7: модель обрастает защитной оболочкой, учась отвергать ловушки. Символизирует консервативность как стадию роста.*
+*Рис. 5. Сцена 7: матрица smoke Exp 002. Positive — pass, negative и edge cases — fail. Это первый контакт модели с production-рисками, которые offline-метрики не покрывают.*
 
 **Ключевые артефакты:** [`G-022-exp002-smoke-fail.svg`](assets/visuals/G-022-exp002-smoke-fail.svg), case-card.
 
@@ -289,6 +304,10 @@
 4. Decision accuracy: 67%.
 5. Best checkpoint = epoch 2 / checkpoint-48.
 
+![Сцена 8a лендинга: эволюция датасета 90 → 123](assets/visuals/G-023-dataset-evolution-exp001-003.svg)
+
+*Рис. 6. Сцена 8a: эволюция датасета от Exp 001/002 к Exp 003. Добавление 33 hard negatives меняет состав и смещает фокус модели.*
+
 **Ключевые артефакты:** [`G-023-dataset-evolution-exp001-003.svg`](assets/visuals/G-023-dataset-evolution-exp001-003.svg), DOM-метрики Exp 003.
 
 **Вывод:** hard negatives — эффективный способ обучить модель дискриминировать сложные негативы. Но победа имеет цену.
@@ -308,9 +327,9 @@
 2. Decision accuracy упала 78% → 67%.
 3. Модель стала консервативной: лучше отсеивать, но рискует потерять подходящих.
 
-![Переломный момент: торговля precision и recall](assets/visuals/narrative-moment-tradeoff.svg)
+![Сцена 8b лендинга: precision/recall trade-off](assets/visuals/G-024-precision-recall-tradeoff-scene8b.svg)
 
-*Рис. 3. Сцена 8b: hard negatives повышают precision, но снижают recall. Trade-off как драматургический поворот.*
+*Рис. 7. Сцена 8b: precision/recall trade-off. Добавление hard negatives убивает false positives, но снижает recall — победа имеет цену.*
 
 **Ключевые артефакты:** [`G-024-precision-recall-tradeoff-scene8b.svg`](assets/visuals/G-024-precision-recall-tradeoff-scene8b.svg), DOM-метрики Exp 003.
 
@@ -332,9 +351,9 @@
 3. Decision accuracy = 80%, MAE = 15.1 — лучшее в серии.
 4. Runtime smoke: 7/7 passed.
 
-![Восстановление баланса после торговли](assets/visuals/narrative-moment-balance.svg)
+![Сцена 9 лендинга: баланс датасета и метрик](assets/visuals/G-025-balance-dataset-and-metrics.svg)
 
-*Рис. 4. Сцена 9: positives и borderlines возвращают recall, сохраняя умение отсеивать ловушки.*
+*Рис. 8. Сцена 9: баланс датасета и метрик. Добавление positives и borderlines возвращает recall, сохраняя умение отсеивать ловушки.*
 
 **Ключевые артефакты:** [`G-025-balance-dataset-and-metrics.svg`](assets/visuals/G-025-balance-dataset-and-metrics.svg), DOM-метрики Exp 004.
 
@@ -355,6 +374,10 @@
 2. LoRA decision accuracy = 93.1%; GPT-4o-mini = 94.1%.
 3. LoRA MAE = 19.5; GPT MAE = 6.9.
 4. Модель обобщается, но уступает эталону по калибровке score.
+
+![Сцена 10 лендинга: external validation scatter](assets/visuals/G-008-external-validation-scatter.svg)
+
+*Рис. 9. Сцена 10: external validation scatter на 102 записях. LoRA score расположен рядом с reference score — модель обобщается на незнакомых данных.*
 
 **Ключевые артефакты:** [`G-008-external-validation-scatter.svg`](assets/visuals/G-008-external-validation-scatter.svg), DOM-метрики external validation.
 
@@ -395,6 +418,10 @@
 3. Fix: `max_tokens=512` + graceful JSON extraction envelope.
 4. GPT comparison v2: valid JSON 0.867 → 1.000, decision accuracy 0.800 → 0.933.
 
+![Сцена 12 лендинга: before/after truncation fix](assets/visuals/G-015-before-after-truncation.svg)
+
+*Рис. 10. Сцена 12: влияние truncation bug на метрики GPT comparison. После увеличения max_tokens valid JSON и decision accuracy возвращаются к реальным значениям.*
+
 **Ключевые артефакты:** [`G-015-before-after-truncation.svg`](assets/visuals/G-015-before-after-truncation.svg), DOM-метрики truncation fix.
 
 **Вывод:** production bug может исказить оценку качества модели. Важно отделять метрики модели от метрик интеграции.
@@ -412,6 +439,10 @@
 **События:**
 1. После Exp 004: latency p50 = 11.7 с.
 2. Latency profile: generate занимает >99% времени ответа.
+
+![Сцена 13a лендинга: latency stage breakdown](assets/visuals/G-012-latency-stage-breakdown.svg)
+
+*Рис. 11. Сцена 13a: latency stage breakdown. Почти всё время ответа уходит на генерацию токенов — bottleneck найден.*
 
 **Ключевые артефакты:** [`G-012-latency-stage-breakdown.svg`](assets/visuals/G-012-latency-stage-breakdown.svg), DOM-метрики latency.
 
@@ -431,6 +462,10 @@
 1. Engine benchmark: transformers_fp16 avg ~9.1 с; transformers_4bit avg ~15.5 с и хуже quality.
 2. vllm_fp16: avg ~2.2 с, качество сохранилось.
 3. Warm persistent process + vLLM: external validation 102 записи, avg ~1.6 с.
+
+![Сцена 13b лендинга: benchmark inference-движков](assets/visuals/G-011-engine-benchmark.svg)
+
+*Рис. 12. Сцена 13b: benchmark inference-движков. vLLM + warm persistent process даёт ускорение с ~11 с до ~1.6 с без потери quality.*
 
 **Ключевые артефакты:** [`G-011-engine-benchmark.svg`](assets/visuals/G-011-engine-benchmark.svg), DOM-метрики engine benchmark.
 
@@ -452,9 +487,9 @@
 3. Qwen-LoRA MAE = 19.5, GPT MAE = 6.9.
 4. Модель приблизилась к облачному эталону по решениям, но отстаёт по калибровке score.
 
-![Люмина в production-состоянии — готовность к реальному миру](assets/visuals/lumina-production.svg)
+![Сцена 14 лендинга: Qwen-LoRA vs GPT-4o-mini](assets/visuals/G-027-qwen-lora-vs-gpt.svg)
 
-*Рис. 5. Сцена 14: модель обрастает «антеннами» и быстрыми контурами — готова к production и сравнению с облачным эталоном.*
+*Рис. 13. Сцена 14: Qwen-LoRA vs GPT-4o-mini на внешней выборке. Локальная модель приблизилась к облачному эталону по accuracy, но отстаёт по калибровке score.*
 
 **Ключевые артефакты:** [`G-027-qwen-lora-vs-gpt.svg`](assets/visuals/G-027-qwen-lora-vs-gpt.svg), DOM-метрики optimized summary.
 
@@ -536,6 +571,10 @@
 4. Exp 004: best epoch 3 из 5.
 5. Во всех случаях train loss продолжал падать, но eval loss рос после best checkpoint.
 
+![Сцена 18 лендинга: best epoch markers across experiments](assets/visuals/G-016-best-epoch-markers.svg)
+
+*Рис. 14. Сцена 18: best epoch во всех экспериментах. В каждом случае лучший checkpoint оказался не последним — ранний останов предотвращает переобучение.*
+
 **Ключевые артефакты:** [`G-016-best-epoch-markers.svg`](assets/visuals/G-016-best-epoch-markers.svg), DOM-метрики best epoch.
 
 **Вывод:** продолжение обучения улучшает запоминание train set, но не обобщение. Больше усилий не всегда означает больше мастерства.
@@ -554,6 +593,10 @@
 1. Все 4 `adapter_config.json` идентичны: r=16, alpha=32, dropout=0.05, 7 target modules.
 2. Менялись: dataset size (90 → 90 → 123 → 162), composition, splits.
 3. Два рычага: hard negatives → precision↑; positives/borderlines → recall↑.
+
+![Сцена 19 лендинга: dataset change log](assets/visuals/D-010-dataset-change-log.svg)
+
+*Рис. 15. Сцена 19: dataset change log. LoRA params зафиксированы, рос только датасет — и именно это дало прирост качества.*
 
 **Ключевые артефакты:** [`D-010-dataset-change-log.svg`](assets/visuals/D-010-dataset-change-log.svg), DOM-метрики LoRA config.
 
@@ -593,9 +636,9 @@
 3. Central thesis: dataset engineering > model tuning.
 4. Caveats: разные test sets нельзя сравнивать напрямую; 93.1% не рассказывает всё.
 
-![Люмина в состоянии следующего цикла — открытая форма](assets/visuals/lumina-next.svg)
+![Сцена 21 лендинга: full pipeline от teacher dataset до Telegram API](assets/visuals/D-001-pipeline-schematic.svg)
 
-*Рис. 6. Сцена 21: форма Люмины незавершена — часть связей ещё не сформирована. Символизирует продолжение роста и следующий цикл исследования.*
+*Рис. 16. Сцена 21: full pipeline. Teacher dataset → LoRA-adapter → vLLM-server → Telegram API. Controlled variables зафиксированы, менялся только датасет.*
 
 **Ключевые артефакты:** [`D-001-pipeline-schematic.svg`](assets/visuals/D-001-pipeline-schematic.svg), method-params DOM-элементы.
 
@@ -693,18 +736,6 @@
 
 ---
 
-## 10. Визуальная эволюция Люмины
-
-| Состояние `data-lumina` | Сцены landing | Визуальный образ | Иллюстрация |
-|------------------------|---------------|------------------|-------------|
-| `base` | 1, 2, 3 | Прозрачная сфера, равномерное свечение | [`lumina-base.svg`](assets/visuals/lumina-base.svg) |
-| `form` | 4, 5 | Простые геометрические паттерны — форма без смысла | — |
-| `direction` | 6, 7 | Первые направленные связи, форма вытягивается | — |
-| `shell` | 8a | Резкие грани, оболочка отказа | [`lumina-shell.svg`](assets/visuals/lumina-shell.svg) |
-| `contracted` | 8b | Сфера сжимается, связи осторожные | — |
-| `balance` | 9, 10, 11 | Сбалансированная форма | [`lumina-balance.svg`](assets/visuals/lumina-balance.svg) |
-| `production` | 12, 13a, 13b, 14, 15, 18 | Модель обрастает «антеннами» и быстрыми контурами | [`lumina-production.svg`](assets/visuals/lumina-production.svg) |
-| `next` | 16, 17, 19, 20, 21 | Форма открыта, часть связей ещё не сформирована | [`lumina-next.svg`](assets/visuals/lumina-next.svg) |
 
 ---
 

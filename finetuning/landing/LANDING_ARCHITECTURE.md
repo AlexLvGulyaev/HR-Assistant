@@ -143,7 +143,7 @@ flowchart TD
 - `index.html` — научные тексты, структура сцен, привязка DOM-элементов к данным.
 - `css/main.css` — визуальное оформление.
 - `js/app.js` — интерактив и рендеринг Люмины.
-- Концептуальные иллюстрации `lumina-*.svg` и `narrative-moment-*.svg` — используются в [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md), не в HTML.
+- [`assets/visuals/lumina-evolution.svg`](assets/visuals/lumina-evolution.svg) — схема эволюции Люмины для [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md), не используется в HTML.
 
 ---
 
