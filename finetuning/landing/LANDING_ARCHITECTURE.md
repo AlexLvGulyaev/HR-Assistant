@@ -226,7 +226,7 @@ finetuning/landing/
 ├── archive/                # резервные копии версий (не отдаются)
 ├── Dockerfile              # nginx-образ
 ├── nginx.conf              # конфигурация веб-сервера
-└── docker-compose.yml      # оркестрация (в cases/hr-assistant/)
+└── docker-compose.yml      # оркестрация контейнера
 ```
 
 ---
@@ -245,7 +245,7 @@ finetuning/landing/
 3. Обновить тексты в `index.html`, если метрики изменили смысл.
 4. Пересобрать и развернуть образ:
    ```bash
-   cd /opt/ai-automation-portfolio-lab/cases/hr-assistant
+   cd finetuning/landing
    docker compose up -d --build
    ```
 

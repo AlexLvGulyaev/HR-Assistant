@@ -61,7 +61,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/assets/visuals/G-
 
 ### Файлы
 
-- `cases/hr-assistant/docker-compose.yml` — оркестрация контейнера;
+- `finetuning/landing/docker-compose.yml` — оркестрация контейнера;
 - `finetuning/landing/Dockerfile` — образ nginx;
 - `finetuning/landing/nginx.conf` — конфигурация nginx;
 - `finetuning/landing/.dockerignore` — исключение локальных артефактов из образа;
@@ -70,7 +70,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/assets/visuals/G-
 ### Шаг 1. Собрать и запустить контейнер
 
 ```bash
-cd /opt/ai-automation-portfolio-lab/cases/hr-assistant
+cd /opt/ai-automation-portfolio-lab/cases/hr-assistant/finetuning/landing
 docker compose up -d --build
 ```
 
@@ -148,7 +148,7 @@ python3 generate_graphs.py
 Затем пересоберите и перезапустите контейнер:
 
 ```bash
-cd /opt/ai-automation-portfolio-lab/cases/hr-assistant
+cd /opt/ai-automation-portfolio-lab/cases/hr-assistant/finetuning/landing
 docker compose up -d --build
 ```
 

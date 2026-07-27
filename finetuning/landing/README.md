@@ -66,7 +66,7 @@ python3 generate_graphs.py
 После этого пересоберите образ:
 
 ```bash
-cd /opt/ai-automation-portfolio-lab/cases/hr-assistant
+cd finetuning/landing
 docker compose up -d --build
 ```
 

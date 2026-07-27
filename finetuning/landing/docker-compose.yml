@@ -2,6 +2,7 @@
 # Source of Truth for production deployment.
 #
 # Usage:
+#   cd finetuning/landing
 #   docker compose up -d --build
 #
 # The static landing is served by nginx and exposed to the existing
@@ -10,7 +11,7 @@
 services:
   hra-lora:
     build:
-      context: ./finetuning/landing
+      context: .
       dockerfile: Dockerfile
     container_name: hra-lora
     restart: always

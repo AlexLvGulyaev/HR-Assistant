@@ -128,10 +128,59 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .scene-thumb.active span { background: var(--teal); color: var(--bg); }
 
 .dossier-footer {
-  padding: 0.5rem 1.5rem 0;
-  font-size: 0.75rem;
-  color: var(--muted);
+  padding: 0.3rem 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
   transition: opacity var(--transition);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.2s;
+  line-height: 1.3;
+}
+
+.nav-link:hover {
+  background: var(--panel);
+  border-color: rgba(78,205,196,0.3);
+  color: var(--teal);
+}
+
+.nav-link__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.nav-link--github:hover { color: #ffffff; }
+.nav-link--portfolio:hover { color: var(--amber); }
+
+/* Top-right status brand */
+.zerocoder-brand {
+  position: fixed;
+  top: 1rem;
+  right: 3.25rem;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: -0.01em;
+  z-index: 101;
+  pointer-events: none;
 }
 
 /* Main film */
