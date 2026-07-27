@@ -1,88 +1,93 @@
-# Deployment Guide — HR Assistant LoRA Landing v3
+# Руководство по развёртыванию — HR Assistant LoRA Landing v3
 
-**Target URL:** `https://hra-lora.alex-n8n.site`
+**Целевой URL:** `https://hra-lora.alex-n8n.site`
 
-This document is the Source of Truth for deploying the static storytelling landing page for the [HR Assistant LoRA fine-tuning module](../README.md).
-
----
-
-## What is being deployed
-
-A self-contained static landing page located in `finetuning/landing/`:
-
-- `index.html` — single-page film with 20 scenes based on [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md), including a "Dramatis Personae" glossary scene
-- `css/main.css` — styles, animations, responsive layout
-- `js/app.js` — scene navigation, keyboard shortcuts, scroll animations, Lumina SVG generator, data binding
-- `data/experimentData.js` — extracted experiment metrics and source inventory (auto-generated)
-- `assets/visuals/*.svg` — generated engineering graphs and diagrams
-- `archive/v1/` — first landing version (preserved, not served by default)
-- `archive/v2/` — second landing version (preserved, not served by default)
-- Internal design and research artifacts are archived in `task_history/attachments/landing_internal/` (excluded from the Docker image via `.dockerignore`).
-
-No build step, no server-side runtime, no API calls at page load.
+Единый источник истины (Source of Truth) для развёртывания статического storytelling-лендинга модуля [HR Assistant LoRA](../README.md).
 
 ---
 
-## Prerequisites
+## Что развёртывается
 
-- A web server capable of serving static files (nginx, Caddy, Apache, Python `http.server`, Cloudflare Pages, GitHub Pages, etc.)
-- The domain `hra-lora.alex-n8n.site` pointing to the server
-- HTTPS certificate for production
+Самодостаточный статический сайт в каталоге `finetuning/landing/`:
+
+- `index.html` — 21 интерфейсная сцена (23 DOM-секции) с боковой навигацией;
+- `css/main.css` — стили, анимации, адаптивная вёрстка;
+- `js/app.js` — навигация, клавиатурное управление, генератор персонажа Люмины, привязка данных;
+- `data/experimentData.js` — извлечённые метрики экспериментов;
+- `assets/visuals/*.svg` — SVG-графики и диаграммы;
+- `archive/` — резервные копии предыдущих версий (не отдаются по умолчанию).
+
+Нет шага сборки, нет серверной части, нет вызовов внешних API при загрузке страницы.
+
+> **Нумерация сцен.** В интерфейсе landing используется 21 сцена с промежуточными номерами `8a/8b` и `13a/13b`. Эти две группы реализованы отдельными DOM-секциями (`scene-8`/`scene-9` и `scene-14`/`scene-15`), поэтому в `index.html` всего 23 DOM-секции.
 
 ---
 
-## Local preview
+## Предварительные требования
+
+- Docker и Docker Compose на хосте.
+- Внешняя сеть `n8n_default`, к которой подключён Traefik.
+- Домен `hra-lora.alex-n8n.site`, направленный на сервер с Traefik.
+- Настроенный в Traefik TLS-резолвер (например, `myresolver`).
+
+---
+
+## Локальный предпросмотр
 
 ```bash
 cd finetuning/landing
 python3 -m http.server 8765
 ```
 
-Open `http://localhost:8765/index.html`.
+Откройте `http://localhost:8765/index.html`.
 
-Quick validation:
+Быстрая проверка:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/css/main.css
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/js/app.js
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/data/experimentData.js
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/assets/visuals/D-001-pipeline-schematic.svg
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/assets/visuals/G-001-loss-curves.svg
 ```
 
-All should return `200`.
+Все запросы должны вернуть `200`.
 
 ---
 
-## Production deployment with Docker + Traefik (current)
+## Production-развёртывание: Docker + Traefik
 
-This is the deployment method used for `https://hra-lora.alex-n8n.site`.
+Используемый способ для `https://hra-lora.alex-n8n.site`.
 
-### Files
+### Файлы
 
-- `cases/hr-assistant/docker-compose.yml` — orchestration
-- `finetuning/landing/Dockerfile` — nginx image
-- `finetuning/landing/nginx.conf` — nginx configuration
-- `finetuning/landing/.dockerignore` — excludes `docs/` and local artifacts from the image
-- `/opt/n8n/dynamic.yml` — Traefik router/service definition
+- `cases/hr-assistant/docker-compose.yml` — оркестрация контейнера;
+- `finetuning/landing/Dockerfile` — образ nginx;
+- `finetuning/landing/nginx.conf` — конфигурация nginx;
+- `finetuning/landing/.dockerignore` — исключение локальных артефактов из образа;
+- `/opt/n8n/dynamic.yml` — динамическая конфигурация Traefik.
 
-### Deploy
+### Шаг 1. Собрать и запустить контейнер
 
 ```bash
 cd /opt/ai-automation-portfolio-lab/cases/hr-assistant
 docker compose up -d --build
 ```
 
-Then reload Traefik to pick up the router (if using file provider):
+Контейнер `hra-lora` подключается к существующей сети `n8n_default`, чтобы Traefik мог маршрутизировать на него запросы.
+
+### Шаг 2. Перезагрузить Traefik
+
+Если используется file-провайдер, Traefik должен подхватить новый router:
 
 ```bash
 cd /opt/n8n
 docker compose restart traefik
 ```
 
-### Traefik dynamic configuration
+### Конфигурация Traefik
 
-Add to `/opt/n8n/dynamic.yml`:
+Фрагмент `/opt/n8n/dynamic.yml`:
 
 ```yaml
 http:
@@ -103,80 +108,36 @@ http:
           - url: "http://hra-lora:80"
 ```
 
-The `hra-lora` container attaches to the existing `n8n_default` network so Traefik can reach it.
+---
+
+## Конфигурация nginx
+
+Контейнер использует `finetuning/landing/nginx.conf`:
+
+- корень сайта — `/usr/share/nginx/html`;
+- `index.html` отдаётся без кеширования;
+- статика (`css`, `js`, `svg`, шрифты) кешируется на 1 год;
+- gzip включён для текстовых типов;
+- добавлены базовые security-заголовки;
+- скрытые файлы (начинающиеся с `.`) недоступны.
 
 ---
 
-## Alternative: Production deployment with Caddy
+## Проверка после развёртывания
 
-Create a Caddyfile snippet:
-
-```caddyfile
-hra-lora.alex-n8n.site {
-    root * /var/www/hra-lora
-    file_server
-    encode gzip
-    header Cache-Control "public, max-age=3600"
-    header -Server
-}
-```
-
-Copy the `finetuning/landing/` contents to the web root:
-
-```bash
-rsync -av --delete finetuning/landing/ /var/www/hra-lora/
-```
-
-Reload Caddy:
-
-```bash
-caddy reload
-```
+1. `https://hra-lora.alex-n8n.site/` возвращает `200`.
+2. Все 21 сцена доступны через боковое досье.
+3. Работает клавиатурная навигация (стрелки, PageUp/PageDown, Home/End).
+4. На сцене 10 (внешняя проверка) отображается scatter-график с диагональю.
+5. Таблицы и карточки на сценах 15–21 отображаются без пустых ячеек.
+6. Мобильная вёрстка не даёт горизонтального скролла.
+7. В консоли браузера нет ошибок.
 
 ---
 
-## Alternative: Production deployment with nginx
+## Перегенерация активов
 
-```nginx
-server {
-    listen 80;
-    listen 443 ssl http2;
-    server_name hra-lora.alex-n8n.site;
-
-    root /var/www/hra-lora;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location ~* \.(svg|css|js|json|png|jpg|woff2)$ {
-        expires 1h;
-        add_header Cache-Control "public, max-age=3600";
-    }
-}
-```
-
----
-
-## Deployment validation
-
-After deploying, verify:
-
-1. `https://hra-lora.alex-n8n.site/` returns 200.
-2. All 20 scenes are reachable via left-side dossier navigation.
-3. Keyboard navigation works (ArrowUp/ArrowDown, PageUp/PageDown, Home/End).
-4. Scatter plot on scene 9 renders points and diagonal.
-5. Tables on scenes 10, 14, 17, 18, 19, 20 render without empty cells.
-6. Evidence Room boxes on scene 19 show metrics and source inventory.
-7. Mobile layout stacks vertically without horizontal overflow.
-8. No console errors (check DevTools).
-
----
-
-## Re-generating assets
-
-If experiment artifacts change, regenerate the data and graphs:
+Если экспериментальные артефакты изменились:
 
 ```bash
 cd finetuning/landing/data
@@ -184,13 +145,22 @@ python3 extract_data.py
 python3 generate_graphs.py
 ```
 
-Then re-deploy the `finetuning/landing/` directory.
+Затем пересоберите и перезапустите контейнер:
+
+```bash
+cd /opt/ai-automation-portfolio-lab/cases/hr-assistant
+docker compose up -d --build
+```
 
 ---
 
-## Notes
+## Примечания
 
-- The page follows a narrative blueprint that maps LoRA experiments to the storytelling structure.
-- The visual hero is an inline SVG symbol representing the model; no external illustration dependencies.
-- All numbers on the page are traceable to JSON source files listed in `experimentData.js`.
-- `experimentData.js` is auto-generated; do not edit manually.
+- `data/experimentData.js` генерируется автоматически; редактировать его вручную не рекомендуется.
+- Для развёртывания в другом окружении достаточно любого веб-сервера, отдающего статику из `finetuning/landing/`.
+- Файлы в `archive/` не отдаются посетителям и предназначены только для резервного копирования.
+
+---
+
+**Статус:** актуально для landing v3.  
+**Последнее обновление:** 2026-07-27
