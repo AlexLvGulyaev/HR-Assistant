@@ -1,5 +1,0 @@
-experiment,total_records,candidates,train,validation,test,holdout,obvious_match,borderline,obvious_no_match
-Exp 001,90,30,72,9,9,0,30,30,30
-Exp 002,90,30,72,9,9,0,30,30,30
-Exp 003,123,41,93,15,9,6,30,42,51
-Exp 004,162,54,114,27,15,6,57,54,51
