@@ -367,7 +367,21 @@ model = PeftModel.from_pretrained(model, adapter_path)
 
 ### 6.4. max_tokens
 
-Для русскоязычных reasoning-ответов может потребоваться `max_tokens >= 512`. Значение `300` приводит к обрезанию длинных ответов и ошибкам парсинга. В каноническом пайплайне используется `max_tokens = 512` для LoRA и baseline.
+Для русскоязычных reasoning-ответов может потребоваться `max_tokens >= 512`. Значение `300` приводит к обрезанию длинных ответов и ошибкам парсинга, что подтверждено в Experiment 004: при `max_tokens = 300` `valid_json_rate` LoRA на GPT-4o-mini comparison упал до 0.867. В каноническом пайплайне используется `max_tokens = 512` для LoRA и baseline. Подробнее — в [`Experiment_004_Report.md`](Experiment_004_Report.md) и [`data/evidence/experiment_004_gpt_comparison_examples.jsonl`](data/evidence/experiment_004_gpt_comparison_examples.jsonl).
+
+#### Representative example: влияние max_tokens на парсинг JSON
+
+**Candidate:** AI Automation Enthusiast, 2 года pet-проектов, REST API, автоматизация, n8n, LLM; без SQL/BPMN.
+
+**Vacancy:** Системный аналитик; требуется SQL, BPMN, REST API, аналитика, постановка задач разработчикам.
+
+**Reference:** `no_match`, score 54.
+
+**Model prediction (LoRA Experiment 004):** `no_match`, score 41, валидный JSON с развёрнутым обоснованием по каждому компоненту.
+
+**Почему этот пример важен:** Обоснование модели для такого профиля занимает ~400–500 токенов. При `max_tokens=300` ответ обрезался и приводил к HTTP 422; после увеличения до 512 и добавления graceful JSON fallback тот же кейс возвращает корректный JSON, что поднимает `valid_json_rate` с 0.867 до 1.000.
+
+**Evidence:** [`data/evidence/experiment_004_gpt_comparison_examples.jsonl`](data/evidence/experiment_004_gpt_comparison_examples.jsonl), запись `HRA-EVAL-V2-000212`, vacancy "Системный аналитик" (поле `truncation_note`).
 
 ### 6.5. Latency measurement
 

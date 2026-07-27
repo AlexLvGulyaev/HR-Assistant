@@ -1,0 +1,108 @@
+{
+  "experiment_id": "experiment_003",
+  "total_cases": 7,
+  "passed": 7,
+  "failed": 0,
+  "unexpected_matches": 0,
+  "timestamp": "2026-07-22T02:16:27Z",
+  "results": [
+    {
+      "case_code": "SMOKE-POSITIVE-001",
+      "category": "positive",
+      "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+      "parsed_output": "{\"role_score\": 26.0, \"skills_score\": 27.0, \"experience_score\": 19.0, \"conditions_score\": 15.0, \"score\": 85.0, \"decision\": \"match\", \"reason\": \"1) Должность: опытный Prompt Engineer/AI Automation Specialist совпадает с ролью Prompt Engineer (26/30).\\n2) Навыки: есть все ключевые навыки: prompt engineering, LLM, n8n, REST API, Python (27/35).\\n3) Опыт: 4 года релевантного опыта в автоматизации бизнес-процессов и работе с LLM (19/20).\\n4) Зарплата: ожидания работника (200 000) в рамках бюджета вакансии (150 000–250 000), что позволяет подойти к зарплате относительно гибко (15/15).\\n5) Уровень условия: город Москва, но не указано, что это офис или удалёнка — поэтому снижено (15/15).\\nИтого: 85 баллов.\"}",
+      "evaluation": {
+        "valid_json": true,
+        "decision": "match",
+        "score": 85.0,
+        "match_unexpected": false,
+        "passed": true
+      },
+      "latency_ms": 19161
+    },
+    {
+      "case_code": "SMOKE-NEGATIVE-001",
+      "category": "obvious_negative",
+      "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+      "parsed_output": "{\"role_score\": 0, \"skills_score\": 0, \"experience_score\": 0, \"conditions_score\": 0, \"score\": 0, \"decision\": \"no_match\", \"reason\": \"1. Должность: Врач-терапевт — это врач, не работают с автоматизациями и AI-пайплайнами (role_score=0).\\n2. Навыки: Есть опыт работы с пациентами и медицинской документацией, но отсутствуют ключевые навыки в области prompt engineering, LLM, n8n, REST API или автоматизации (skills_score=0).\\n3. Опыт: 7 лет релевантного опыта в медицине, но нет опыта работы с AI/automation (experience_score=0).\\n4. Зарплата: Ожидания клиента (120 000) значительно ниже бюджета вакансии (от 150 000 до 250 000) (conditions_score=0).\\n5. Ключевые критерии: Нет совпадения ни по профилю, ни по уровню зарплатных ожиданий.\"}",
+      "evaluation": {
+        "valid_json": true,
+        "decision": "no_match",
+        "score": 0,
+        "match_unexpected": false,
+        "passed": true
+      },
+      "latency_ms": 17286
+    },
+    {
+      "case_code": "SMOKE-HARDNEG-001",
+      "category": "hard_negative",
+      "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+      "parsed_output": "{\"role_score\": 4.0, \"skills_score\": 6.0, \"experience_score\": 0, \"conditions_score\": 0, \"score\": 10.0, \"decision\": \"no_match\", \"reason\": \"1) Должность: Data Analyst — это аналитик данных, а не промпт-инженер или специалист по автоматизации AI (role_score=4). 2) Навыки: есть опыт работы с данными и BI-инструментами, но отсутствуют ключевые навыки в области prompt engineering, LLM, n8n, REST API и автоматизации (skills_score=6). 3) Опыт: 3 года релевантного опыта в анализе данных, что немного выше минимальных требований, но ниже типичных порогов для позиции AI/AI automation (experience_score=0). 4) Зарплата: ожидания работника (180 000) значительно выше бюджета вакансии (максимум 250 000) (conditions_score=0). 5) Ключевые условия: нет соответствия по требованиям к профилю и зарплатным ожиданиям.\"}",
+      "evaluation": {
+        "valid_json": true,
+        "decision": "no_match",
+        "score": 10.0,
+        "match_unexpected": false,
+        "passed": true
+      },
+      "latency_ms": 17563
+    },
+    {
+      "case_code": "SMOKE-EDGECASE-001",
+      "category": "edge_case",
+      "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+      "parsed_output": "{\"role_score\": 0, \"skills_score\": 0, \"experience_score\": 0, \"conditions_score\": 0, \"score\": 0, \"decision\": \"no_match\", \"reason\": \"Кандидат — Python Backend Developer, не имеет опыта или навыков в области prompt engineering, AI автоматизации, LLM, n8n, REST API или работы с промптом. Нет совпадения по профилю и ключевым требованиям вакансии.\"}",
+      "evaluation": {
+        "valid_json": true,
+        "decision": "no_match",
+        "score": 0,
+        "match_unexpected": false,
+        "passed": true
+      },
+      "latency_ms": 6566
+    },
+    {
+      "case_code": "SMOKE-HARDNEG-002",
+      "category": "hard_negative",
+      "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+      "parsed_output": "{\"role_score\": 4.0, \"skills_score\": 6.0, \"experience_score\": 0, \"conditions_score\": 0, \"score\": 10.0, \"decision\": \"no_match\", \"reason\": \"1) Должность: Кандидат — junior Python-разработчик, а вакансия требует специалиста поPrompt Engineering/AI Automation. Это разные области (4/30). 2) Навыки: Есть опыт работы с Python и базовыми скриптами, но отсутствуют ключевые навыки prompt engineering, LLM, n8n, REST API, автоматизации бизнес-процессов (6/35). 3) Опыт: 1 год релевантного опыта в IT, что значительно ниже типичных требований для данной роли (0/20). 4) Условия: Зарплатные ожидания кандидата (80 000) значительно ниже бюджета вакансии (от 150 000 до 250 000), поэтому не рассматривается (0/15). Всего: 10/70.\"}",
+      "evaluation": {
+        "valid_json": true,
+        "decision": "no_match",
+        "score": 10.0,
+        "match_unexpected": false,
+        "passed": true
+      },
+      "latency_ms": 13395
+    },
+    {
+      "case_code": "SMOKE-INVALID-001",
+      "category": "invalid_input",
+      "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+      "parsed_output": "{\"role_score\": 0, \"skills_score\": 0, \"experience_score\": 0, \"conditions_score\": 0, \"score\": 0, \"decision\": \"no_match\", \"reason\": \"1. Должность: В релевантной области только опыт работы с автоматизацией и интеграцией, но не прямая связь с пайплингом или LLM-интеграциями.\\n2. Навыки: Отсутствуют ключевые навыки — грамотный Python, n8n, API, LLM, prompt engineering, автоматизация бизнес-процессов.\\n3. Опыт: Нет опыта работы с LLM, автоматизации бизнес-процессов, аналитиками данных или разработчиками AI.\\n4. Зарплата: Ожидания выше бюджета вакансии (250 000).\\n5. Уровень подготовки: Нет конкретного релевантного опыта или образование.\"}",
+      "evaluation": {
+        "valid_json": true,
+        "decision": "no_match",
+        "score": 0,
+        "match_unexpected": false,
+        "passed": true
+      },
+      "latency_ms": 10640
+    },
+    {
+      "case_code": "SMOKE-STABILITY-001",
+      "category": "stability_repeat",
+      "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+      "parsed_output": "{\"role_score\": 26.0, \"skills_score\": 27.0, \"experience_score\": 19.0, \"conditions_score\": 15.0, \"score\": 85.0, \"decision\": \"match\", \"reason\": \"1) Должность: опытный Prompt Engineer/AI Automation Specialist совпадает с ролью Prompt Engineer (26/30).\\n2) Навыки: есть все ключевые навыки: prompt engineering, LLM, n8n, REST API, Python (27/35).\\n3) Опыт: 4 года релевантного опыта в автоматизации бизнес-процессов и работе с LLM (19/20).\\n4) Зарплата: ожидания работника (200 000) в рамках бюджета вакансии (150 000–250 000), что позволяет подойти к зарплате относительно гибко (15/15).\\n5) Уровень условия: город Москва, но не указано, что это офис или удалёнка — поэтому снижено (15/15).\\nИтого: 85 баллов.\"}",
+      "evaluation": {
+        "valid_json": true,
+        "decision": "match",
+        "score": 85.0,
+        "match_unexpected": false,
+        "passed": true
+      },
+      "latency_ms": 12184
+    }
+  ]
+}

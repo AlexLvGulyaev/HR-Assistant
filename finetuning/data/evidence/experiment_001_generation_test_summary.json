@@ -1,0 +1,392 @@
+{
+  "experiment": "experiment_001",
+  "base_qwen_summary": {
+    "records": 9,
+    "valid_json_rate": 1.0,
+    "decision_accuracy": 0.4444444444444444,
+    "mae_score": 38.77777777777778
+  },
+  "lora_summary": {
+    "records": 9,
+    "valid_json_rate": 1.0,
+    "decision_accuracy": 0.4444444444444444,
+    "mae_score": 29.77777777777778
+  },
+  "example_records": [
+    {
+      "index": 1,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V2",
+        "dataset_code": "HRA-EVAL-V2",
+        "case_code": "HRA-EVAL-V2-000010",
+        "case_type": "obvious_match",
+        "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+        "reference_score": 60.0,
+        "reference_decision": "match"
+      },
+      "reference": {
+        "role_score": 12.0,
+        "skills_score": 13.0,
+        "experience_score": 20.0,
+        "conditions_score": 15.0,
+        "score": 60.0,
+        "decision": "match",
+        "reason": "1. Должность: Кандидат — системный аналитик, что относительно близко к AI Automation Specialist, но не совпадает напрямую с prompt engineering (12/30).\n2. Навыки: Есть опыт с API, BPMN, UML, SQL, Agile и документированием, но отсутствуют ключевые навыки prompt engineering, n8n, LLM, JSON (13/35).\n3. Опыт: 6 лет релевантного опыта в системном анализе, что соответствует требованиям по опыту (20/20).\n4. Условия: Зарплатные ожидания кандидата (190 000) в рамках бюджета вакансии (120 000–250 000), готов к релокации (15/15).\nИтого: Кандидат частично соответствует требованиям, но не обладает ключевыми навыками prompt engineering и LLM. Итоговый score — 60, что соответствует пороговому значению для \"match\"."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 60.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "score": 75,
+          "decision": "match",
+          "reason": "Максим Попов соответствует требованиям должности Prompt Engineer / AI Automation Specialist, имея опыт работы в области документирования и знание базовых навыков AI (SQL, BPMN, REST API, UML). Зарплата в пределах указанных в вакансии."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": true,
+          "score_abs_error": 15.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 60.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "role_score": 7.0,
+          "skills_score": 12.0,
+          "experience_score": 18.0,
+          "conditions_score": 15.0,
+          "score": 52.0,
+          "decision": "no_match",
+          "reason": "Кандидат работает системным аналитиком, что относительно близко к роли prompt engineer (7/30). Из требуемых навыков у него есть только понимание prompt engineering и n8n, но отсутствуют опыт работы с API, JSON, LLM и автоматизацией бизнес-процессов (12/35). Опыт работы — 6 лет, что соответствует требованиям по стажу (18/20), но город и зарплатные ожидания значительно ниже бюджета вакансии (15/15). Итоговый score — 52, кандидат не соответствует требованиям."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 8.0,
+          "role_abs_error": 5.0,
+          "skills_abs_error": 1.0,
+          "experience_abs_error": 2.0,
+          "conditions_abs_error": 0.0
+        }
+      }
+    },
+    {
+      "index": 2,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V2",
+        "dataset_code": "HRA-EVAL-V2",
+        "case_code": "HRA-EVAL-V2-000010",
+        "case_type": "obvious_match",
+        "vacancy_title": "Системный аналитик",
+        "reference_score": 98.0,
+        "reference_decision": "match"
+      },
+      "reference": {
+        "role_score": 30.0,
+        "skills_score": 33.0,
+        "experience_score": 20.0,
+        "conditions_score": 15.0,
+        "score": 98.0,
+        "decision": "match",
+        "reason": "Кандидат занимает целевую должность (Системный аналитик), имеет релевантный опыт (6 лет), все ключевые навыки из требований присутствуют (SQL, BPMN, REST API, опыт взаимодействия с разработчиками, аналитическое мышление подтверждается опытом и summary). Зарплатные ожидания в рамках бюджета вакансии. Готов к релокации. Полное соответствие по всем критериям."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Системный аналитик",
+          "reference_score": 98.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "score": 78,
+          "decision": "match",
+          "reason": "Максим Попов соответствует требованиям вакансии по должности, опыту и навыкам."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": true,
+          "score_abs_error": 20.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Системный аналитик",
+          "reference_score": 98.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "role_score": 8.0,
+          "skills_score": 12.0,
+          "experience_score": 18.0,
+          "conditions_score": 15.0,
+          "score": 53.0,
+          "decision": "no_match",
+          "reason": "1) Должность: Кандидат — системный аналитик, что является смежной, но не родственной областью (8/30). 2) Навыки: Есть опыт с API, BPMN, SQL, но отсутствуют ключевые навыки по SQL, BPMN, REST API, автоматизации бизнес-процессов (12/35). 3) Опыт: 6 лет релевантного опыта в IT, что соответствует требованиям (18/20). 4) Условия: Город и зарплатные ожидания полностью соответствуют условиям вакансии (15/15). Итог: кандидат не обладает необходимыми навыками по SQL, BPMN, автоматизации бизнес-процессов."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 45.0,
+          "role_abs_error": 22.0,
+          "skills_abs_error": 21.0,
+          "experience_abs_error": 2.0,
+          "conditions_abs_error": 0.0
+        }
+      }
+    },
+    {
+      "index": 4,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V2",
+        "dataset_code": "HRA-EVAL-V2",
+        "case_code": "HRA-EVAL-V2-000020",
+        "case_type": "obvious_no_match",
+        "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+        "reference_score": 19.0,
+        "reference_decision": "no_match"
+      },
+      "reference": {
+        "role_score": 2.0,
+        "skills_score": 2.0,
+        "experience_score": 0,
+        "conditions_score": 15.0,
+        "score": 19.0,
+        "decision": "no_match",
+        "reason": "Кандидат — врач с 15-летним опытом в медицине, не имеет опыта или навыков в области prompt engineering, автоматизации, работы с LLM, API, n8n или интеграции AI. Совпадает только по городу и зарплатным ожиданиям. Полное отсутствие релевантного опыта и навыков для данной IT-вакансии."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000020",
+          "case_type": "obvious_no_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 19.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "score": 75,
+          "decision": "match",
+          "reason": "Кандидат имеет необходимые навыки (Медицина, Диагностика, Лечение, Пациенты) для должности Prompt Engineer / AI Automation Specialist. Он также имеет достаточный опыт работы в медицинской сфере (15 лет). Зарплатные ожидания соответствуют средним показателям в данной области."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 56.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000020",
+          "case_type": "obvious_no_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 19.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "role_score": 10.0,
+          "skills_score": 9.0,
+          "experience_score": 15.0,
+          "conditions_score": 15.0,
+          "score": 59.0,
+          "decision": "no_match",
+          "reason": "Кандидат работает врачом, что полностью соответствует профилю вакансии (внимательность, внимательное слышание, понимание пациентов), но не имеет опыта работы с автоматизацией, prompt engineering, API или LLM. Из требуемых навыков у него только базовые элементы медицинской деятельности (внимательность, грамотный русский язык). Опыт работы — 15 лет, что значительно выше типичных требований для этой роли, но не хватает ключевых навыков. Зарплатные ожидания и город соответствуют условиям вакансии."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": true,
+          "score_abs_error": 40.0,
+          "role_abs_error": 8.0,
+          "skills_abs_error": 7.0,
+          "experience_abs_error": 15.0,
+          "conditions_abs_error": 0.0
+        }
+      }
+    },
+    {
+      "index": 5,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V2",
+        "dataset_code": "HRA-EVAL-V2",
+        "case_code": "HRA-EVAL-V2-000020",
+        "case_type": "obvious_no_match",
+        "vacancy_title": "Системный аналитик",
+        "reference_score": 39.0,
+        "reference_decision": "no_match"
+      },
+      "reference": {
+        "role_score": 2.0,
+        "skills_score": 2.0,
+        "experience_score": 20.0,
+        "conditions_score": 15.0,
+        "score": 39.0,
+        "decision": "no_match",
+        "reason": "Кандидат — врач с 15-летним опытом в медицине, не имеет опыта или навыков в системной аналитике, бизнес-анализе, работе с SQL, BPMN, REST API или постановке задач разработчикам. Совпадает только уровень опыта и зарплатные ожидания. По ключевым критериям (роль и навыки) соответствие минимальное."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000020",
+          "case_type": "obvious_no_match",
+          "vacancy_title": "Системный аналитик",
+          "reference_score": 39.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "score": 78,
+          "decision": "match",
+          "reason": "Кандидат имеет необходимые навыки (Медицина, Диагностика, Лечение, Пациенты) для должности Системного аналитика, который требует работы с медицинской информацией. Он также имеет достаточный опыт (15 лет), что подтверждает его способность работать на высоком уровне. Зарплата соответствует требованиям вакансии."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 39.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000020",
+          "case_type": "obvious_no_match",
+          "vacancy_title": "Системный аналитик",
+          "reference_score": 39.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "role_score": 18.0,
+          "skills_score": 17.0,
+          "experience_score": 20.0,
+          "conditions_score": 15.0,
+          "score": 70.0,
+          "decision": "match",
+          "reason": "Кандидат претендует на должность врач-интерн, что является смежной, но не родственной областью (18/30). Из требуемых навыков у кандидата есть только базовые понятия об медицинской помощи и работе с пациентами, отсутствуют ключевые для вакансии навыки (SQL, BPMN, REST API, постановка задач разработчикам) (17/35). Опыт работы 15 лет полностью соответствует требованиям по стажу (20/20). Зарплатные ожидания кандидата (200 000) значительно выше бюджета вакансии (150 000–220 000), поэтому это дополнительное минус (15/15). Итоговый score=70 — кандидат подходит."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 31.0,
+          "role_abs_error": 16.0,
+          "skills_abs_error": 15.0,
+          "experience_abs_error": 0.0,
+          "conditions_abs_error": 0.0
+        }
+      }
+    },
+    {
+      "index": 6,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V2",
+        "dataset_code": "HRA-EVAL-V2",
+        "case_code": "HRA-EVAL-V2-000020",
+        "case_type": "obvious_no_match",
+        "vacancy_title": "Специалист по разметке данных",
+        "reference_score": 27.0,
+        "reference_decision": "no_match"
+      },
+      "reference": {
+        "role_score": 2.0,
+        "skills_score": 5.0,
+        "experience_score": 20.0,
+        "conditions_score": 0,
+        "score": 27.0,
+        "decision": "no_match",
+        "reason": "Кандидат — врач с 15-летним опытом в медицине, что не соответствует роли специалиста по разметке данных (role_score=2). Ключевые навыки (работа с текстом, ИИ, инструкции) отсутствуют, есть только общие навыки врача (skills_score=5). Опыт большой, но не релевантен, поэтому максимальный балл только за стаж (experience_score=20). Зарплатные ожидания (200 000) значительно выше бюджета вакансии (max 120 000), поэтому conditions_score=0. Итоговый score=27 — кандидат не подходит."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000020",
+          "case_type": "obvious_no_match",
+          "vacancy_title": "Специалист по разметке данных",
+          "reference_score": 27.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "score": 78,
+          "decision": "match",
+          "reason": "Кандидат имеет необходимые навыки (Медицина, Диагностика, Лечение, Пациенты) для должности специалиста по разметке данных. Он также имеет достаточный опыт работы в медицинской сфере (15 лет). Зарплата в пределах указанных в вакансии."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 51.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V2",
+          "dataset_code": "HRA-EVAL-V2",
+          "case_code": "HRA-EVAL-V2-000020",
+          "case_type": "obvious_no_match",
+          "vacancy_title": "Специалист по разметке данных",
+          "reference_score": 27.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "role_score": 18.0,
+          "skills_score": 17.0,
+          "experience_score": 20.0,
+          "conditions_score": 15.0,
+          "score": 70.0,
+          "decision": "match",
+          "reason": "1) Должность: Кандидат — врач, что относительно близко к роли специалиста по разметке данных (18/30). 2) Навыки: Есть опыт работы с медицинской информацией и взаимосвязью с ИИ, но отсутствуют ключевые навыки вождения, внимательности, грамотного русского языка, понимания инструкций и критерий оценки (17/35). 3) Опыт: 15 лет релевантного опыта в области медицины, что соответствует требованиям (20/20). 4) Условия: Зарплатные ожидания кандидата (200 000) полностью соответствуют бюджету вакансии (60 000–120 000), поэтому все условия fullfiled (15/15). Итог: Кандидат обладает частью требуемых навыков и опытом, но не имеет ключевых для вакансии (вождение, внимательность, грамотный русский, понимание инструкций), поэтому есть смежный, но не совпадающий подход."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 43.0,
+          "role_abs_error": 16.0,
+          "skills_abs_error": 12.0,
+          "experience_abs_error": 0.0,
+          "conditions_abs_error": 15.0
+        }
+      }
+    }
+  ]
+}

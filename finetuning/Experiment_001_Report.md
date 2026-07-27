@@ -197,6 +197,8 @@ Eval loss достиг минимума на эпохе 4 и слегка выр
 | Base Qwen | 1.000 | 0.444 | 38.78 |
 | **LoRA Experiment 001** | **1.000** | **0.444** | **29.78** |
 
+> **Доказательство:** summary метрик и примеры Base vs LoRA — в [`data/evidence/experiment_001_generation_test_summary.json`](data/evidence/experiment_001_generation_test_summary.json).
+
 ### 8.2. Интерпретация offline-метрик
 
 - **Главный критерий выполнен:** `valid_json_rate` = 1.0. Модель генерирует валидный JSON.
@@ -204,6 +206,20 @@ Eval loss достиг минимума на эпохе 4 и слегка выр
 - MAE score снизился с 38.78 до 29.78 — LoRA стала ближе к числовым оценкам teacher, но не к принятию решений.
 
 Эти результаты показали, что пайплайн работает, и позволили перейти к параметрической оптимизации в Experiment 002.
+
+#### Representative example: корректный JSON
+
+**Candidate:** Системный аналитик, 6 лет опыта, SQL, BPMN, REST API, UML, Agile, документирование, зарплата 190 000 ₽.
+
+**Vacancy:** Системный аналитик; требования совпадают с профилем кандидата.
+
+**Reference:** `match`, score 98.
+
+**Model prediction (LoRA Experiment 001):** валидный JSON с `role_score=8`, `skills_score=12`, `experience_score=18`, `conditions_score=15`, `score=53`, `decision=no_match`.
+
+**Почему этот пример важен:** Подтверждает главный критерий Experiment 001 — LoRA возвращает корректный JSON с обязательными полями (`role_score`, `skills_score`, `experience_score`, `conditions_score`, `score`, `decision`, `reason`). Решение пока не совпадает с reference, потому что улучшение matching не было целью этого цикла.
+
+**Evidence:** [`data/evidence/experiment_001_generation_test_summary.json`](data/evidence/experiment_001_generation_test_summary.json), запись `HRA-EVAL-V2-000010`, vacancy "Системный аналитик".
 
 ---
 

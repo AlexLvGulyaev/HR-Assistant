@@ -133,11 +133,41 @@ graph TD
 
 **Ключевой вывод:**
 - LoRA улучшает offline качество.
-- Experiment 002 **не прошёл runtime negative smoke test** из-за недостатка hard negative примеров.
-- Experiment 003 добавил hard negatives и **прошёл runtime negative smoke test (7/7)**, но ценой умеренного снижения decision accuracy на original test set (precision/recall trade-off).
+- Experiment 002 **не прошёл runtime negative smoke test** из-за недостатка hard negative примеров. Примеры false positive — в [`finetuning/data/evidence/experiment_002_failure_modes.jsonl`](../finetuning/data/evidence/experiment_002_failure_modes.jsonl).
+- Experiment 003 добавил hard negatives и **прошёл runtime negative smoke test (7/7)**, но ценой умеренного снижения decision accuracy на original test set (precision/recall trade-off). Ответы LoRA по smoke-кейсам — в [`finetuning/data/evidence/experiment_003_runtime_smoke.json`](../finetuning/data/evidence/experiment_003_runtime_smoke.json), over-correction кейсы — в [`finetuning/data/evidence/experiment_003_overcorrection.jsonl`](../finetuning/data/evidence/experiment_003_overcorrection.jsonl).
 - Модель всё ещё **не является production-ready**.
 
-**Директория:** `finetuning/runs/experiment_002/`, `finetuning/runs/experiment_003/`
+#### Representative example: Experiment 002 — runtime false positive
+
+**Candidate:** Врач с 15-летним медицинским опытом, навыки диагностики и лечения, зарплата 200 000 ₽.
+
+**Vacancy:** Специалист по разметке данных; требуется работа с текстом, внимательность, грамотный русский язык, понимание ИИ, следование инструкциям; бюджет 60 000–120 000 ₽.
+
+**Reference:** `no_match`, score 27.
+
+**Model prediction (LoRA Experiment 002):** `match`, score 72.
+
+**Почему этот пример важен:** Наглядно показывает, почему Exp 002 не прошёл runtime negative smoke: модель выдала ложное положительное решение на полностью нерелевантном профиле, использовав опыт и soft skills вместо проверки профильной базы.
+
+**Evidence:** [`finetuning/data/evidence/experiment_002_failure_modes.jsonl`](../finetuning/data/evidence/experiment_002_failure_modes.jsonl), запись `HRA-EVAL-V2-000020`, vacancy "Специалист по разметке данных".
+
+---
+
+#### Representative example: Experiment 003 — устранение false positive
+
+**Candidate:** Врач-терапевт, 7 лет клинического опыта, без IT/AI навыков.
+
+**Vacancy:** Prompt Engineer / AI Automation Specialist; требуется prompt engineering, n8n, API, JSON, LLM, автоматизация бизнес-процессов.
+
+**Reference / expected:** `no_match`.
+
+**Model prediction (LoRA Experiment 003):** `no_match`, score 0.
+
+**Почему этот пример важен:** Показывает, что добавление hard negatives в teacher dataset научило модель корректно отклонять нерелевантные профили, и Exp 003 прошёл runtime negative smoke 7/7.
+
+**Evidence:** [`finetuning/data/evidence/experiment_003_runtime_smoke.json`](../finetuning/data/evidence/experiment_003_runtime_smoke.json), кейс `SMOKE-NEGATIVE-001`, category `obvious_negative`.
+
+**Директория с public evidence:** `finetuning/data/evidence/`
 
 **Документация:** [finetuning/README.md](../finetuning/README.md), [Experiment_003_Report.md](../finetuning/Experiment_003_Report.md)
 
@@ -195,7 +225,7 @@ graph TD
 
 **Результаты:**
 - Experiment 002: Positive Smoke Test ✅ Pass, Negative Smoke Test ❌ **Failed**
-- Experiment 003: Positive Smoke Test ✅ Pass, Negative Smoke Test ✅ **Pass (7/7)**
+- Experiment 003: Positive Smoke Test ✅ Pass, Negative Smoke Test ✅ **Pass (7/7)**. Детальные ответы LoRA — в [`finetuning/data/evidence/experiment_003_runtime_smoke.json`](../finetuning/data/evidence/experiment_003_runtime_smoke.json).
 
 **Важное изменение в Experiment 003:**
 - Помимо Multi Provider Test workflow появился автоматический локальный runtime smoke test: `finetuning/scripts/runtime_smoke_test.py` + фиксированный `data/smoke_set.jsonl`.

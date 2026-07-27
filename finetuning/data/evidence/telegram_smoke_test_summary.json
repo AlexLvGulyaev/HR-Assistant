@@ -1,0 +1,81 @@
+{
+  "experiment": "experiment_004",
+  "test_type": "real-world Telegram smoke test",
+  "date": "2026-07-22",
+  "models_compared": ["LoRA Experiment 004 (vLLM)", "GPT-4o-mini"],
+  "total_cases": 23,
+  "case_categories": ["HN1", "HN2", "HN3", "HN4", "HN5", "HN6", "HN7", "HN8", "EC1", "EC3", "EC4", "POSITIVE", "OBVIOUSNOMATCH"],
+  "lora_summary": {
+    "model": "LoRA Experiment 004 (vLLM)",
+    "correct": 8,
+    "correct_rate": 0.348,
+    "false_matches": 15,
+    "false_match_rate": 0.652
+  },
+  "gpt_summary": {
+    "model": "GPT-4o-mini",
+    "correct": 10,
+    "correct_rate": 0.435,
+    "false_matches": 12,
+    "false_match_rate": 0.522,
+    "borderline": 1
+  },
+  "comparison_table": [
+    {"#": 1, "category": "HN1", "profile": "Хирург-ортопед, 14 лет", "vacancy": "Системный аналитик", "lora": "52 no_match ✅", "gpt": "0 no_match ✅"},
+    {"#": 2, "category": "HN2", "profile": "Бизнес-аналитик, 5 лет", "vacancy": "Системный аналитик", "lora": "86 match ❌", "gpt": "85 match ❌"},
+    {"#": 3, "category": "HN2", "profile": "QA engineer, 3 года", "vacancy": "Системный аналитик", "lora": "52 no_match ✅", "gpt": "30 no_match ✅"},
+    {"#": 4, "category": "HN3", "profile": "Аналитик данных, 4 года", "vacancy": "Системный аналитик", "lora": "86 match ❌", "gpt": "60 match ❌"},
+    {"#": 5, "category": "HN3", "profile": "Маркетинговый аналитик, 4 года", "vacancy": "Системный аналитик", "lora": "57 no_match ✅", "gpt": "45 no_match ✅"},
+    {"#": 6, "category": "HN4", "profile": "Ведущий юрист, 10 лет", "vacancy": "Системный аналитик", "lora": "57 no_match ✅", "gpt": "5 no_match ✅"},
+    {"#": 7, "category": "HN5", "profile": "Маркетолог с Python, 6 лет", "vacancy": "Prompt Engineer", "lora": "68 match ❌", "gpt": "30 no_match ✅"},
+    {"#": 8, "category": "HN5", "profile": "Финансовый аналитик, 5 лет", "vacancy": "Системный аналитик", "lora": "65 match ❌", "gpt": "30 no_match ✅"},
+    {"#": 9, "category": "HN5", "profile": "Копирайтер, 4 года", "vacancy": "Системный аналитик", "lora": "52 no_match ✅", "gpt": "40 no_match ✅"},
+    {"#": 10, "category": "HN6", "profile": "Junior SA, 6 месяцев", "vacancy": "Системный аналитик", "lora": "90 match ❌ (галлюцинации SQL/BPMN/REST)", "gpt": "80 match ❌"},
+    {"#": 11, "category": "HN6", "profile": "Стажёр, 0 лет, 1 навык SQL", "vacancy": "Системный аналитик", "lora": "80 match ❌ (галлюцинации SQL/BPMN/REST)", "gpt": "55 no_match ✅"},
+    {"#": 12, "category": "HN6", "profile": "Стажёр → Prompt Engineer", "vacancy": "Prompt Engineer", "lora": "90 match ❌ (галлюцинации prompt/LLM/n8n)", "gpt": "65 match ❌"},
+    {"#": 13, "category": "HN7", "profile": "Руководитель IT-отдела, 8 лет", "vacancy": "Системный аналитик", "lora": "63 match ❌ (придуманы SQL/BPMN/REST)", "gpt": "20 no_match ✅"},
+    {"#": 14, "category": "HN7", "profile": "Директор по продажам, 12 лет", "vacancy": "Системный аналитик", "lora": "52 no_match ✅", "gpt": "5 no_match ✅"},
+    {"#": 15, "category": "HN8", "profile": "Контент-менеджер, 4 года", "vacancy": "Системный аналитик", "lora": "52 no_match ✅", "gpt": "55 no_match ✅"},
+    {"#": 16, "category": "EC1", "profile": "Системный аналитик с n8n, 3 года", "vacancy": "Системный аналитик", "lora": "83 match ❌", "gpt": "85 match ❌"},
+    {"#": 17, "category": "EC1", "profile": "Младший системный аналитик, 2 года", "vacancy": "Системный аналитик", "lora": "90 match ❌", "gpt": "80 match ❌"},
+    {"#": 18, "category": "EC1", "profile": "Data Analyst → SA", "vacancy": "Системный аналитик", "lora": "95 match ❌ (заменила должность в reason)", "gpt": "80 match ❌"},
+    {"#": 19, "category": "EC1", "profile": "Бизнес-аналитик, урезанные навыки", "vacancy": "Системный аналитик", "lora": "92 match ❌ (придуманы SQL/BPMN/REST)", "gpt": "65 match ❌"},
+    {"#": 20, "category": "EC3", "profile": "Процессный аналитик, 5 лет", "vacancy": "Системный аналитик", "lora": "86 match ❌", "gpt": "75 match ❌"},
+    {"#": 21, "category": "EC4", "profile": "Senior Prompt Engineer, зарплата 450k", "vacancy": "Prompt Engineer", "lora": "95 match ❌ (salary mismatch проигнорирован)", "gpt": "85 match ❌"},
+    {"#": 22, "category": "POSITIVE", "profile": "AI Automation Specialist, 4 года", "vacancy": "Prompt Engineer", "lora": "93 match ✅", "gpt": "100 match ✅"},
+    {"#": 23, "category": "OBVIOUSNOMATCH", "profile": "Курьер, 5 лет", "vacancy": "Prompt Engineer", "lora": "57 no_match ✅", "gpt": "20 no_match ✅"}
+  ],
+  "representative_failures": [
+    {
+      "category": "HN6",
+      "profile": "Стажёр, 0 лет опыта, 1 навык SQL",
+      "vacancy": "Системный аналитик",
+      "lora_decision": "match",
+      "lora_score": 80,
+      "lora_failure_mode": "Галлюцинации: SQL, BPMN, REST API, аналитика — навыки, которых нет в резюме.",
+      "gpt_decision": "no_match",
+      "gpt_score": 55
+    },
+    {
+      "category": "HN5",
+      "profile": "Маркетолог с Python, 6 лет",
+      "vacancy": "Prompt Engineer",
+      "lora_decision": "match",
+      "lora_score": 68,
+      "lora_failure_mode": "Одиночное совпадение Python + 'автоматизация отчётов' переоценено как AI Automation.",
+      "gpt_decision": "no_match",
+      "gpt_score": 30
+    },
+    {
+      "category": "EC4",
+      "profile": "Senior Prompt Engineer, зарплата 450 000 руб.",
+      "vacancy": "Prompt Engineer",
+      "lora_decision": "match",
+      "lora_score": 95,
+      "lora_failure_mode": "Salary mismatch проигнорирован; conditions_score занижен, но итоговый score всё равно match.",
+      "gpt_decision": "match",
+      "gpt_score": 85
+    }
+  ],
+  "note": "Кейсы синтетические: реальные персональные данные не использовались. Результаты получены в production-контуре Telegram-бота HR Assistant с LoRA Experiment 004 через vLLM и GPT-4o-mini."
+}

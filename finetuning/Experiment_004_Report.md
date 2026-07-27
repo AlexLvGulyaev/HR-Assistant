@@ -208,6 +208,8 @@ Early convergence: лучший чекпоинт достигается на э�
 | Base Qwen | 1.000 | 0.333 | 34.13 | — | — | — | — |
 | **LoRA Experiment 004** | **1.000** | **0.800** | **15.13** | 2.40 | 3.07 | 6.00 | 4.73 |
 
+> **Доказательство:** summary метрик и примеры Base vs LoRA — в [`data/evidence/experiment_004_generation_test_summary.json`](data/evidence/experiment_004_generation_test_summary.json). Эта оценка проведена скриптом `evaluate_generation_test.py` на `test.jsonl` HRA-EVAL-V4.
+
 ### 8.2. Test loss evaluation
 
 | Модель | eval_loss |
@@ -239,6 +241,22 @@ Early convergence: лучший чекпоинт достигается на э�
 
 **Ключевой вывод:** все заранее зафиксированные отрицательные и edge-case сценарии корректно отклонены; unexpected matches отсутствуют. Достижения Experiment 003 по hard negatives сохранены.
 
+> **Доказательство:** полные ответы LoRA по каждому smoke-кейсу — в [`data/evidence/experiment_004_runtime_smoke.json`](data/evidence/experiment_004_runtime_smoke.json).
+
+#### Representative example: успешное восстановление genuine match
+
+**Candidate:** AI Automation Specialist / Prompt Engineer, 4 года опыта в prompt engineering, LLM, n8n, REST API, Python, зарплата 200 000 ₽.
+
+**Vacancy:** Prompt Engineer / AI Automation Specialist; бюджет 150 000–250 000 ₽.
+
+**Reference / expected:** `match`.
+
+**Model prediction (LoRA Experiment 004):** `match`, score 87, с обоснованием по всем четырём компонентам (роль, навыки, опыт, условия).
+
+**Почему этот пример важен:** Подтверждает, что добавление positive/borderline примеров в V4 восстановило recall: LoRA снова признаёт genuine match, сохраняя при этом runtime negative smoke 7/7.
+
+**Evidence:** [`data/evidence/experiment_004_runtime_smoke.json`](data/evidence/experiment_004_runtime_smoke.json), кейс `SMOKE-POSITIVE-001`, category `positive`.
+
 ### 9.2. Truncation bug и max_tokens bump
 
 В ходе GPT-4o-mini comparison (Этап 7) первый запуск с `max_tokens = 300` выявил проблему:
@@ -250,11 +268,13 @@ Early convergence: лучший чекпоинт достигается на э�
 1. В [`hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py) заменён raise `HTTPException(422)` на graceful fallback: HTTP 200 с JSON-объектом `{"error": "invalid_json", "raw_response": "..."}`. Это позволяет downstream-клиентам обрабатывать malformed output без разрыва соединения.
 2. В скрипте сравнения `max_tokens` увеличен с 300 до 512 для LoRA и GPT-4o-mini.
 
-**Результат после фикса:**
+**Результат после фикса (в рамках GPT-4o-mini comparison, `compare_with_gpt.py`):**
 - `valid_json_rate` LoRA: 0.867 → 1.000;
 - `decision_accuracy` LoRA: 0.800 → 0.933;
 - `MAE_score` LoRA: 6.69 → 5.80;
 - HTTP 422 errors: 0.
+
+> **Примечание:** значения 0.800 / 15.13 в разделе 8.1 получены скриптом `evaluate_generation_test.py`; значения 0.933 / 5.80 — скриптом `compare_with_gpt.py` после увеличения `max_tokens` до 512. Это два независимых прогона с разными downstream-скриптами, поэтому их MAE_score отличаются.
 
 ### 9.3. Latency
 
@@ -284,6 +304,8 @@ Early convergence: лучший чекпоинт достигается на э�
 
 GPT-4o-mini остаётся точнее на малой teacher-размеченной выборке (15 записей), что ожидаемо из-за семейной близости с teacher-моделью GPT-4.1. LoRA после фикса достигает 93.3% decision accuracy при нулевом FNR.
 
+> **Доказательство:** примеры prediction/reference/LoRA/GPT для записей с расхождениями — в [`data/evidence/experiment_004_gpt_comparison_examples.jsonl`](data/evidence/experiment_004_gpt_comparison_examples.jsonl).
+
 ### 10.2. External validation vs GPT-4o-mini (HRA-EVAL-V5-EXT, 102 записи)
 
 | Metric | LoRA Experiment 004 | GPT-4o-mini |
@@ -302,6 +324,76 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 - LoRA более консервативна: FNR 13.6% vs 4.5% у GPT-4o-mini.
 - LoRA сильно отстаёт по точности score (MAE 19.6 vs 6.2) и по latency (~10× медленнее канонического runtime).
 
+> **Доказательство:** примеры с ошибками LoRA на HRA-EVAL-V5-EXT — в [`data/evidence/experiment_004_external_validation_examples.jsonl`](data/evidence/experiment_004_external_validation_examples.jsonl).
+
+### 10.2b. External validation с vLLM-ускорением vs GPT-4o-mini (HRA-EVAL-V5-EXT, 102 записи, 3 прогона)
+
+После latency optimization LoRA была переключена на vLLM OpenAI-compatible runtime ([`../api/hra_qwen_api_lora_vllm.py`](../api/hra_qwen_api_lora_vllm.py)), и тот же внешний датасет HRA-EVAL-V5-EXT был прогнан 3 раза для сравнения с GPT-4o-mini.
+
+| Metric | LoRA Experiment 004 (vLLM) avg 3 runs | GPT-4o-mini avg 3 runs |
+|--------|--------------------------------------|------------------------|
+| valid_json_rate | 1.000 | 0.997 |
+| decision_accuracy | **0.931** | 0.925 |
+| MAE_score | 19.53 | **6.73** |
+| FPR | **0.050** | 0.079 |
+| FNR | 0.136 | **0.045** |
+| latency_p50 (ms) | 1 688 | 1 296 |
+| latency_p95 (ms) | 2 104 | 2 007 |
+
+**Выводы external validation после ускорения:**
+- С vLLM LoRA достигает **сопоставимого с GPT-4o-mini decision accuracy** (0.931 vs 0.925) и даже немного превосходит по среднему по 3 прогонам.
+- FPR у LoRA ниже, чем у GPT-4o-mini (5.0% vs 7.9%).
+- FNR остаётся выше (13.6% vs 4.5%), и MAE score по-прежнему существенно хуже (19.5 vs 6.7).
+- Latency p95 становится **сопоставимым** с GPT-4o-mini (~2.1 сек vs ~2.0 сек), в отличие от канонического runtime (~16.9 сек).
+
+> **Доказательство:** summary трёх повторных прогонов и representative examples — в [`data/evidence/experiment_004_external_validation_vllm_examples.jsonl`](data/evidence/experiment_004_external_validation_vllm_examples.jsonl).
+
+#### Representative example: LoRA консервативнее GPT-4o-mini на смежной роли
+
+**Candidate:** AI Automation Specialist, 4 года опыта автоматизации бизнес-процессов, REST API, работа с бизнес-процессами; без SQL и BPMN.
+
+**Vacancy:** Системный аналитик; требуется SQL, BPMN, REST API, аналитика, постановка задач разработчикам.
+
+**Reference (GPT-4o):** `match`, score 63.
+
+**Model prediction (LoRA Experiment 004, vLLM):** `no_match`, score 57, с обоснованием, что кандидат — AI Automation Specialist, а не системный аналитик, и не хватает ключевых hard skills.
+
+**GPT-4o-mini prediction:** `match`, score 70.
+
+**Почему этот пример важен:** Иллюстрирует, почему у LoRA выше FNR (13.6% vs 4.5%): она строже штрафует за отсутствие прямых ключевых навыков, даже когда reference judge считает смежный профиль подходящим.
+
+**Evidence:** [`data/evidence/experiment_004_external_validation_vllm_examples.jsonl`](data/evidence/experiment_004_external_validation_vllm_examples.jsonl), запись `HRA-EVAL-V2-000305`, vacancy "Системный аналитик".
+
+#### Representative example: LoRA завышает score на borderline-кейсе
+
+**Candidate:** Системный аналитик, 2 года опыта, SQL, BPMN, REST API, UML, аналитика; недостаточно опыта постановки задач разработчикам, зарплата ниже минимума бюджета.
+
+**Vacancy:** Системный аналитик; требуется опыт постановки задач разработчикам, зарплата в бюджете.
+
+**Reference (GPT-4o):** `no_match`, score 67.
+
+**Model prediction (LoRA Experiment 004, vLLM):** `match`, score 98, с обоснованием, что кандидат "идеально подходит", игнорируя недостаток опыта постановки задач и salary mismatch.
+
+**GPT-4o-mini prediction:** `match`, score 80.
+
+**Почему этот пример важен:** Показывает проблему калибровки score у LoRA: даже при правильном decision (GPT-4o-mini тоже выдал `match`) LoRA сильно завышает absolute score (98 vs reference 67), что объясняет высокий MAE 19.5.
+
+**Evidence:** [`data/evidence/experiment_004_external_validation_vllm_examples.jsonl`](data/evidence/experiment_004_external_validation_vllm_examples.jsonl), запись `HRA-EVAL-V2-000316`, vacancy "Системный аналитик".
+
+#### Representative example: ошибка, оставшаяся после внешней валидации
+
+**Candidate:** Специалист по разметке данных, 4 года опыта разметки данных, проверки ИИ, написания инструкций, внимательность, грамотность.
+
+**Vacancy:** Prompt Engineer / AI Automation Specialist; требуется prompt engineering, n8n, API, JSON, LLM, автоматизация бизнес-процессов.
+
+**Reference (GPT-4o):** `no_match`, score 45.
+
+**Model prediction (LoRA Experiment 004):** `match`, score 62, с обоснованием, что разметка данных — смежная область с prompt engineering.
+
+**Почему этот пример важен:** Показывает, что даже при высокой aggregate decision accuracy (0.931) LoRA всё ещё даёт false positives на смежных ролях без прямых hard skills; это одна из причин, почему модель не production-ready.
+
+**Evidence:** [`data/evidence/experiment_004_external_validation_examples.jsonl`](data/evidence/experiment_004_external_validation_examples.jsonl), запись `HRA-EVAL-V2-000308`, vacancy "Prompt Engineer / AI Automation Specialist".
+
 ### 10.3. Real-world Telegram smoke test
 
 | Параметр | Значение |
@@ -312,6 +404,8 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 | GPT-4o-mini correct rate | **43%** |
 | Сравнение | LoRA уступает GPT-4o-mini на 8 pp |
 
+> **Доказательство:** детальная таблица 23 анкет и representative failures — в [`data/evidence/telegram_smoke_test_summary.json`](data/evidence/telegram_smoke_test_summary.json).
+
 **Классификация кейсов:**
 
 | Категория | Описание |
@@ -321,6 +415,20 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 | BORDERLINE | Пограничные кейсы около порога 60. |
 | HN1–HN8 | Hard-negative категории, определённые в Experiment 003 ([`Experiment_003_Report.md`](Experiment_003_Report.md)). |
 | EC1 / EC3 / EC4 | Edge-case категории, определённые в Experiment 003. |
+
+#### Representative example: характерный failure mode Telegram smoke
+
+**Candidate:** Стажёр, 0 лет опыта, в резюме указан 1 навык SQL.
+
+**Vacancy:** Системный аналитик; требуется SQL, BPMN, REST API, аналитика, постановка задач разработчикам.
+
+**Expected:** `no_match`.
+
+**Model prediction (LoRA Experiment 004, vLLM):** `match`, score 80, с галлюцинациями SQL, BPMN, REST API и аналитики — навыков, которых у кандидата нет.
+
+**Почему этот пример важен:** Иллюстрирует главный production-риск LoRA: на extreme sparse junior/стажёрских профилях модель "дорисовывает" недостающие hard skills и завышает score, из-за чего real-world correct rate LoRA (35 %) ниже, чем у GPT-4o-mini (43 %).
+
+**Evidence:** [`data/evidence/telegram_smoke_test_summary.json`](data/evidence/telegram_smoke_test_summary.json), строка #11 (HN6) и блок `representative_failures`.
 
 **Основные failure modes LoRA в Telegram smoke:**
 

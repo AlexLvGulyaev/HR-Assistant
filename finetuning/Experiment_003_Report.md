@@ -15,7 +15,7 @@
 К моменту начала Experiment 003 в кейсе HR Assistant уже было проведено два цикла fine-tuning:
 
 - **Experiment 001** — технический baseline. Код пайплайна разработан в диалоге с ChatGPT; запуск и управление выполнял пользователь вручную на RunPod. Подтверждено: LoRA обучается стабильно, чекпоинты сохраняются, JSON-формат генерируется.
-- **Experiment 002** — параметрическая оптимизация: rank 8 → 16, target modules 4 → 7, увеличено число эпох. Код и launch contract также разработаны в диалоге с ChatGPT; запуск и управление выполнял пользователь вручную на RunPod. Offline-метрики выросли (`eval_loss=0.44`, `decision_accuracy=0.778`), но runtime negative smoke test не пройден — модель давала ложные срабатывания на нерелевантных профилях.
+- **Experiment 002** — параметрическая оптимизация: rank 8 → 16, target modules 4 → 7. Код и launch contract также разработаны в диалоге с ChatGPT; запуск и управление выполнял пользователь вручную на RunPod. Offline-метрики выросли (`eval_loss=0.44`, `decision_accuracy=0.778`), но runtime negative smoke test не пройден — модель давала ложные срабатывания на нерелевантных профилях.
 
 Experiment 003 стал переходом к следующему режиму работы: Claude Code развёрнут непосредственно на RunPod и участвует в GPU-этапах пайплайна вместе с пользователем. Это развитие процесса, а не смена инструмента: исходный пайплайн, сформированный в Experiments 001–002, сохранён и расширен.
 
@@ -213,6 +213,8 @@ Early convergence: лучший чекпоинт достигается на э�
 | LoRA Experiment 002 | 1.000 | 0.778 | 21.89 |
 | **LoRA Experiment 003** | **1.000** | **0.667** | **22.22** |
 
+> **Доказательство:** summary метрик и примеры Base vs LoRA — в [`data/evidence/experiment_003_generation_test_summary.json`](data/evidence/experiment_003_generation_test_summary.json).
+
 ### 8.2. Интерпретация offline-метрик
 
 - LoRA Exp 003 значительно превосходит base Qwen, но уступает Exp 002 по decision accuracy (−11.1 pp).
@@ -234,6 +236,38 @@ Early convergence: лучший чекпоинт достигается на э�
 | **Итого** | **7** | **7** | **0** |
 
 **Ключевой вывод:** все заранее зафиксированные отрицательные и edge-case сценарии корректно отклонены; unexpected matches отсутствуют. Это главное достижение Experiment 003.
+
+> **Доказательство:** полные ответы LoRA по каждому smoke-кейсу — в [`data/evidence/experiment_003_runtime_smoke.json`](data/evidence/experiment_003_runtime_smoke.json).
+
+#### Representative example: устранение false positive
+
+**Candidate:** Врач-терапевт, 7 лет клинического опыта, навыки работы с пациентами и медицинской документацией; нет IT/AI навыков.
+
+**Vacancy:** Prompt Engineer / AI Automation Specialist; требуется prompt engineering, n8n, API, JSON, LLM, автоматизация бизнес-процессов.
+
+**Reference / expected:** `no_match`.
+
+**Model prediction (LoRA Experiment 003):** `no_match`, score 0 — модель отклоняет нерелевантный профиль и не использует медицинский опыт как обоснование соответствия.
+
+**Почему этот пример важен:** Показывает, что добавление hard negatives в teacher dataset научило модель корректно отклонять полностью нерелевантную профессию (HN-1), чего Exp 002 не умел.
+
+**Evidence:** [`data/evidence/experiment_003_runtime_smoke.json`](data/evidence/experiment_003_runtime_smoke.json), кейс `SMOKE-NEGATIVE-001`, category `obvious_negative`.
+
+---
+
+#### Representative example: over-correction
+
+**Candidate:** Системный аналитик, 6 лет опыта, SQL, BPMN, REST API, UML, Agile, документирование, зарплата 190 000 ₽.
+
+**Vacancy:** Системный аналитик; требования совпадают с профилем кандидата.
+
+**Reference:** `match`, score 98.
+
+**Model prediction (LoRA Experiment 003):** `no_match`, score 43, с обоснованием, что у кандидата "не указаны аналитические или технические навыки".
+
+**Почему этот пример важен:** Иллюстрирует цену hard negatives без компенсирующих positive примеров: модель стала слишком консервативной и стала отклонять genuine match.
+
+**Evidence:** [`data/evidence/experiment_003_overcorrection.jsonl`](data/evidence/experiment_003_overcorrection.jsonl), запись `HRA-EVAL-V2-000010`, vacancy "Системный аналитик".
 
 ---
 
@@ -286,6 +320,8 @@ Early convergence: лучший чекпоинт достигается на э�
 | `HRA-EVAL-V2-000010` | Prompt Engineer / AI Automation Specialist | match (60) | no_match (54) | −6 | Модель стала штрафовать системного аналитика за отсутствие prompt engineering навыков |
 | `HRA-EVAL-V2-000010` | Системный аналитик | match (98) | no_match (43) | −55 | Игнорирование совпадения по названию должности и заявленных навыков |
 | `HRA-EVAL-V2-000030` | Специалист по разметке данных | match (64) | no_match (45) | −19 | Content manager не распознаётся как подходящий для разметки данных |
+
+> **Доказательство:** полные `reference`, Base Qwen и LoRA prediction для over-correction кейсов — в [`data/evidence/experiment_003_overcorrection.jsonl`](data/evidence/experiment_003_overcorrection.jsonl).
 
 Эти кейсы показали, что **hard negatives без компенсирующих positive/borderline примеров ведут к over-correction**. Модель научилась искать отсутствие ключевых слов, но потеряла способность признавать наличие соответствия на смежных профилях.
 

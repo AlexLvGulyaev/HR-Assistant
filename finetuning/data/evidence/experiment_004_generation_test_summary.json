@@ -1,0 +1,392 @@
+{
+  "experiment": "experiment_004",
+  "base_qwen_summary": {
+    "records": 15,
+    "valid_json_rate": 1.0,
+    "decision_accuracy": 0.3333333333333333,
+    "mae_score": 34.13333333333333
+  },
+  "lora_summary": {
+    "records": 15,
+    "valid_json_rate": 1.0,
+    "decision_accuracy": 0.8,
+    "mae_score": 15.133333333333333
+  },
+  "example_records": [
+    {
+      "index": 1,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V4",
+        "dataset_code": "HRA-EVAL-V4",
+        "case_code": "HRA-EVAL-V2-000010",
+        "case_type": "obvious_match",
+        "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+        "reference_score": 60.0,
+        "reference_decision": "match"
+      },
+      "reference": {
+        "role_score": 12.0,
+        "skills_score": 13.0,
+        "experience_score": 20.0,
+        "conditions_score": 15.0,
+        "score": 60.0,
+        "decision": "match",
+        "reason": "1. Должность: Кандидат — системный аналитик, что относительно близко к AI Automation Specialist, но не совпадает напрямую с prompt engineering (12/30).\n2. Навыки: Есть опыт с API, BPMN, SQL, UML, Agile, но отсутствуют ключевые навыки prompt engineering, n8n, LLM, JSON (13/35).\n3. Опыт: 6 лет релевантного опыта в системном анализе, что соответствует или превышает требования (20/20).\n4. Условия: Зарплатные ожидания (190 000) в рамках бюджета вакансии, готов к релокации (15/15).\nИтого: Кандидат частично соответствует требованиям, но не обладает ключевыми навыками prompt engineering и LLM. Пороговое значение достигнуто за счёт релевантного опыта и условий."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 60.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "score": 75,
+          "decision": "match",
+          "reason": "Максим имеет необходимые навыки (SQL, BPMN, REST API, UML, Agile) для должности Prompt Engineer / AI Automation Specialist. Он также имеет определенный опыт работы с бизнес-требованиями и готов к релокации в Москву."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": true,
+          "score_abs_error": 15.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 60.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "role_score": 10.0,
+          "skills_score": 12.0,
+          "experience_score": 20.0,
+          "conditions_score": 15.0,
+          "score": 57.0,
+          "decision": "no_match",
+          "reason": "1) Должность: Кандидат — системный аналитик, а вакансия требует Prompt Engineer / AI Automation Specialist. Это относительно близкая область (работа с данными и процессами), но не совпадает по сути (10/30).\n2) Навыки: Есть SQL, BPMN, REST API, UML, Agile, документирование, но отсутствуют ключевые навыки prompt engineering, n8n, LLM, JSON, автоматизация бизнес-процессов. Большинство технических навыков полностью соответствует требованиям, только частичное совпадение по автоматизации (12/35).\n3) Опыт: 6 лет релевантного опыта в IT, что соответствует минимальным требованиям для junior-уровня (20/20).\n4) Условия: Город и зарплатные ожидания полностью соответствуют условиям вакансии (15/15).\nИтого: Кандидат не обладает необходимыми специфическими навыками и опытом в AI/Prompt Engineering, поэтому итоговый score ниже порога."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 3.0,
+          "role_abs_error": 2.0,
+          "skills_abs_error": 1.0,
+          "experience_abs_error": 0.0,
+          "conditions_abs_error": 0.0
+        }
+      }
+    },
+    {
+      "index": 3,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V4",
+        "dataset_code": "HRA-EVAL-V4",
+        "case_code": "HRA-EVAL-V2-000010",
+        "case_type": "obvious_match",
+        "vacancy_title": "Специалист по разметке данных",
+        "reference_score": 36.0,
+        "reference_decision": "no_match"
+      },
+      "reference": {
+        "role_score": 5.0,
+        "skills_score": 10.0,
+        "experience_score": 20.0,
+        "conditions_score": 1.0,
+        "score": 36.0,
+        "decision": "no_match",
+        "reason": "1) Должность: Кандидат — системный аналитик, а вакансия — специалист по разметке данных. Это разные области, только минимальное пересечение (5/30).\n2) Навыки: У кандидата нет прямого опыта разметки данных, проверки ИИ или работы с инструкциями; присутствуют только общие навыки (SQL, BPMN, UML, Agile, документирование), которые частично релевантны (10/35).\n3) Опыт: 6 лет опыта — выше необходимого для junior-уровня разметки данных (20/20).\n4) Зарплата: Ожидания кандидата (190 000) значительно выше бюджета вакансии (60 000–120 000) (1/15).\nИтого: Кандидат существенно не соответствует профилю вакансии по роли, навыкам и условиям."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Специалист по разметке данных",
+          "reference_score": 36.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "score": 78,
+          "decision": "match",
+          "reason": "Максим Попов соответствует требованиям вакансии по опыту (6 лет), навыкам (SQL, BPMN, REST API, UML, Agile, Документирование) и уровню знаний (внимательность, грамотный русский язык, понимание работы ИИ). Он также подходит для релокации в Москву."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 42.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000010",
+          "case_type": "obvious_match",
+          "vacancy_title": "Специалист по разметке данных",
+          "reference_score": 36.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "role_score": 5.0,
+          "skills_score": 10.0,
+          "experience_score": 20.0,
+          "conditions_score": 15.0,
+          "score": 50.0,
+          "decision": "no_match",
+          "reason": "Кандидат — системный аналитик с опытом 6 лет, а вакансия — специалист по разметке данных. Ключевые навыки (внимательность, грамотный русский, работа с ИИ) отсутствуют, есть только минимальное пересечение по работе с документами и разметке (5/30). Опыт не соответствует требованиям по стажу и роли (20/30). Зарплатные ожидания и город полностью соответствуют условиям вакансии (15/15). Итоговый score — 50, кандидат не подходит."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": true,
+          "score_abs_error": 14.0,
+          "role_abs_error": 0.0,
+          "skills_abs_error": 0.0,
+          "experience_abs_error": 0.0,
+          "conditions_abs_error": 14.0
+        }
+      }
+    },
+    {
+      "index": 4,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V4",
+        "dataset_code": "HRA-EVAL-V4",
+        "case_code": "HRA-EVAL-V2-000211",
+        "case_type": "obvious_match",
+        "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+        "reference_score": 60.0,
+        "reference_decision": "match"
+      },
+      "reference": {
+        "role_score": 14.0,
+        "skills_score": 13.0,
+        "experience_score": 18.0,
+        "conditions_score": 15.0,
+        "score": 60.0,
+        "decision": "match",
+        "reason": "1. Должность: Кандидат — системный аналитик, что относительно близко к роли AI Automation Specialist, но не совпадает напрямую с prompt engineering (14/30).\n2. Навыки: Есть опыт работы с API, аналитикой, BPMN, постановкой задач, но отсутствуют ключевые навыки prompt engineering, n8n, LLM, JSON (13/35).\n3. Опыт: 4 года релевантного опыта в аналитике и автоматизации бизнес-процессов (18/20).\n4. Условия: Город и зарплатные ожидания полностью соответствуют условиям вакансии (15/15).\nИтого: Кандидат на грани соответствия — сильный опыт в аналитике и автоматизации, но нет специфических AI/LLM навыков."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000211",
+          "case_type": "obvious_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 60.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "score": 75,
+          "decision": "match",
+          "reason": "Павел соответствует требованиям должности Prompt Engineer / AI Automation Specialist, имея опыт в проектировании промптов и автоматизации бизнес-процессов."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": true,
+          "score_abs_error": 15.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000211",
+          "case_type": "obvious_match",
+          "vacancy_title": "Prompt Engineer / AI Automation Specialist",
+          "reference_score": 60.0,
+          "reference_decision": "match"
+        },
+        "parsed_output": {
+          "role_score": 10.0,
+          "skills_score": 12.0,
+          "experience_score": 20.0,
+          "conditions_score": 15.0,
+          "score": 57.0,
+          "decision": "no_match",
+          "reason": "1) Должность: Кандидат — системный аналитик, а вакансия требует Prompt Engineer / AI Automation Specialist. Это относительно близкая область (работа с данными и процессами), но не совпадает по сути (10/30).\n2) Навыки: Есть SQL, BPMN, REST API, UML, аналитика, постановка задач, но отсутствуют ключевые навыки prompt engineering, n8n, LLM, JSON, API. Навыки partially match, но не fully (12/35).\n3) Опыт: 4 года релевантного опыта в IT, что соответствует требованиям по стажу (20/20).\n4) Условия: Город и зарплатные ожидания полностью соответствуют условиям вакансии (15/15).\nИтого: Кандидат не обладает необходимыми специфическими навыками и опытом в AI/Prompt Engineering, поэтому итоговый score ниже порога."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 3.0,
+          "role_abs_error": 4.0,
+          "skills_abs_error": 1.0,
+          "experience_abs_error": 2.0,
+          "conditions_abs_error": 0.0
+        }
+      }
+    },
+    {
+      "index": 6,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V4",
+        "dataset_code": "HRA-EVAL-V4",
+        "case_code": "HRA-EVAL-V2-000211",
+        "case_type": "obvious_match",
+        "vacancy_title": "Специалист по разметке данных",
+        "reference_score": 36.0,
+        "reference_decision": "no_match"
+      },
+      "reference": {
+        "role_score": 5.0,
+        "skills_score": 10.0,
+        "experience_score": 20.0,
+        "conditions_score": 1.0,
+        "score": 36.0,
+        "decision": "no_match",
+        "reason": "1) Должность: Кандидат — системный аналитик, а вакансия — специалист по разметке данных. Это разные области, только минимальное пересечение (5/30).\n2) Навыки: У кандидата нет прямого опыта разметки данных, проверки ИИ или работы с инструкциями; присутствуют только общие навыки аналитики и постановки задач (10/35).\n3) Опыт: 4 года релевантного опыта в аналитике, что выше минимальных требований для junior-разметчика (20/20).\n4) Условия: Ожидания по зарплате (180 000) значительно выше бюджета вакансии (максимум 120 000) (1/15).\nИтого: Кандидат не соответствует ключевым требованиям и условиям вакансии."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000211",
+          "case_type": "obvious_match",
+          "vacancy_title": "Специалист по разметке данных",
+          "reference_score": 36.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "score": 75,
+          "decision": "match",
+          "reason": "Павел соответствует требованиям вакансии по навыкам (SQL, BPMN, REST API, UML), опыту (4 года) и уровню знаний (Аналитика). Зарплатные ожидания вакансии также подходят для его текущего уровня опыта."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 39.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000211",
+          "case_type": "obvious_match",
+          "vacancy_title": "Специалист по разметке данных",
+          "reference_score": 36.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "role_score": 5.0,
+          "skills_score": 10.0,
+          "experience_score": 20.0,
+          "conditions_score": 15.0,
+          "score": 50.0,
+          "decision": "no_match",
+          "reason": "Кандидат — системный аналитик, а вакансия — специалист по разметке данных. Должности не совпадают (5/30). Ключевые навыки вакансии (внимательность, грамотный русский, работа с ИИ, следование инструкциям) отсутствуют, есть только частичное пересечение по внимательности и работе с текстами (10/35). Опыт работы — 4 года, что соответствует требованиям по стажу (20/20), но условия по зарплате значительно выше максимума для вакансии (120 000 > 180 000), поэтому итоговый score ниже порога."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": true,
+          "score_abs_error": 14.0,
+          "role_abs_error": 0.0,
+          "skills_abs_error": 0.0,
+          "experience_abs_error": 0.0,
+          "conditions_abs_error": 14.0
+        }
+      }
+    },
+    {
+      "index": 8,
+      "metadata": {
+        "experiment_code": "HRA-EXP-V4",
+        "dataset_code": "HRA-EVAL-V4",
+        "case_code": "HRA-EVAL-V2-000212",
+        "case_type": "obvious_match",
+        "vacancy_title": "Системный аналитик",
+        "reference_score": 54.0,
+        "reference_decision": "no_match"
+      },
+      "reference": {
+        "role_score": 14.0,
+        "skills_score": 17.0,
+        "experience_score": 8.0,
+        "conditions_score": 15.0,
+        "score": 54.0,
+        "decision": "no_match",
+        "reason": "1. Должность: Кандидат не работал системным аналитиком, а занимался AI-автоматизацией и pet-проектами — это относительно близкая область (14/30).\n2. Навыки: Есть REST API и опыт автоматизации, но отсутствуют ключевые навыки системного аналитика — SQL, BPMN, постановка задач разработчикам, аналитика (17/35).\n3. Опыт: 2 года pet-проектов — это ниже типичных требований к системному аналитику, но опыт есть (8/20).\n4. Условия: Город и зарплатные ожидания полностью соответствуют (15/15).\nИтого: Кандидат не обладает профильным опытом и ключевыми навыками системного аналитика, поэтому score ниже порога."
+      },
+      "base_qwen": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000212",
+          "case_type": "obvious_match",
+          "vacancy_title": "Системный аналитик",
+          "reference_score": 54.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "score": 75,
+          "decision": "match",
+          "reason": "Кандидат имеет необходимые навыки (AI Automation, N8n, LLM, REST API) для работы на системном аналитика. Он также имеет опыт в автоматизации процессов и готов к взаимодействию с разработчиками."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 21.0,
+          "role_abs_error": null,
+          "skills_abs_error": null,
+          "experience_abs_error": null,
+          "conditions_abs_error": null
+        }
+      },
+      "lora": {
+        "metadata": {
+          "experiment_code": "HRA-EXP-V4",
+          "dataset_code": "HRA-EVAL-V4",
+          "case_code": "HRA-EVAL-V2-000212",
+          "case_type": "obvious_match",
+          "vacancy_title": "Системный аналитик",
+          "reference_score": 54.0,
+          "reference_decision": "no_match"
+        },
+        "parsed_output": {
+          "role_score": 17.0,
+          "skills_score": 19.0,
+          "experience_score": 18.0,
+          "conditions_score": 15.0,
+          "score": 79.0,
+          "decision": "match",
+          "reason": "1. Должность: Кандидат претендует на позицию AI Automation Enthusiast, что является смежной областью с системным анализом (17/30).\n2. Навыки: Есть опыт с REST API, автоматизацией (n8n), интеграцией LLM, prompt engineering, JSON, Python. Однако отсутствуют ключевые навыки SQL и BPMN (19/35).\n3. Опыт: 2 года релевантного опыта в смежной области, что соответствует минимальным требованиям (18/20).\n4. Условия: Город совпадает, зарплатные ожидания в бюджете (15/15).\nИтого: Кандидат подходит для роли системного аналитика, но есть пробелы по ключевым навыкам."
+        },
+        "metrics": {
+          "valid_json": true,
+          "decision_match": false,
+          "score_abs_error": 25.0,
+          "role_abs_error": 3.0,
+          "skills_abs_error": 2.0,
+          "experience_abs_error": 10.0,
+          "conditions_abs_error": 0.0
+        }
+      }
+    }
+  ]
+}

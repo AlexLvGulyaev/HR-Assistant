@@ -22,8 +22,7 @@ Experiment 002 ставил цель **улучшить качество matchin
 
 1. Увеличение LoRA rank с 8 до 16 (проверка гипотезы о недостаточной ёмкости адаптера Exp 001).
 2. Расширение target modules с attention-only (4) до attention + MLP (7) (проверка гипотезы о необходимости адаптации MLP-слоёв).
-3. Увеличение числа эпох и корректировка learning rate.
-4. Проверка поведения на runtime negative сценариях.
+3. Проверка поведения на runtime negative сценариях.
 
 ### 1.3. Почему этот эксперимент важен
 
@@ -207,6 +206,8 @@ Eval loss достиг плато на эпохах 2–3 и начал раст
 | LoRA Experiment 001 | 1.000 | 0.444 | 29.78 |
 | **LoRA Experiment 002** | **1.000** | **0.778** | **21.89** |
 
+> **Доказательство:** summary метрик и примеры Base vs LoRA — в [`data/evidence/experiment_002_generation_test_summary.json`](data/evidence/experiment_002_generation_test_summary.json); записи с ошибками (false positive / false negative) — в [`data/evidence/experiment_002_failure_modes.jsonl`](data/evidence/experiment_002_failure_modes.jsonl).
+
 ### 8.2. Интерпретация offline-метрик
 
 - `decision_accuracy` вырос с 0.444 (Exp 001 / base Qwen) до **0.778** — существенное улучшение matching.
@@ -222,7 +223,39 @@ Eval loss достиг плато на эпохах 2–3 и начал раст
 | 6 | obvious_no_match | Специалист по разметке данных | no_match (27) | match (72) | ❌ False positive |
 | 9 | borderline | Специалист по разметке данных | match (64) | no_match (40) | ❌ False negative |
 
+> **Доказательство:** полные `reference`, Base Qwen и LoRA prediction для кейсов с ошибками — в [`data/evidence/experiment_002_failure_modes.jsonl`](data/evidence/experiment_002_failure_modes.jsonl).
+
 Центральный false positive — кейс 6: кандидат-врач с 15-летним медицинским опытом получил `match` на вакансию «Специалист по разметке данных». Модель использовала нерелевантные сигналы (опыт, зарплата в бюджете) и проигнорировала отсутствие профильной базы. Этот кейс позже стал частью мотивации Experiment 003.
+
+#### Representative example: false positive
+
+**Candidate:** Врач с 15-летним медицинским опытом, навыки диагностики и лечения, зарплата 200 000 ₽.
+
+**Vacancy:** Специалист по разметке данных; требуется работа с текстом, внимательность, грамотный русский язык, понимание ИИ, следование инструкциям; бюджет 60 000–120 000 ₽.
+
+**Reference:** `no_match`, score 27.
+
+**Model prediction (LoRA Experiment 002):** `match`, score 72, с обоснованием, что медицинский опыт и soft skills делают кандидата подходящим.
+
+**Почему этот пример важен:** Наглядно показывает runtime-риск Exp 002: модель использовала нерелевантные сигналы (стаж, soft skills, зарплата в бюджете) и проигнорировала отсутствие профильной базы для IT-роли.
+
+**Evidence:** [`data/evidence/experiment_002_failure_modes.jsonl`](data/evidence/experiment_002_failure_modes.jsonl), запись `HRA-EVAL-V2-000020`, vacancy "Специалист по разметке данных".
+
+---
+
+#### Representative example: false negative
+
+**Candidate:** Content Manager, 2 года опыта, внимательность, грамотный русский язык, работа с текстами, зарплата 90 000 ₽.
+
+**Vacancy:** Специалист по разметке данных; требуется работа с текстом, внимательность, грамотный русский язык, понимание ИИ, следование инструкциям; бюджет 60 000–120 000 ₽.
+
+**Reference:** `match`, score 64.
+
+**Model prediction (LoRA Experiment 002):** `no_match`, score 40.
+
+**Почему этот пример важен:** Демонстрирует, что даже при offline accuracy 0.778 модель может ошибаться на borderline-кейсах, занижая score там, где teacher считает профиль подходящим.
+
+**Evidence:** [`data/evidence/experiment_002_failure_modes.jsonl`](data/evidence/experiment_002_failure_modes.jsonl), запись `HRA-EVAL-V2-000030`, vacancy "Специалист по разметке данных".
 
 ---
 
@@ -257,7 +290,7 @@ Positive сценарии прошли, но negative сценарии пров�
 
 ### 10.1. Проблема false positives
 
-Главная ошибка Experiment 002 — false positive на нерелевантном профиле. Модель придавала вес общим сигналам:
+Главная ошибка Experiment 002 — false positive на нерелевантном профиле. Конкретные примеры с `reference` и LoRA prediction — в [`data/evidence/experiment_002_failure_modes.jsonl`](data/evidence/experiment_002_failure_modes.jsonl). Модель придавала вес общим сигналам:
 
 - наличие опыта (любого);
 - зарплата в диапазоне бюджета;

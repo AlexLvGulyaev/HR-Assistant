@@ -134,7 +134,7 @@ graph TD
 - **Prompt Evaluation:** Активный, HRA-EXP-V1 завершён
 - **Fine-tuning:** Экспериментальный, Experiments 001–004 завершены; Experiment 004 — последний цикл
 - **Runtime Validation:** Инженерный стенд (Multi Provider Test workflow)
-- **Production Ready:** **Нет** — LoRA не обгоняет GPT-4o-mini на real-world hard negatives
+- **Production Ready:** **Нет** — LoRA не обгоняет GPT-4o-mini на real-world hard negatives (Telegram smoke 23 анкеты: LoRA 35 % vs GPT-4o-mini 43 %, см. [`finetuning/data/evidence/telegram_smoke_test_summary.json`](finetuning/data/evidence/telegram_smoke_test_summary.json))
 
 **Подробно:** [Архитектура экспериментального контура](docs/ARCHITECTURE.md#экспериментальный-ml-контур)
 
@@ -160,7 +160,37 @@ graph TD
 | **003** | Hard negatives в teacher dataset | Runtime negative smoke **7/7 pass**, offline accuracy снизилась до 0.667 |
 | **004** | Positive/borderline примеры + GPT-4o-mini comparison | Internal 0.933 / external 0.931 decision accuracy; real-world Telegram smoke 35 % vs GPT-4o-mini 43 % |
 
-**Вывод:** LoRA — рабочий on-premise / edge кандидат; production-контур по-прежнему использует GPT-4o-mini.
+**Вывод:** LoRA — рабочий on-premise / edge кандидат; production-контур по-прежнему использует GPT-4o-mini. Подтверждающие примеры — в [`finetuning/data/evidence/`](finetuning/data/evidence/).
+
+#### Representative example: успешный кейс Telegram smoke
+
+**Candidate:** AI Automation Specialist, 4 года опыта в prompt engineering, LLM, n8n, REST API, Python, зарплата 200 000 ₽.
+
+**Vacancy:** Prompt Engineer / AI Automation Specialist; бюджет 150 000–250 000 ₽, Москва.
+
+**Reference / expected:** `match`.
+
+**Model prediction (LoRA Experiment 004, vLLM):** `match`, score 93.
+
+**Почему этот пример важен:** Показывает, что LoRA умеет признавать явное соответствие — это baseline, который модель должна проходить стабильно, прежде чем претендовать на production.
+
+**Evidence:** [`finetuning/data/evidence/telegram_smoke_test_summary.json`](finetuning/data/evidence/telegram_smoke_test_summary.json), строка #22 (POSITIVE).
+
+---
+
+#### Representative example: неуспешный кейс Telegram smoke
+
+**Candidate:** Стажёр, 0 лет опыта, в резюме указан 1 навык SQL.
+
+**Vacancy:** Системный аналитик; требуется SQL, BPMN, REST API, аналитика, постановка задач разработчикам.
+
+**Reference / expected:** `no_match`.
+
+**Model prediction (LoRA Experiment 004, vLLM):** `match`, score 80, с обоснованием, приписывающим кандидату SQL, BPMN, REST API и аналитику, которых в резюме нет.
+
+**Почему этот пример важен:** Демонстрирует ключевой production-риск LoRA: галлюцинация hard-навыков у слабых профилей приводит к ложному положительному решению, поэтому LoRA уступает GPT-4o-mini на real-world hard negatives.
+
+**Evidence:** [`finetuning/data/evidence/telegram_smoke_test_summary.json`](finetuning/data/evidence/telegram_smoke_test_summary.json), строка #11 (HN6) и блок `representative_failures`.
 
 ### Следующий цикл
 
@@ -240,7 +270,7 @@ psql -U hr_user -d hr_assistant -f database/schema_hr_assistant.sql
 | Prompt Evaluation | ✅ Active (HRA-EXP-V1) |
 | Fine-tuning | ⚠️ Experimental (Experiments 001–004 completed; Experiment 004 latest) |
 | Runtime Validation | ⚠️ Engineering test only |
-| LoRA Production | ❌ Not ready (underperforms GPT-4o-mini on real-world hard negatives) |
+| LoRA Production | ❌ Not ready (underperforms GPT-4o-mini on real-world hard negatives; см. [`finetuning/data/evidence/telegram_smoke_test_summary.json`](finetuning/data/evidence/telegram_smoke_test_summary.json)) |
 
 **Подробно:** [PROJECT_STATE](docs/PROJECT_STATE.md)
 

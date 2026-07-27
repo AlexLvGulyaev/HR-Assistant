@@ -42,7 +42,7 @@
 | Prompt Evaluation | Active | ✅ 100% | HRA-EXP-V1 завершён, сформирован reference dataset |
 | Fine-tuning Infrastructure | Experimental | ✅ 100% | Каталог finetuning/, configs, scripts, runs, launch contract pattern |
 | Fine-tuning Experiment 003 | Completed | ✅ 100% | Runtime negative smoke пройден (7/7), offline decision accuracy на original test снизилась до 0.667 |
-| Fine-tuning Cycle 4 / Experiment 004 | Completed | ✅ 100% | External validation пройдена: LoRA 0.931 vs GPT-4o-mini 0.941 decision_accuracy на 102 парах (GPT-4o reference). LoRA является рабочим on-premise / edge кандидатом; production остаётся за GPT-4o-mini. |
+| Fine-tuning Cycle 4 / Experiment 004 | Completed | ✅ 100% | External validation пройдена: LoRA 0.931 vs GPT-4o-mini 0.941 на каноническом runtime (102 пары, GPT-4o reference). После vLLM-ускорения: LoRA 0.931 vs GPT-4o-mini 0.925 (3 повторных прогона, p95 latency ~2.1 сек). LoRA является рабочим on-premise / edge кандидатом; production остаётся за GPT-4o-mini из-за Telegram smoke 35% vs 43%. |
 | Runtime Smoke Validation | Engineering Test | ✅ 100% | Локальный `runtime_smoke_test.py` + Multi Provider Test workflow |
 | LoRA Model Production | Not Ready | ❌ 0% | LoRA не обгоняет GPT-4o-mini и не готова к production; открытые вопросы: score calibration, latency optimization, production smoke set |
 
@@ -79,12 +79,12 @@
 3. **⚠️ LoRA PRECISION / RECALL TRADE-OFF** (открыто 2026-07-22, частично устранён 2026-07-22)
    - **Описание:** Experiment 003 прошёл runtime negative smoke, но на original test set появились ложные отрицательные решения на genuine match-кейсах. Модель стала слишком консервативной после добавления hard negatives.
    - **Влияние:** LoRA-адаптер не может заменить GPT-4o-mini в production, но пригоден как on-premise / edge альтернатива.
-   - **Статус:** Частично устранён. Experiment 004 прошёл runtime smoke (7/7), достиг decision_accuracy 0.931 vs GPT-4o-mini 0.941 на внешней валидации (102 пары, GPT-4o reference). Latency optimization запущена 2026-07-22; score calibration (MAE 19.6 vs 6.2) остаётся открытым.
+   - **Статус:** Частично устранён. Experiment 004 прошёл runtime smoke (7/7). На внешней валидации HRA-EVAL-V5-EXT (102 пары, GPT-4o reference) LoRA достигла decision_accuracy 0.931 vs GPT-4o-mini 0.941 на каноническом runtime. После vLLM-ускорения (3 повторных прогона) LoRA достигла decision_accuracy 0.931 vs GPT-4o-mini 0.925 при сопоставимом p95 latency (~2.1 сек vs ~2.0 сек). Score calibration (MAE 19.6 vs 6.2) остаётся открытым.
    - **Ссылки:** [Experiment_003_Report.md](../finetuning/Experiment_003_Report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md), [teacher_dataset_report.md](../finetuning/reports/teacher_dataset_report.md)
    - **Рекомендации:** score calibration, vLLM/TGI inference, quantization, расширение teacher dataset, production smoke set.
 
 4. **🟡 VALIDATION ACCURACY VS PRODUCTION HARD NEGATIVES MISMATCH** (открыто 2026-07-22)
-   - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation, но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 9 из 36 hard-negative-like записей (25 %) размечены reference-teacher как `match` (Junior SA → SA, BA → SA, DA → SA, Senior BA с salary mismatch → SA). External validation V5-EXT содержит всего 17,6 % hard-negative-like записей и не покрывает ключевые failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах.
+   - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation (и 0.931 vs 0.925 GPT-4o-mini после vLLM-ускорения), но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 5 из 33 hard-negative-like записей (15 %) размечены reference-teacher как `match` (BA → SA, DA → SA и др.). External validation V5-EXT не покрывает ключевые failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах. Детальные примеры — в [`finetuning/data/evidence/telegram_smoke_test_summary.json`](finetuning/data/evidence/telegram_smoke_test_summary.json) и [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](finetuning/data/evidence/teacher_label_mismatch_v4.json).
    - **Влияние:** Метрика 0.931 создаёт ложное ощущение готовности LoRA к production; критические false positives (аналитики на SA, junior, salary mismatch) остаются незамеченными до реального тестирования.
    - **Статус:** Открыто. Решение: ввести stratified metrics и production smoke set.
    - **Ссылки:** [teacher_dataset_report.md](../finetuning/reports/teacher_dataset_report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md)
@@ -94,6 +94,18 @@
      - Сформировать production smoke set (~30–50 кейсов), покрывающий HN1–HN8, EC1, EC3, EC4, POSITIVE, OBVIOUSNOMATCH.
      - Перед следующим циклом дообучения ре-разметить hard negatives с жёстким критерием: без прямых ключевых навыков → `no_match`.
      - Добавить в teacher dataset extreme sparse profiles и salary mismatch.
+
+#### Representative example: teacher-label mismatch в production-like hard negative
+
+**Candidate:** Data Analyst, 4 года опыта, SQL, Python, BI, визуализация данных, Excel; без BPMN, REST API и опыта постановки задач разработчикам.
+
+**Vacancy:** Системный аналитик; требуется SQL, BPMN, REST API, аналитика, постановка задач разработчикам.
+
+**Teacher label (GPT-4.1):** `match`, score 71.
+
+**Почему этот пример важен:** Иллюстрирует причину расхождения между aggregate validation accuracy и production-качеством: teacher разметил hard-negative-like запись как `match`, поэтому LoRA наследует эту ошибку и принимает смежные роли без обязательных hard skills.
+
+**Evidence:** [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](finetuning/data/evidence/teacher_label_mismatch_v4.json), запись `HRA-EVAL-V2-000103`, vacancy "Системный аналитик".
 
 ---
 
@@ -369,7 +381,7 @@
 **Цель:** Устранить mismatch между validation accuracy и production-качеством на hard negatives; подготовить метрики и production smoke set для принятия решения о внедрении LoRA.
 
 **Контекст:**
-- Teacher dataset V4 содержит hard negatives, размеченные как `match` (9 / 36 hard-negative-like записей).
+- Teacher dataset V4 содержит hard negatives, размеченные как `match` (5 / 33 hard-negative-like записей). Детали — в [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](finetuning/data/evidence/teacher_label_mismatch_v4.json).
 - External validation V5-EXT недостаточно покрывает production-failure modes (процессный аналитик, salary mismatch 450k, extreme sparse junior).
 - Telegram smoke test показал: LoRA 35 %, GPT-4o-mini 43 % на 23 hard-negative/edge анкетах.
 
