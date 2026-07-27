@@ -433,6 +433,7 @@ Latency измеряется на стороне клиента (n8n / скри�
 | Документ | Назначение |
 |----------|-----------|
 | [`README.md`](README.md) | Точка входа в подсистему fine-tuning |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Архитектура экспериментального контура, инфраструктура, жизненный цикл и эволюция экспериментов |
 | [`Experiment_001_Report.md`](Experiment_001_Report.md) | Базовый LoRA baseline, проверка технического пайплайна |
 | [`Experiment_002_Report.md`](Experiment_002_Report.md) | Улучшение параметров LoRA, runtime negative failure |
 | [`Experiment_003_Report.md`](Experiment_003_Report.md) | Hard negative teacher dataset, runtime smoke, precision/recall trade-off |

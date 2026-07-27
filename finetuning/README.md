@@ -124,6 +124,7 @@ Production Verdict
 
 | Документ | Назначение |
 |----------|-----------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Архитектура экспериментального контура, инфраструктура, жизненный цикл и эволюция экспериментов |
 | [TECHNICAL_FOUNDATION.md](TECHNICAL_FOUNDATION.md) | Базовая модель, LoRA, инфраструктура, метрики, общий воспроизводимый пайплайн |
 | [Experiment_001_Report.md](Experiment_001_Report.md) | Базовый LoRA baseline, проверка технического пайплайна |
 | [Experiment_002_Report.md](Experiment_002_Report.md) | Улучшение параметров LoRA, runtime negative failure |
