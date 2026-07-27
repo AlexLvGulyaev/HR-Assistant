@@ -24,7 +24,7 @@
 
 ### Публичный кейс
 
-- **[Storytelling Landing](landing/README.md)** — кинематографический лендинг экспериментов LoRA: `https://hra-lora.alex-n8n.site`
+- **[Storytelling Landing](finetuning/landing/README.md)** — кинематографический лендинг экспериментов LoRA: `https://hra-lora.alex-n8n.site`
 
 ### Для инженера
 

@@ -2,21 +2,22 @@
 
 **Target URL:** `https://hra-lora.alex-n8n.site`
 
-This document is the Source of Truth for deploying the static storytelling landing page.
+This document is the Source of Truth for deploying the static storytelling landing page for the [HR Assistant LoRA fine-tuning module](../README.md).
 
 ---
 
 ## What is being deployed
 
-A self-contained static landing page located in `landing/`:
+A self-contained static landing page located in `finetuning/landing/`:
 
-- `index.html` — single-page film with 20 scenes based on `hra_lora_narrative_blueprint_v2.md`, including a "Dramatis Personae" glossary scene
+- `index.html` — single-page film with 20 scenes based on [`docs/hra_lora_narrative_blueprint_v2.md`](docs/hra_lora_narrative_blueprint_v2.md), including a "Dramatis Personae" glossary scene
 - `css/main.css` — styles, animations, responsive layout
 - `js/app.js` — scene navigation, keyboard shortcuts, scroll animations, Lumina SVG generator, data binding
 - `data/experimentData.js` — extracted experiment metrics and source inventory (auto-generated)
 - `assets/visuals/*.svg` — generated engineering graphs and diagrams
 - `archive/v1/` — first landing version (preserved, not served by default)
 - `archive/v2/` — second landing version (preserved, not served by default)
+- `docs/` — internal design and research artifacts (excluded from the Docker image via `.dockerignore`)
 
 No build step, no server-side runtime, no API calls at page load.
 
@@ -33,7 +34,7 @@ No build step, no server-side runtime, no API calls at page load.
 ## Local preview
 
 ```bash
-cd landing
+cd finetuning/landing
 python3 -m http.server 8765
 ```
 
@@ -60,8 +61,9 @@ This is the deployment method used for `https://hra-lora.alex-n8n.site`.
 ### Files
 
 - `cases/hr-assistant/docker-compose.yml` — orchestration
-- `landing/Dockerfile` — nginx image
-- `landing/nginx.conf` — nginx configuration
+- `finetuning/landing/Dockerfile` — nginx image
+- `finetuning/landing/nginx.conf` — nginx configuration
+- `finetuning/landing/.dockerignore` — excludes `docs/` and local artifacts from the image
 - `/opt/n8n/dynamic.yml` — Traefik router/service definition
 
 ### Deploy
@@ -119,10 +121,10 @@ hra-lora.alex-n8n.site {
 }
 ```
 
-Copy the `landing/` contents to the web root:
+Copy the `finetuning/landing/` contents to the web root:
 
 ```bash
-rsync -av --delete landing/ /var/www/hra-lora/
+rsync -av --delete finetuning/landing/ /var/www/hra-lora/
 ```
 
 Reload Caddy:
@@ -177,12 +179,12 @@ After deploying, verify:
 If experiment artifacts change, regenerate the data and graphs:
 
 ```bash
-cd landing/data
+cd finetuning/landing/data
 python3 extract_data.py
 python3 generate_graphs.py
 ```
 
-Then re-deploy the `landing/` directory.
+Then re-deploy the `finetuning/landing/` directory.
 
 ---
 

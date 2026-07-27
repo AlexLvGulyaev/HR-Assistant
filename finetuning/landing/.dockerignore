@@ -1,0 +1,16 @@
+# Internal landing documentation — not part of the public static site
+docs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local environment
+.env
+.env.*
+
+# Local build / preview artifacts
+node_modules/
+dist/
+*.log
+.DS_Store

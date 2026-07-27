@@ -131,6 +131,7 @@ Production Verdict
 | [Experiment_004_Report.md](Experiment_004_Report.md) | Сбалансированный dataset, GPT-4o-mini comparison, external validation, real-world Telegram smoke test |
 | [reports/teacher_dataset_report.md](reports/teacher_dataset_report.md) | Состав и структура teacher dataset |
 | [reports/external_validation_report.md](reports/external_validation_report.md) | Состав внешнего датасета HRA-EVAL-V5-EXT |
+| [landing/README.md](landing/README.md) | Визуальная презентация экспериментов: storytelling landing |
 
 ### Публичные артефакты-доказательства
 
