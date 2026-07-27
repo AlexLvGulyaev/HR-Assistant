@@ -69,6 +69,6 @@ python3 generate_graphs.py
 |----------|---------|
 | [../README.md](../README.md) | Fine-tuning module: experiments, metrics, evidence |
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Production deployment, Docker, Traefik, Caddy, nginx |
-| [`docs/hra_lora_narrative_blueprint_v2.md`](docs/hra_lora_narrative_blueprint_v2.md) | Narrative blueprint: 20 scenes, dramaturgy, messaging |
-| [`docs/visual_assets_registry.md`](docs/visual_assets_registry.md) | Visual assets registry: 57 G/T/D/C elements |
-| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | Landing rework project plan (phases 1–8) |
+| [NARRATIVE_BLUEPRINT.md](NARRATIVE_BLUEPRINT.md) | Narrative blueprint: 20 scenes, dramaturgy, messaging |
+| [VISUAL_ASSETS_REGISTRY.md](VISUAL_ASSETS_REGISTRY.md) | Visual assets registry: 57 G/T/D/C elements |
+| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Landing rework project plan (phases 1–8) |

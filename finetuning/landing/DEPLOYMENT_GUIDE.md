@@ -10,14 +10,14 @@ This document is the Source of Truth for deploying the static storytelling landi
 
 A self-contained static landing page located in `finetuning/landing/`:
 
-- `index.html` — single-page film with 20 scenes based on [`docs/hra_lora_narrative_blueprint_v2.md`](docs/hra_lora_narrative_blueprint_v2.md), including a "Dramatis Personae" glossary scene
+- `index.html` — single-page film with 20 scenes based on [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md), including a "Dramatis Personae" glossary scene
 - `css/main.css` — styles, animations, responsive layout
 - `js/app.js` — scene navigation, keyboard shortcuts, scroll animations, Lumina SVG generator, data binding
 - `data/experimentData.js` — extracted experiment metrics and source inventory (auto-generated)
 - `assets/visuals/*.svg` — generated engineering graphs and diagrams
 - `archive/v1/` — first landing version (preserved, not served by default)
 - `archive/v2/` — second landing version (preserved, not served by default)
-- `docs/` — internal design and research artifacts (excluded from the Docker image via `.dockerignore`)
+- Internal design and research artifacts are archived in `task_history/attachments/landing_internal/` (excluded from the Docker image via `.dockerignore`).
 
 No build step, no server-side runtime, no API calls at page load.
 
