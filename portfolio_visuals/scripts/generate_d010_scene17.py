@@ -2,7 +2,7 @@
 """Generate D-010-dataset-change-log.svg for landing scene 17."""
 import os
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "landing", "assets", "visuals")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "finetuning", "landing", "assets", "visuals")
 OUTPUT_PATH = os.path.join(OUTPUT_DIR, "D-010-dataset-change-log.svg")
 
 VIEWBOX_W, VIEWBOX_H = 800, 450

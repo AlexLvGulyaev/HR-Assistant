@@ -14,7 +14,7 @@ The hero of the story is the language model itself. The film follows Qwen2.5-1.5
 - Left-side scene dossier with click and keyboard navigation
 - Inline SVG model hero (Lumina) and generated engineering graphs/diagrams
 - Scroll-triggered animations
-- All numbers traceable to JSON source files in `finetuning/runs/`
+- All numbers traceable to public evidence files in [`finetuning/data/evidence/`](../finetuning/data/evidence/) and auto-generated `data/experimentData.*`
 - Fully responsive layout
 
 ---

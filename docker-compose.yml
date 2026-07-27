@@ -10,7 +10,7 @@
 services:
   hra-lora:
     build:
-      context: ./landing
+      context: ./finetuning/landing
       dockerfile: Dockerfile
     container_name: hra-lora
     restart: always

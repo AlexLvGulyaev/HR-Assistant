@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]  # cases/hr-assistant
 OUT_SVG = ROOT / "portfolio_visuals" / "svg" / "D-008-proven-partial-next.svg"
-LANDING_SVG = ROOT / "landing" / "assets" / "visuals" / "D-008-proven-partial-next.svg"
+LANDING_SVG = ROOT / "finetuning" / "landing" / "assets" / "visuals" / "D-008-proven-partial-next.svg"
 
 # --- Палитра ----------------------------------------------------------------
 BG = "#0d0d10"

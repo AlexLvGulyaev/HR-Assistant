@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "portfolio_visuals" / "data"
-SVG_DIR = ROOT / "landing" / "assets" / "visuals"
+SVG_DIR = ROOT / "finetuning" / "landing" / "assets" / "visuals"
 PNG_DIR = ROOT / "portfolio_visuals" / "png"
 
 DARK_BG = "#0d1117"

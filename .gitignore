@@ -7,7 +7,7 @@ attachments/
 # ============================================================
 # Internal landing design and research artifacts
 # ============================================================
-landing/docs/
+finetuning/landing/docs/
 
 # ============================================================
 # Fine-tuning datasets, training runs, checkpoints and model weights

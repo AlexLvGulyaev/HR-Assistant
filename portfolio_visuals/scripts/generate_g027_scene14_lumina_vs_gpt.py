@@ -7,7 +7,7 @@ Visual concept (adapted for blueprint v2):
   - Right: GPT-4o-mini reference — smaller, muted, angular/brutal cloud-AI form (steel blue-grey).
   - Bottom: comparison metric cards (LoRA vs GPT) from optimized external validation.
 
-Data source: landing/data/experimentData.js via the optimized external validation summary
+Data source: finetuning/landing/data/experimentData.js via the optimized external validation summary
 (102 records, vLLM + warm process).
 """
 
@@ -17,8 +17,8 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path("/opt/ai-automation-portfolio-lab/cases/hr-assistant")
-EXPERIMENT_DATA = ROOT / "landing/data/experimentData.js"
-OUT_SVG_LANDING = ROOT / "landing/assets/visuals/G-027-lumina-vs-gpt.svg"
+EXPERIMENT_DATA = ROOT / "finetuning/landing/data/experimentData.js"
+OUT_SVG_LANDING = ROOT / "finetuning/landing/assets/visuals/G-027-lumina-vs-gpt.svg"
 OUT_SVG_PORTFOLIO = ROOT / "portfolio_visuals/svg/G-027-lumina-vs-gpt.svg"
 
 # Palette

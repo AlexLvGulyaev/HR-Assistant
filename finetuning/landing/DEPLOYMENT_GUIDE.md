@@ -188,7 +188,7 @@ Then re-deploy the `landing/` directory.
 
 ## Notes
 
-- The page follows the narrative blueprint in `landing/docs/hra_lora_narrative_blueprint_v2.md`.
+- The page follows a narrative blueprint that maps LoRA experiments to the storytelling structure.
 - The visual hero is an inline SVG symbol representing the model; no external illustration dependencies.
 - All numbers on the page are traceable to JSON source files listed in `experimentData.js`.
 - `experimentData.js` is auto-generated; do not edit manually.

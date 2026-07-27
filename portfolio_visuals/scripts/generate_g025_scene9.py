@@ -25,7 +25,7 @@ REPORTS = {
     "004": ROOT / "finetuning/runs/experiment_004/generation_test/generation_test_report.json",
 }
 
-OUT_SVG_LANDING = ROOT / "landing/assets/visuals/G-025-balance-dataset-and-metrics.svg"
+OUT_SVG_LANDING = ROOT / "finetuning/landing/assets/visuals/G-025-balance-dataset-and-metrics.svg"
 OUT_SVG_PORTFOLIO = ROOT / "portfolio_visuals/svg/G-025-balance-dataset-and-metrics.svg"
 
 

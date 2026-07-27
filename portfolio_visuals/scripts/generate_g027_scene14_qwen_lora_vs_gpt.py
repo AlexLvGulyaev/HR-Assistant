@@ -17,8 +17,8 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path("/opt/ai-automation-portfolio-lab/cases/hr-assistant")
-EXPERIMENT_DATA = ROOT / "landing/data/experimentData.js"
-OUT_SVG_LANDING = ROOT / "landing/assets/visuals/G-027-qwen-lora-vs-gpt.svg"
+EXPERIMENT_DATA = ROOT / "finetuning/landing/data/experimentData.js"
+OUT_SVG_LANDING = ROOT / "finetuning/landing/assets/visuals/G-027-qwen-lora-vs-gpt.svg"
 OUT_SVG_PORTFOLIO = ROOT / "portfolio_visuals/svg/G-027-qwen-lora-vs-gpt.svg"
 
 # Palette

@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path("/opt/ai-automation-portfolio-lab/cases/hr-assistant")
-OUT_SVG_LANDING = ROOT / "landing/assets/visuals/G-026-smoke-repeatability-matrix.svg"
+OUT_SVG_LANDING = ROOT / "finetuning/landing/assets/visuals/G-026-smoke-repeatability-matrix.svg"
 OUT_SVG_PORTFOLIO = ROOT / "portfolio_visuals/svg/G-026-smoke-repeatability-matrix.svg"
 
 

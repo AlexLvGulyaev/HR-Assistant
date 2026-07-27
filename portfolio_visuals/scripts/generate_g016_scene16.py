@@ -11,7 +11,7 @@ Facts (source: trainer_state.json in each experiment run):
 
 import os
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "landing", "assets", "visuals")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "finetuning", "landing", "assets", "visuals")
 OUTPUT_PATH = os.path.join(OUTPUT_DIR, "G-016-best-epoch-markers.svg")
 
 VIEWBOX_W, VIEWBOX_H = 800, 420

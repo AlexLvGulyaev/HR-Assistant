@@ -19,7 +19,7 @@ from pathlib import Path
 # --- Пути -------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[2]  # cases/hr-assistant
 OUT_SVG = ROOT / "portfolio_visuals" / "svg" / "G-012-latency-stage-breakdown.svg"
-LANDING_SVG = ROOT / "landing" / "assets" / "visuals" / "G-012-latency-stage-breakdown.svg"
+LANDING_SVG = ROOT / "finetuning" / "landing" / "assets" / "visuals" / "G-012-latency-stage-breakdown.svg"
 
 DATA_SOURCE = ROOT / "finetuning" / "data" / "latency_stage_profile.json"
 

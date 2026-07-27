@@ -20,7 +20,7 @@ ROOT = Path("/opt/ai-automation-portfolio-lab/cases/hr-assistant")
 TRAINER_STATE = ROOT / "finetuning/runs/experiment_004/trainer_state.json"
 GEN_TEST = ROOT / "finetuning/runs/experiment_004/generation_test/generation_test_report.json"
 
-OUT_SVG_LANDING = ROOT / "landing/assets/visuals/G-028-exp004-epoch-breakdown.svg"
+OUT_SVG_LANDING = ROOT / "finetuning/landing/assets/visuals/G-028-exp004-epoch-breakdown.svg"
 OUT_SVG_PORTFOLIO = ROOT / "portfolio_visuals/svg/G-028-exp004-epoch-breakdown.svg"
 
 # Palette (matches landing dark theme)

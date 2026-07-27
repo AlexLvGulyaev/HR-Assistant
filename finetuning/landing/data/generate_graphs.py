@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from math import pi, cos, sin
 
-ROOT = Path(__file__).resolve().parent.parent.parent / "finetuning" / "runs"
-OUT = Path(__file__).resolve().parent.parent / "assets" / "visuals"
+ROOT = Path(__file__).resolve().parents[3] / "finetuning" / "runs"
+OUT = Path(__file__).resolve().parents[2] / "assets" / "visuals"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # Landing palette

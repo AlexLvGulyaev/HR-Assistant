@@ -3,9 +3,9 @@
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent / "finetuning" / "runs"
-DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "finetuning" / "data"
-CONFIGS_ROOT = Path(__file__).resolve().parent.parent.parent / "finetuning" / "configs"
+ROOT = Path(__file__).resolve().parents[3] / "finetuning" / "runs"
+DATA_ROOT = Path(__file__).resolve().parents[3] / "finetuning" / "data"
+CONFIGS_ROOT = Path(__file__).resolve().parents[3] / "finetuning" / "configs"
 
 
 def load(path):
