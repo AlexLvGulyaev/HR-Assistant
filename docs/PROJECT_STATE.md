@@ -405,35 +405,16 @@
 
 ---
 
-### Phase 1: Документация кейса HR Assistant (приоритет: высокий)
+### Phase 1: Документация кейса HR Assistant (приоритет: высокий) ✅ ЗАВЕРШЁН
 
-**Цель:** Создать оставшиеся документы customer / user / operator layers по стандартам APL.
+**Документационный пакет корневой документации создан полностью (2026-06-23, «Documentation Complete» — см. Status History) и верифицирован SOT-аудитом (2026-06-24).** Фактическая база `docs/` включает все документы из этого плана и больше:
 
-**Примечание:** Fine-tuning Documentation Package завершён. Этот phase относится к корневой документации кейса, а не к `finetuning/`.
+- **Customer Facing Layer:** BUSINESS_VALUE.md, E2E_SCENARIOS.md, NARRATIVE_BLUEPRINT.md
+- **User / Operator Layer:** USER_GUIDE.md, HR_GUIDE.md, SUPPORT_RUNBOOK.md
+- **Engineering Layer:** ARCHITECTURE.md, DEPLOYMENT_GUIDE.md, AI_QUALIFICATION.md, AUTOMATION_PASSPORT.md, INTEGRATION_DIAGRAM.md, CHANGE_LOG.md, MULTI_PROVIDER_ARCHITECTURE.md, EXPERIMENTAL_ML_PIPELINE.md, PROMPT_ENGINEERING_GUIDE.md, WORKFLOW_MODIFICATION_GUIDE.md
+- **Плюс:** SPEC.md, SUCCESS_METRICS.md, PROJECT_HANDOFF_CHECKLIST.md, known-issues.md, PROJECT_STATE.md, screenshots/
 
-**Задачи:**
-
-#### Customer Facing Layer (2 документа)
-
-- [ ] Создать BUSINESS_VALUE.md — бизнес-ценность, проблемы, решение, эффект
-- [ ] Создать E2E_SCENARIOS.md — сквозные сценарии использования
-
-#### User / Operator Layer (3 документа)
-
-- [ ] Создать USER_GUIDE.md — руководство кандидата (отправка резюме через Telegram)
-- [ ] Создать HR_GUIDE.md — руководство HR-специалиста (работа с результатами matching)
-- [ ] Создать SUPPORT_RUNBOOK.md — инструкция для сопровождения
-
-#### Engineering Layer (6 документов)
-
-- [ ] Создать ARCHITECTURE.md — архитектура системы, компоненты, потоки данных
-- [ ] Создать DEPLOYMENT_GUIDE.md — инструкция по развёртыванию
-- [ ] Создать AI_QUALIFICATION.md — промпты, модели, параметры
-- [ ] Создать AUTOMATION_PASSPORT.md — паспорт автоматизации
-- [ ] Создать INTEGRATION_DIAGRAM.md — схема интеграций
-- [ ] Создать CHANGE_LOG.md — журнал изменений
-
-**Срок:** 3-5 дней
+> Исторический чек-лист этого Phase (11 пунктов «создать …») удалён 01.09.2026 как не соответствующий факту: все перечисленные документы существуют с июня 2026. Устаревшая запись дезориентировала аудит корпуса (PORTFOLIO_CORPUS_AUDIT) и планирование.
 
 ---
 
@@ -497,30 +478,9 @@
 
 ---
 
-## Documentation Roadmap
+## Documentation Roadmap — ✅ выполнен
 
-### Приоритеты создания документов
-
-| Приоритет | Документы | Количество |
-|-----------|-----------|------------|
-| 🔴 Высокий | BUSINESS_VALUE.md, E2E_SCENARIOS.md, USER_GUIDE.md, HR_GUIDE.md, SUPPORT_RUNBOOK.md | 5 |
-| 🟡 Средний | ARCHITECTURE.md, DEPLOYMENT_GUIDE.md, AI_QUALIFICATION.md, AUTOMATION_PASSPORT.md, INTEGRATION_DIAGRAM.md, CHANGE_LOG.md | 6 |
-| 🟢 Низкий | SYSTEM_DEMO.md, ADMIN_GUIDE.md, FAQ.md, SECURITY_NOTES.md, PROJECT_HISTORY.md, SCREENSHOTS.md, MULTIMODALITY.md, ECONOMICS.md | 8 |
-
-### Источники материалов
-
-| Документ | Источник |
-|----------|----------|
-| BUSINESS_VALUE.md | PDF-001 (Раздел 1, 10), PDF-002 |
-| E2E_SCENARIOS.md | PDF-001 (Приложение 3, 4), IMG-006–IMG-015 |
-| USER_GUIDE.md | PDF-001 (Приложение 3, 4), IMG-006–IMG-015, LQ USER_GUIDE |
-| HR_GUIDE.md | PDF-001 (Раздел 4-7), operator_guide_template.pdf, LQ MANAGER_GUIDE |
-| SUPPORT_RUNBOOK.md | PDF-001 (Раздел 8, Приложение 8), known-issues.md |
-| ARCHITECTURE.md | PDF-001 (Раздел 3), IMG-001 |
-| DEPLOYMENT_GUIDE.md | PDF-001 (Раздел 11, Приложение 9), YAML-001 |
-| AI_QUALIFICATION.md | PDF-001 (Приложение 6) |
-| AUTOMATION_PASSPORT.md | PDF-001 (Раздел 1, 2, 12), Automation Passport Template |
-| INTEGRATION_DIAGRAM.md | PDF-001 (Приложение 8), IMG-018–IMG-022 |
+Документационный пакет создан полностью (2026-06-23) и верифицирован SOT-аудитом (2026-06-24). Исторический план создания (приоритеты «высокий/средний/низкий» на 19 документов и таблица источников материалов) удалён 01.09.2026 как исполненный — актуальный состав документации см. в Phase 1 (✅) и разделе Documentation Status. Таблица источников сохранена в истории git (до 01.09.2026).
 
 ---
 
@@ -528,11 +488,9 @@
 
 ### Созданные документы
 
-- [SPEC.md](SPEC.md) — Спецификация системы
-- [known-issues.md](known-issues.md) — Известные проблемы
-- [../README.md](../README.md) — Описание кейса
-- [../workflows/README.md](../workflows/README.md) — Описание workflow
-- [../database/README.md](../database/README.md) — Описание схемы БД
+Корневая документация кейса (`docs/`): SPEC.md, BUSINESS_VALUE.md, E2E_SCENARIOS.md, NARRATIVE_BLUEPRINT.md, USER_GUIDE.md, HR_GUIDE.md, SUPPORT_RUNBOOK.md, ARCHITECTURE.md, DEPLOYMENT_GUIDE.md, AI_QUALIFICATION.md, AUTOMATION_PASSPORT.md, INTEGRATION_DIAGRAM.md, CHANGE_LOG.md, MULTI_PROVIDER_ARCHITECTURE.md, EXPERIMENTAL_ML_PIPELINE.md, PROMPT_ENGINEERING_GUIDE.md, WORKFLOW_MODIFICATION_GUIDE.md, SUCCESS_METRICS.md, PROJECT_HANDOFF_CHECKLIST.md, known-issues.md, PROJECT_STATE.md.
+
+Прочее: [README.md](../README.md) — описание кейса, [workflows/README.md](../workflows/README.md) — описание workflow, [database/README.md](../database/README.md) — описание схемы БД, `finetuning/` — пакет документации fine-tuning контура.
 
 ---
 
@@ -540,6 +498,7 @@
 
 | Дата | Статус | Изменение |
 |------|--------|-----------|
+| 2026-09-01 | Documentation Debt Removed | Из PROJECT_STATE удалён устаревший «долг» Phase 1 (11 чек-боксов «создать …»): все документы существуют с 23.06.2026 и верифицированы SOT-аудитом 24.06.2026; Documentation Roadmap помечен выполненным. Устаревшая запись дезориентировала аудит корпуса — реальный открытый долг кейса: Phase 0d (hard-negative fix + production smoke set), Phase 2 (metadata + credentials) |
 | 2026-07-22 | Validation vs Production Mismatch | Анализ teacher dataset и external validation объяснил расхождение: hard negatives часто размечены как match, external validation не покрывает Telegram-failure modes; введён Phase 0d с stratified metrics и production smoke set |
 | 2026-07-22 | Fine-tuning Experiment 003 | Runtime negative smoke пройден (7/7), но decision accuracy на original test снизилась (−11.1 pp); гипотеза подтверждена частично, модель не production-ready |
 | 2026-06-28 | Fine-tuning Experiment 002 | Лучший результат offline, failed negative smoke test, не production-ready |
