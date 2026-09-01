@@ -123,7 +123,22 @@
 
 ---
 
+## Portfolio Light / Dark Images (HRA LoRA)
+
+| ID | File | Caption |
+|----|------|---------|
+| HRA-LORA-LIGHT | `raw/HRA-Lora_portfolio_light.png` | Portfolio preview image for HRA LoRA — Light theme |
+| HRA-LORA-DARK | `raw/HRA-Lora_portfolio_dark.png` | Portfolio preview image for HRA LoRA — Dark theme |
+
+**Usage:**
+- Reference from `cases/hr-assistant/finetuning/landing/` portfolio materials and case README.
+
+---
+
 ## Corrections History
+
+**2026-08-22:**
+- Added Portfolio Light / Dark Images section for HRA LoRA.
 
 **2026-06-25:**
 - Добавлена секция Prompt Evaluation Screenshots

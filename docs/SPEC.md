@@ -293,7 +293,7 @@ graph TB
    - `subject` (TEXT)
    - `body` (TEXT)
    - `reply_markup` (JSONB)
-   - `metadata` (JSONB) **← КРИТИЧЕСКОЕ ПОЛЕ**
+   - `metadata` (JSONB) — контракт Delivery Worker (TTS/visual), формат ниже
    - `error_text` (TEXT)
    - `status` (TEXT)
    - `sent_at` (TIMESTAMPTZ)
@@ -443,6 +443,25 @@ graph TB
 
 **FR-016:** Система должна генерировать визуальные материалы при наличии `metadata.visual_required`.
 
+#### Контракт metadata (outbox, KP-001 fix, 2026-09-01)
+
+Заполняется Processing Worker (узел "Build TG response"), потребляется Delivery Worker:
+
+| Ключ | Тип | Значение |
+|------|-----|----------|
+| `tts_required` | bool | всегда `true` для карточек ответа (голосовое озвучивание текста) |
+| `tts_text` | string | связный текст озвучки: кандидат + вакансия + «Совпадение N из 100» + reason (срез 300 симв.); для no_match — вежливый отказ |
+| `visual_required` | bool | `true` только при наличии совпадения (`has_match`) |
+| `visual_prompt` | string \| null | контекстный промпт gpt-image-1: кандидат, вакансия, score, reason + стилистика инфографики; для no_match — `null` |
+| `visual_title` | string | заголовок карточки |
+| `visual_score` | number | score совпадения |
+| `visual_candidate_name` | string \| null | имя кандидата |
+| `visual_vacancy_title` | string | название вакансии |
+
+Распределение по типам сообщений: **match_card** → TTS + visual; **no_match** → TTS только; ветки ошибок → `metadata = NULL` (безопасные дефолты — IF-узлы Delivery Worker гейтятся на `=== true`).
+
+> Примечание (живая проверка 01.09.2026): `tts_text: null` / `visual_prompt: null` допустимы (fallback-режим), но дают худший результат — озвучку сырой карточки (английские токены вакансии, «100/100») и генерическую картинку без контекста кандидата. Прод-логика Processing Worker формирует оба значения контекстно.
+
 ### 3.5 Отправка ответа
 
 **FR-017:** Система должна отправлять сообщения через Telegram Bot API.
@@ -519,9 +538,9 @@ graph TB
 
 **Влияние:** TTS и visual generation используют fallback-значения вместо реальных данных.
 
-**Статус:** Открыто.
+**Статус:** ✅ Fixed (2026-09-01).
 
-**Решение:** Добавить заполнение metadata в Processing Worker INSERT запросы.
+**Решение:** Processing Worker заполняет `metadata` во всех 5 INSERT в `outbox` (обе версии workflow): ветки результатов — полный контракт (см. FR-016 «Контракт metadata»), ветки ошибок — NULL. Контракт с Delivery Worker сверен по обеим сторонам. Живая проверка TTS/visual — на живом инстансе (приёмка владельца).
 
 ### 6.2 Средние
 

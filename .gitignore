@@ -10,6 +10,11 @@ attachments/
 finetuning/landing/docs/
 
 # ============================================================
+# Legacy portfolio visuals generator (moved to task_history/attachments/landing_internal)
+# ============================================================
+portfolio_visuals/
+
+# ============================================================
 # Fine-tuning datasets, training runs, checkpoints and model weights
 # ============================================================
 finetuning/runs/

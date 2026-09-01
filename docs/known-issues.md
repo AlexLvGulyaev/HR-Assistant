@@ -1,6 +1,6 @@
 # Known Issues: HR Assistant
 
-**Last Updated:** 2026-06-24
+**Last Updated:** 2026-09-01
 
 ---
 
@@ -10,9 +10,11 @@
 
 **Приоритет:** 🔴 Critical
 
-**Статус:** Open
+**Статус:** ✅ Fixed (2026-09-01)
 
 **Дата выявления:** 2026-06-23
+
+**Дата исправления:** 2026-09-01
 
 **Описание:**
 
@@ -75,30 +77,35 @@ VALUES (...)
 
 Поле `metadata` было добавлено в БД (ALTER TABLE), обработка была добавлена в Delivery Worker, но INSERT-запросы в Processing Worker не были обновлены.
 
-**Решение:**
+**Решение (выполнено 2026-09-01):**
 
-1. Определить источник данных для metadata полей
-2. Добавить заполнение metadata в Processing Worker:
-   ```sql
-   INSERT INTO outbox (
-       ...,
-       metadata
-   )
-   VALUES (
-       ...,
-       '{{ JSON.stringify($json.metadata).replace(/'/g, "''") }}'::jsonb
-   )
-   ```
-3. Протестировать TTS и visual generation
-4. Документировать формат metadata
+1. ✅ Источник metadata определён — узел `Build TG response` Processing Worker (там доступны candidate, score, title)
+2. ✅ INSERT запросы обновлены в обоих файлах workflow (`HR Processing Worker.json`, `HR Processing Worker - Multi Provider Test.json`), все 5 мест:
+   - ветки результатов (match_card, no_match, invalid, JSON error, processing) → колонка `metadata` со значением `NULLIF('{{ JSON.stringify($json.metadata || null) }}', 'null')::jsonb`
+   - ветка processing-error (нет reply_markup) → `metadata = NULL`
+3. ✅ Формат metadata документирован в `SPEC.md` (раздел «Контракт metadata», FR-015/016)
+4. ✅ Живая проверка TTS и visual generation на живом n8n/Telegram (2026-09-01): match_card доставлен с полным metadata; голос — связный русский текст; картинка — карточка с кандидатом/вакансией/скором. Приёмка владельца пройдена. После первой итерации контракта (`tts_text: null` → fallback озвучивал сырую карточку с английскими токенами; `visual_prompt: null` → генерический промпт без контекста) значения tts_text и visual_prompt заменены на связные контекстные, формируемые в Processing Worker
 
-**Требуется:**
+**Исправление:**
 
-- [ ] Определить источник metadata
-- [ ] Обновить INSERT запросы в Processing Worker (5 мест)
-- [ ] Протестировать TTS generation
-- [ ] Протестировать Visual generation
-- [ ] Документировать формат metadata в SPEC.md
+Узел `Build TG response` теперь формирует объект `metadata`:
+
+```javascript
+metadata: {
+  tts_required: true,                       // карточка всегда озвучивается
+  tts_text: null,                           // fallback: body без emoji (500 симв.)
+  visual_required: Boolean($json.has_match),// visual только при совпадении
+  visual_prompt: null,                      // fallback-промпт Delivery Worker
+  visual_title: title,
+  visual_score: score,
+  visual_candidate_name: String($json.candidate?.full_name || '').trim() || null,
+  visual_vacancy_title: title
+}
+```
+
+**Распределение по типам сообщений:** match_card → TTS + visual; no_match → TTS; ветки ошибок → `metadata = NULL` (IF-узлы Delivery Worker гейтятся на `=== true`, поэтому отсутствие/NULL metadata безопасно — срабатывают fallback-значения).
+
+**Контракт сверен по обеим сторонам:** `PG: claim pending outbox` в Delivery Worker уже выбирает `o.metadata`, узел «Build context after outbox» парсит строку или объект.
 
 ---
 

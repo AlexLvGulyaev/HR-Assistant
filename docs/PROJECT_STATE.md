@@ -376,7 +376,9 @@
 
 ---
 
-### Phase 0d: Hard-Negative Dataset Fix & Production Metrics (приоритет: критический) 🔄 В ПРОЦЕССЕ
+### Phase 0d: Hard-Negative Dataset Fix & Production Metrics (приоритет: критический) ⛔ НЕ ВЫПОЛНЯЕТСЯ (решение владельца, 2026-09-01)
+
+> **Решение владельца (01.09.2026):** Phase 0d закрывается как неисполнимый — GPU-бюджета нет (Runpod не оплачен с августа 2026), fix hard negatives и прогоны LoRA на production smoke set выполнить и **проверить невозможно**. Задачи ниже остаются как задел на будущее при возобновлении GPU-финансирования. Живой контур продолжает работать на GPT-4o-mini.
 
 **Цель:** Устранить mismatch между validation accuracy и production-качеством на hard negatives; подготовить метрики и production smoke set для принятия решения о внедрении LoRA.
 
@@ -418,18 +420,18 @@
 
 ---
 
-### Phase 2: Исправление критических дефектов (приоритет: высокий)
+### Phase 2: Исправление критических дефектов (приоритет: высокий) ✅ ЗАВЕРШЁН (2026-09-01)
 
-**Цель:** Устранить расхождение metadata
+**Цель:** Устранить расхождение metadata (KP-001)
 
 **Задачи:**
-- [ ] Добавить заполнение metadata в HR Processing Worker
-- [ ] Определить источник данных для metadata полей
-- [ ] Протестировать TTS и visual generation
-- [ ] Документировать формат metadata
-- [ ] Перенести credentials в environment variables
+- [x] Определить источник данных для metadata полей — узел `Build TG response` Processing Worker
+- [x] Добавить заполнение metadata в HR Processing Worker — все 5 INSERT в обеих версиях workflow (`HR Processing Worker.json`, `HR Processing Worker - Multi Provider Test.json`); ветки ошибок пишут NULL
+- [x] Документировать формат metadata — `SPEC.md`, раздел «Контракт metadata» (8 ключей, распределение по типам сообщений)
+- [x] Перенести credentials в environment variables — проверка показала: ключи уже НЕ в репозитории. OpenAI — n8n credential store (`genericCredentialType`), bot token — таблица `bot_credentials` с placeholder (KP-002, исправлено 24.06); документировано в DEPLOYMENT_GUIDE §5. Пункт закрыт «как уже выполненный», переноса не требуется
+- [x] Протестировать TTS и visual generation — живая проверка 01.09.2026 пройдена, приёмка владельца ✅ (голос — связный текст, картинка — карточка с кандидатом/вакансией/скором)
 
-**Срок:** 2-3 дня
+**Срок:** завершён 2026-09-01, включая живую проверку
 
 ---
 
@@ -498,6 +500,7 @@
 
 | Дата | Статус | Изменение |
 |------|--------|-----------|
+| 2026-09-01 | Phase 2 Closed, Phase 0d Cancelled | Phase 2 завершён: KP-001 (metadata) исправлен в обеих версиях Processing Worker — 5 INSERT заполняют metadata из узла «Build TG response», контракт с Delivery Worker сверен по обеим сторонам, формат документирован в SPEC.md; пункт «credentials → env» оказался уже выполненным (n8n credential store + bot_credentials, KP-002). Phase 0d (hard negatives LoRA) отменён решением владельца: GPU-бюджета нет (Runpod не оплачен с августа), проверка невозможна. Живая проверка TTS/visual — приёмка владельца на живом инстансе |
 | 2026-09-01 | Documentation Debt Removed | Из PROJECT_STATE удалён устаревший «долг» Phase 1 (11 чек-боксов «создать …»): все документы существуют с 23.06.2026 и верифицированы SOT-аудитом 24.06.2026; Documentation Roadmap помечен выполненным. Устаревшая запись дезориентировала аудит корпуса — реальный открытый долг кейса: Phase 0d (hard-negative fix + production smoke set), Phase 2 (metadata + credentials) |
 | 2026-07-22 | Validation vs Production Mismatch | Анализ teacher dataset и external validation объяснил расхождение: hard negatives часто размечены как match, external validation не покрывает Telegram-failure modes; введён Phase 0d с stratified metrics и production smoke set |
 | 2026-07-22 | Fine-tuning Experiment 003 | Runtime negative smoke пройден (7/7), но decision accuracy на original test снизилась (−11.1 pp); гипотеза подтверждена частично, модель не production-ready |

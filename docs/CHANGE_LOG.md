@@ -18,6 +18,25 @@
 
 ---
 
+## [2.3.0] - 2026-09-01
+
+### Fixed
+
+#### KP-001: Заполнение metadata в Processing Worker
+
+- **Processing Worker** — все 5 INSERT в `outbox` теперь заполняют колонку `metadata` (обе версии workflow: `HR Processing Worker.json`, `HR Processing Worker - Multi Provider Test.json`); ветки результатов пишут полный контракт, ветки ошибок — NULL
+- **Build TG response** — формирует объект metadata: `tts_required: true`, `visual_required` при наличии совпадения, `visual_title` / `visual_score` / `visual_candidate_name` / `visual_vacancy_title`
+- **Delivery Worker не менялся** — контракт потребителя сверен (claim уже выбирает `o.metadata`, IF-гейты на `=== true` безопасны при NULL)
+- Формат metadata документирован в `SPEC.md` (раздел «Контракт metadata»)
+
+### Changed
+
+#### Phase 0d (LoRA hard negatives) — не выполняется
+
+- Решение владельца (01.09.2026): GPU-бюджета нет (Runpod не оплачен с августа 2026), проверка невозможна; задачи остаются заделом на будущее. См. `PROJECT_STATE.md`.
+
+---
+
 ## [2.2.0] - 2026-06-28
 
 ### Added
