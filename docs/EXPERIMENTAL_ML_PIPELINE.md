@@ -2,7 +2,7 @@
 
 **Created:** 2026-06-28
 **Updated:** 2026-07-22
-**Status:** Experimental — Experiment 003 завершён (partially confirmed)
+**Status:** Experimental — Experiment 004 завершён (LoRA validated as on-premise / edge candidate)
 **Author:** AI Automation Portfolio Lab
 
 ---
@@ -130,12 +130,14 @@ graph TD
 | Experiment 001 | 90 кейсов | ✅ Baseline | ✅ Pass |
 | Experiment 002 | 90 кейсов | ✅ **Improved** | ❌ **Failed negative** |
 | Experiment 003 | 123 кейса (+33 hard negative) | ✅ **eval_loss 0.31** | ✅ **Pass (7/7)** |
+| Experiment 004 | 162 записи (54 кандидата, +positive/borderline) | ✅ **Internal test: 0.933 accuracy, 5.80 MAE** | ✅ **Pass (7/7)**; external validation (n=102, vLLM): 0.931 vs GPT-4o-mini 0.925 |
 
 **Ключевой вывод:**
 - LoRA улучшает offline качество.
 - Experiment 002 **не прошёл runtime negative smoke test** из-за недостатка hard negative примеров. Примеры false positive — в [`finetuning/data/evidence/experiment_002_failure_modes.jsonl`](../finetuning/data/evidence/experiment_002_failure_modes.jsonl).
 - Experiment 003 добавил hard negatives и **прошёл runtime negative smoke test (7/7)**, но ценой умеренного снижения decision accuracy на original test set (precision/recall trade-off). Ответы LoRA по smoke-кейсам — в [`finetuning/data/evidence/experiment_003_runtime_smoke.json`](../finetuning/data/evidence/experiment_003_runtime_smoke.json), over-correction кейсы — в [`finetuning/data/evidence/experiment_003_overcorrection.jsonl`](../finetuning/data/evidence/experiment_003_overcorrection.jsonl).
-- Модель всё ещё **не является production-ready**.
+- Experiment 004 добавил positive/borderline примеры (сбалансированный teacher dataset) и сравнение с GPT-4o-mini: external validation с vLLM-ускорением — decision accuracy **0.931 vs 0.925**, latency p95 ~2.1 сек vs ~2.0 сек. LoRA валидирована как рабочий on-premise / edge кандидат; полные метрики и representative examples — в [`finetuning/Experiment_004_Report.md`](../finetuning/Experiment_004_Report.md) (раздел 10.2b).
+- Модель всё ещё **не является production-ready**: real-world Telegram smoke (23 edge-анкеты) — 35% корректных у LoRA vs 43% у GPT-4o-mini, failure modes в [`finetuning/data/evidence/telegram_smoke_test_summary.json`](../finetuning/data/evidence/telegram_smoke_test_summary.json).
 
 #### Representative example: Experiment 002 — runtime false positive
 

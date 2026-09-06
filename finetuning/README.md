@@ -8,6 +8,24 @@
 
 **Производственный контур по-прежнему использует OpenAI GPT-4o-mini.** LoRA-модель проходит те же проверки качества, но не заменяет production без дополнительного цикла валидации.
 
+## Ключевые результаты (Experiment 004)
+
+External validation HRA-EVAL-V5-EXT с vLLM-ускорением vs GPT-4o-mini (n=102, avg 3 прогонов):
+
+| Metric | LoRA (vLLM) | GPT-4o-mini |
+|--------|-------------|-------------|
+| valid_json_rate | 1.000 | 0.997 |
+| decision_accuracy | **0.931** | 0.925 |
+| MAE_score | 19.53 | **6.73** |
+| FPR | **0.050** | 0.079 |
+| FNR | 0.136 | **0.045** |
+| latency_p50 (ms) | 1 688 | 1 296 |
+| latency_p95 (ms) | 2 104 | 2 007 |
+
+Offline evaluation на тестовом наборе Experiment 004 (n=15): `decision_accuracy=0.933`, `MAE_score=5.80`, `valid_json_rate=1.0`.
+
+Полный протокол, интерпретация и representative examples: [Experiment_004_Report.md](Experiment_004_Report.md), раздел 10.2b.
+
 ---
 
 ## Архитектура контура
