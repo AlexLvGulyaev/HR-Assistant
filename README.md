@@ -1,9 +1,6 @@
 # 🏠 HR Assistant
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/raw/HRA_portfolio_dark.png">
-  <img src="docs/screenshots/raw/HRA_portfolio_light.png" alt="HR Assistant — витрина кейса: Telegram-бот принимает резюме в четырёх форматах, n8n с GPT-4o-mini извлекает данные и считает matching с вакансиями">
-</picture>
+<img src="docs/screenshots/raw/HRA_portfolio_light.png" alt="HR Assistant — витрина кейса: Telegram-бот принимает резюме в четырёх форматах, n8n с GPT-4o-mini извлекает данные и считает matching с вакансиями">
 
 🤖 **Мультимодальный AI-ассистент для обработки резюме. Автоматическое извлечение данных, matching с вакансиями, мультимедийный ответ за секунды.**
 

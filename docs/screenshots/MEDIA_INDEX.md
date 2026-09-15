@@ -6,7 +6,7 @@
 
 ## 👁️ 1. Визуальный контракт
 
-- **Витринные hero парные** — README подключает пару `HRA_portfolio_light.png` / `HRA_portfolio_dark.png` через `<picture>` по `prefers-color-scheme`: **Light → README**, **Dark → ARCHITECTURE**. Оба зарегистрированы здесь.
+- **Витринные hero — строго по документам:** README подключает **только** `HRA_portfolio_light.png`, ARCHITECTURE — **только** `HRA_portfolio_dark.png`. Без `<picture>` и подмен по `prefers-color-scheme` — вариант закреплён за документом жёстко (решение владельца, 2026-09-15).
 - **Скриншоты — UI evidence** (`report_v2_*`, `workflow.png`) показывают фактические экраны продукта и n8n; **не смешиваются с AIP artwork** (витринные hero).
 - **Скриншоты подписаны** — заголовок над изображением называет экран; alt-текст описывает содержимое для доступности.
 - **Архитектурные связи — Mermaid** в самих документах; PNG используется только для UI/API-свидетельств (скриншоты редактора n8n, экраны Telegram).
@@ -18,8 +18,8 @@
 
 | Файл | Назначение |
 |------|------------|
-| `raw/HRA_portfolio_light.png` | Витринный hero светлой темы — **README** (`<picture>`) |
-| `raw/HRA_portfolio_dark.png` | Витринный hero тёмной темы — **ARCHITECTURE** (`<picture>`) |
+| `raw/HRA_portfolio_light.png` | Витринный hero светлой темы — **только README** (единственный документ с этим изображением) |
+| `raw/HRA_portfolio_dark.png` | Витринный hero тёмной темы — **только ARCHITECTURE** (единственный документ с этим изображением) |
 
 ---
 
@@ -108,7 +108,7 @@
 
 | Документ | Изображения |
 |----------|-------------|
-| [`README.md`](../../README.md) | HRA_portfolio_light/dark (hero) — единственные изображения README; схемы — Mermaid |
+| [`README.md`](../../README.md) | HRA_portfolio_light (hero) — единственные изображения README; схемы — Mermaid |
 | [`ARCHITECTURE.md`](../ARCHITECTURE.md) | HRA_portfolio_dark (hero); архитектурные и ER-схемы — Mermaid |
 | [`USER_GUIDE.md`](../USER_GUIDE.md) | report_v2_-002..-006, -008..-012 |
 | [`HR_GUIDE.md`](../HR_GUIDE.md) | report_v2_-011 |

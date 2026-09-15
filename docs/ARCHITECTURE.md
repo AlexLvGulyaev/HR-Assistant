@@ -4,10 +4,7 @@
 
 **Основной читатель:** инженер, развивающий или сопровождающий систему.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="screenshots/raw/HRA_portfolio_dark.png">
-  <img src="screenshots/raw/HRA_portfolio_light.png" alt="HR Assistant — архитектурная витрина">
-</picture>
+<img src="screenshots/raw/HRA_portfolio_dark.png" alt="HR Assistant — архитектурная витрина">
 
 ---
 
