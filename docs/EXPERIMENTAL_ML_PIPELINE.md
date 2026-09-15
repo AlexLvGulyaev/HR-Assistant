@@ -1,7 +1,7 @@
 # Экспериментальный ML-контур HR Assistant
 
 **Created:** 2026-06-28
-**Updated:** 2026-07-22
+**Updated:** 2026-09-15
 **Status:** Experimental — Experiment 004 завершён (LoRA validated as on-premise / edge candidate)
 **Author:** AI Automation Portfolio Lab
 
@@ -288,7 +288,7 @@ graph TD
 - Production workflow: HR Processing Worker (только OpenAI)
 - Test workflow: HR Processing Worker - Multi Provider Test (OpenAI / RunPod)
 
-**Документация:** [WORKFLOW_MODIFICATION_GUIDE.md](WORKFLOW_MODIFICATION_GUIDE.md)
+**Документация:** [MULTI_PROVIDER_ARCHITECTURE.md](MULTI_PROVIDER_ARCHITECTURE.md)
 
 ---
 
@@ -319,11 +319,10 @@ Teacher dataset не содержит достаточное количеств�
 |----------|------------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Общая архитектура системы |
 | [MULTI_PROVIDER_ARCHITECTURE.md](MULTI_PROVIDER_ARCHITECTURE.md) | Мультипровайдерная архитектура |
-| [WORKFLOW_MODIFICATION_GUIDE.md](WORKFLOW_MODIFICATION_GUIDE.md) | Инструкция по модификации workflow |
 | [finetuning/README.md](../finetuning/README.md) | Модуль Fine-tuning |
 | [prompt_evaluation/README.md](prompt_evaluation/README.md) | Подсистема Prompt Evaluation |
 
 ---
 
 **Статус документа:** Experimental
-**Последнее обновление:** 2026-06-28
+**Последнее обновление:** 2026-09-15

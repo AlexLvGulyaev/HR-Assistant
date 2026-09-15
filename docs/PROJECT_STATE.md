@@ -1,7 +1,7 @@
-# Project State: HR Assistant
+# 📊 PROJECT_STATE — HR Assistant
 
-**Last Updated:** 2026-07-25
-**Status:** Production-ready (v2.1) + Experimental ML-контур (Experiment 004 completed; LoRA validated as on-premise candidate) + LoRA storytelling landing deployed
+**Last Updated:** 2026-09-15
+**Status:** Production-ready (v2.3.0, 2026-09-01) + Experimental ML-контур (Experiment 004 completed; LoRA validated as on-premise candidate) + LoRA storytelling landing deployed
 **Case ID:** hr-assistant
 
 ---
@@ -31,7 +31,7 @@
 |-----------|--------|------------|-------------|
 | Workflow | Active | ✅ 100% | Все workflow импортированы и работают |
 | Database | Deployed | ✅ 100% | Схема развернута, миграции применены |
-| Integration | Live | ✅ 95% | Telegram bot работает, критическое расхождение с metadata |
+| Integration | Live | ✅ 100% | Telegram bot работает; metadata gap (KP-001) исправлен 2026-09-01, приёмка владельца пройдена |
 | Documentation | Complete | ✅ 100% | Все обязательные документы созданы и проверены по SOT |
 | Security | Improved | ✅ 85% | KP-002 исправлен, токен в БД с placeholder в SQL |
 
@@ -54,7 +54,7 @@
 |-----------|--------|------------|-------------|
 | Workflow | Active | ✅ 100% | Все workflow импортированы и работают |
 | Database | Deployed | ✅ 100% | Схема развернута, миграции применены |
-| Integration | Live | ✅ 95% | Telegram bot работает, критическое расхождение с metadata |
+| Integration | Live | ✅ 100% | Telegram bot работает; metadata gap (KP-001) исправлен 2026-09-01, приёмка владельца пройдена |
 | Documentation | Complete | ✅ 100% | Все обязательные документы созданы и проверены по SOT |
 | Security | Improved | ✅ 85% | KP-002 исправлен, токен в БД с placeholder в SQL |
 
@@ -62,10 +62,10 @@
 
 #### Критические
 
-1. **🔴 НЕСОВМЕСТИМОСТЬ metadata**
-   - **Описание:** Поле `metadata` в таблице `outbox` существует и используется в Delivery Worker, но не заполняется в Processing Worker
-   - **Влияние:** TTS и visual generation используют fallback-значения вместо реальных данных
-   - **Статус:** Открыто, требует исправления
+1. **✅ НЕСОВМЕСТИМОСТЬ metadata** (исправлено 2026-09-01)
+   - **Описание:** Поле `metadata` в таблице `outbox` существует и используется в Delivery Worker, но не заполнялось в Processing Worker
+   - **Влияние (до исправления):** TTS и visual generation использовали fallback-значения вместо реальных данных
+   - **Статус:** ✅ Fixed (2026-09-01) — все 5 INSERT в Processing Worker заполняют metadata, контракт документирован в SPEC, живая проверка и приёмка владельца пройдены
    - **Ссылка:** [known-issues.md](known-issues.md#kp-001-несовместимость-metadata)
 
 #### Средние
@@ -84,7 +84,7 @@
    - **Рекомендации:** score calibration, vLLM/TGI inference, quantization, расширение teacher dataset, production smoke set.
 
 4. **🟡 VALIDATION ACCURACY VS PRODUCTION HARD NEGATIVES MISMATCH** (открыто 2026-07-22)
-   - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation (и 0.931 vs 0.925 GPT-4o-mini после vLLM-ускорения), но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 5 из 33 hard-negative-like записей (15 %) размечены reference-teacher как `match` (BA → SA, DA → SA и др.). External validation V5-EXT не покрывает ключевые failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах. Детальные примеры — в [`finetuning/data/evidence/telegram_smoke_test_summary.json`](finetuning/data/evidence/telegram_smoke_test_summary.json) и [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](finetuning/data/evidence/teacher_label_mismatch_v4.json).
+   - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation (и 0.931 vs 0.925 GPT-4o-mini после vLLM-ускорения), но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 5 из 33 hard-negative-like записей (15 %) размечены reference-teacher как `match` (BA → SA, DA → SA и др.). External validation V5-EXT не покрывает ключевые failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах. Детальные примеры — в [`finetuning/data/evidence/telegram_smoke_test_summary.json`](../finetuning/data/evidence/telegram_smoke_test_summary.json) и [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](../finetuning/data/evidence/teacher_label_mismatch_v4.json).
    - **Влияние:** Метрика 0.931 создаёт ложное ощущение готовности LoRA к production; критические false positives (аналитики на SA, junior, salary mismatch) остаются незамеченными до реального тестирования.
    - **Статус:** Открыто. Решение: ввести stratified metrics и production smoke set.
    - **Ссылки:** [teacher_dataset_report.md](../finetuning/reports/teacher_dataset_report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md)
@@ -105,7 +105,7 @@
 
 **Почему этот пример важен:** Иллюстрирует причину расхождения между aggregate validation accuracy и production-качеством: teacher разметил hard-negative-like запись как `match`, поэтому LoRA наследует эту ошибку и принимает смежные роли без обязательных hard skills.
 
-**Evidence:** [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](finetuning/data/evidence/teacher_label_mismatch_v4.json), запись `HRA-EVAL-V2-000103`, vacancy "Системный аналитик".
+**Evidence:** [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](../finetuning/data/evidence/teacher_label_mismatch_v4.json), запись `HRA-EVAL-V2-000103`, vacancy "Системный аналитик".
 
 ---
 
@@ -128,7 +128,7 @@
 Проведён аудит документации по паттерну SOT (Source of Truth):
 - Проверено 3 документа: HR_GUIDE.md, INTEGRATION_DIAGRAM.md, SUPPORT_RUNBOOK.md
 - Исправлено 27 нарушений (синтетические данные, неверные модели, ошибки изображений)
-- Все документы приведены в соответствие с реальными источниками (workflow, БД, SCREENSHOT_INDEX)
+- Все документы приведены в соответствие с реальными источниками (workflow, БД, MEDIA_INDEX)
 
 **Применённый паттерн:** [documentation-source-of-truth-discipline.md](../../../shared/patterns/documentation-source-of-truth-discipline.md)
 
@@ -247,9 +247,9 @@
 
 ## Market Validation
 
-**Статус:** Проект разработан в рамках образовательного модуля PEm05
+**Статус:** Проект разработан в инженерной среде AI Automation Portfolio Lab (учебно-портфельный проект)
 
-**Заказчик:** Образовательный проект (не коммерческий)
+**Заказчик:** Отсутствует (не коммерческий)
 
 **Потенциал:** Высокий для HR-автоматизации в SMB сегменте
 
@@ -383,7 +383,7 @@
 **Цель:** Устранить mismatch между validation accuracy и production-качеством на hard negatives; подготовить метрики и production smoke set для принятия решения о внедрении LoRA.
 
 **Контекст:**
-- Teacher dataset V4 содержит hard negatives, размеченные как `match` (5 / 33 hard-negative-like записей). Детали — в [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](finetuning/data/evidence/teacher_label_mismatch_v4.json).
+- Teacher dataset V4 содержит hard negatives, размеченные как `match` (5 / 33 hard-negative-like записей). Детали — в [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](../finetuning/data/evidence/teacher_label_mismatch_v4.json).
 - External validation V5-EXT недостаточно покрывает production-failure modes (процессный аналитик, salary mismatch 450k, extreme sparse junior).
 - Telegram smoke test показал: LoRA 35 %, GPT-4o-mini 43 % на 23 hard-negative/edge анкетах.
 
@@ -411,12 +411,12 @@
 
 **Документационный пакет корневой документации создан полностью (2026-06-23, «Documentation Complete» — см. Status History) и верифицирован SOT-аудитом (2026-06-24).** Фактическая база `docs/` включает все документы из этого плана и больше:
 
-- **Customer Facing Layer:** BUSINESS_VALUE.md, E2E_SCENARIOS.md, NARRATIVE_BLUEPRINT.md
+- **Customer Facing Layer:** BUSINESS_VALUE.md, E2E_SCENARIOS.md, DEMO_ROUTE.md
 - **User / Operator Layer:** USER_GUIDE.md, HR_GUIDE.md, SUPPORT_RUNBOOK.md
-- **Engineering Layer:** ARCHITECTURE.md, DEPLOYMENT_GUIDE.md, AI_QUALIFICATION.md, AUTOMATION_PASSPORT.md, INTEGRATION_DIAGRAM.md, CHANGE_LOG.md, MULTI_PROVIDER_ARCHITECTURE.md, EXPERIMENTAL_ML_PIPELINE.md, PROMPT_ENGINEERING_GUIDE.md, WORKFLOW_MODIFICATION_GUIDE.md
-- **Плюс:** SPEC.md, SUCCESS_METRICS.md, PROJECT_HANDOFF_CHECKLIST.md, known-issues.md, PROJECT_STATE.md, screenshots/
+- **Engineering Layer:** ARCHITECTURE.md, DEPLOYMENT_GUIDE.md, AI_QUALIFICATION.md, AUTOMATION_PASSPORT.md, INTEGRATION_DIAGRAM.md, CHANGE_LOG.md, MULTI_PROVIDER_ARCHITECTURE.md, EXPERIMENTAL_ML_PIPELINE.md, PROMPT_ENGINEERING_GUIDE.md, PROJECT_STRUCTURE.md, MEDIA_INDEX.md (docs/screenshots/), SUCCESS_METRICS.md, PROJECT_HANDOFF_CHECKLIST.md, SECURITY_NOTES.md
+- **Плюс:** SPEC.md, known-issues.md, PROJECT_STATE.md, screenshots/
 
-> Исторический чек-лист этого Phase (11 пунктов «создать …») удалён 01.09.2026 как не соответствующий факту: все перечисленные документы существуют с июня 2026. Устаревшая запись дезориентировала аудит корпуса (PORTFOLIO_CORPUS_AUDIT) и планирование.
+> Исторический чек-лист этого Phase (11 пунктов «создать …») удалён 01.09.2026 как не соответствующий факту: все перечисленные документы существуют с июня 2026. Устаревшая запись дезориентировала аудит корпуса (PORTFOLIO_CORPUS_AUDIT) и планирование. Ревизия пакета к стандарту APL — 2026-09-15 (см. Status History).
 
 ---
 
@@ -490,7 +490,7 @@
 
 ### Созданные документы
 
-Корневая документация кейса (`docs/`): SPEC.md, BUSINESS_VALUE.md, E2E_SCENARIOS.md, NARRATIVE_BLUEPRINT.md, USER_GUIDE.md, HR_GUIDE.md, SUPPORT_RUNBOOK.md, ARCHITECTURE.md, DEPLOYMENT_GUIDE.md, AI_QUALIFICATION.md, AUTOMATION_PASSPORT.md, INTEGRATION_DIAGRAM.md, CHANGE_LOG.md, MULTI_PROVIDER_ARCHITECTURE.md, EXPERIMENTAL_ML_PIPELINE.md, PROMPT_ENGINEERING_GUIDE.md, WORKFLOW_MODIFICATION_GUIDE.md, SUCCESS_METRICS.md, PROJECT_HANDOFF_CHECKLIST.md, known-issues.md, PROJECT_STATE.md.
+Корневая документация кейса (`docs/`): SPEC.md, BUSINESS_VALUE.md, E2E_SCENARIOS.md, DEMO_ROUTE.md, USER_GUIDE.md, HR_GUIDE.md, SUPPORT_RUNBOOK.md, ARCHITECTURE.md, DEPLOYMENT_GUIDE.md, AI_QUALIFICATION.md, AUTOMATION_PASSPORT.md, INTEGRATION_DIAGRAM.md, CHANGE_LOG.md, MULTI_PROVIDER_ARCHITECTURE.md, EXPERIMENTAL_ML_PIPELINE.md, PROMPT_ENGINEERING_GUIDE.md, SUCCESS_METRICS.md, PROJECT_HANDOFF_CHECKLIST.md, known-issues.md, PROJECT_STRUCTURE.md, SECURITY_NOTES.md, PROJECT_STATE.md, MEDIA_INDEX.md (docs/screenshots/).
 
 Прочее: [README.md](../README.md) — описание кейса, [workflows/README.md](../workflows/README.md) — описание workflow, [database/README.md](../database/README.md) — описание схемы БД, `finetuning/` — пакет документации fine-tuning контура.
 
@@ -500,6 +500,7 @@
 
 | Дата | Статус | Изменение |
 |------|--------|-----------|
+| 2026-09-15 | Documentation Revision (APL Standard) | Публичная документация приведена к стандарту APL (трёхслойная модель, эмодзи-контракт, один документ — один читатель): README переписан как entry point; созданы PROJECT_STRUCTURE.md, MEDIA_INDEX.md (слит SCREENSHOT_INDEX), SECURITY_NOTES.md; DEPLOYMENT_GUIDE актуализирован по фактическому runtime (compose-сервисы, n8n image, vacancies.status='open'); WORKFLOW_MODIFICATION_GUIDE слит в MULTI_PROVIDER_ARCHITECTURE; NARRATIVE_BLUEPRINT исключён из публичного пакета; clean-room Deployment Validation не проводилась — зафиксирована как reproducibility debt. Продукт не изменялся |
 | 2026-09-01 | Phase 2 Closed, Phase 0d Cancelled | Phase 2 завершён: KP-001 (metadata) исправлен в обеих версиях Processing Worker — 5 INSERT заполняют metadata из узла «Build TG response», контракт с Delivery Worker сверен по обеим сторонам, формат документирован в SPEC.md; пункт «credentials → env» оказался уже выполненным (n8n credential store + bot_credentials, KP-002). Phase 0d (hard negatives LoRA) отменён решением владельца: GPU-бюджета нет (Runpod не оплачен с августа), проверка невозможна. Живая проверка TTS/visual — приёмка владельца на живом инстансе |
 | 2026-09-01 | Documentation Debt Removed | Из PROJECT_STATE удалён устаревший «долг» Phase 1 (11 чек-боксов «создать …»): все документы существуют с 23.06.2026 и верифицированы SOT-аудитом 24.06.2026; Documentation Roadmap помечен выполненным. Устаревшая запись дезориентировала аудит корпуса — реальный открытый долг кейса: Phase 0d (hard-negative fix + production smoke set), Phase 2 (metadata + credentials) |
 | 2026-07-22 | Validation vs Production Mismatch | Анализ teacher dataset и external validation объяснил расхождение: hard negatives часто размечены как match, external validation не покрывает Telegram-failure modes; введён Phase 0d с stratified metrics и production smoke set |

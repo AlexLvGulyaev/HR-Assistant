@@ -195,7 +195,7 @@
 **Индексы:**
 - `idx_outbox_status`
 
-**⚠️ KP-001:** Поле `metadata` существует, но не заполняется в Processing Worker. См. [known-issues.md](../docs/known-issues.md#kp-001-несовместимость-metadata).
+**KP-001:** Поле `metadata` не заполнялось в Processing Worker. ✅ Fixed (2026-09-01) — все 5 INSERT заполняют metadata. См. [known-issues.md](../docs/known-issues.md#kp-001-несовместимость-metadata).
 
 ---
 
@@ -246,7 +246,7 @@
 - `description` (TEXT)
 - `created_at` (TIMESTAMPTZ)
 
-**⚠️ KP-002:** Захардкоженные credentials. См. [known-issues.md](../docs/known-issues.md#kp-002-захардкоженные-credentials).
+**KP-002:** Захардкоженный bot token. ✅ Fixed (2026-06-24) — реальный токен заменён на placeholder. См. [known-issues.md](../docs/known-issues.md#kp-002-bot-token-в-репозитории).
 
 ---
 
@@ -454,9 +454,9 @@ SELECT log_processing_event(
 
 **История миграций:**
 - **v1.0** (2026-04-29): Начальная схема
-- **v1.1** (дата TBD): Добавлено поле `metadata` в `outbox`
-- **v1.2** (дата TBD): Добавлено поле `event_type` в `intake_events`
-- **v1.3** (дата TBD): Добавлено поле `error_text` в `outbox`
+- **v1.1** (дата не зафиксирована — изменения до введения Git-версионирования): Добавлено поле `metadata` в `outbox`
+- **v1.2** (дата не зафиксирована — изменения до введения Git-версионирования): Добавлено поле `event_type` в `intake_events`
+- **v1.3** (дата не зафиксирована — изменения до введения Git-версионирования): Добавлено поле `error_text` в `outbox`
 - **v2.0** (2026-06-24): Добавлен evaluation-контур (02-prompt-evaluation.sql) ✅ **Применено на production**
 
 ---
@@ -468,8 +468,7 @@ SELECT log_processing_event(
 **Назначение:** Отдельный контур для A/B-тестирования matching prompt.
 
 **Предназначен для:**
-- Урока 4 по Prompt Engineering
-- Регрессионной проверки matching prompt
+- A/B-тестирования и регрессионной проверки matching prompt
 
 **Таблицы:**
 | Таблица | Назначение |

@@ -1,4 +1,6 @@
-# Support Runbook: HR Assistant
+# ⚙️ SUPPORT_RUNBOOK — HR Assistant
+
+**Назначение:** эксплуатация системы — точки контроля, диагностика, инциденты, бэкапы. Развёртывание — [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md), реестр дефектов — [`known-issues.md`](known-issues.md).
 
 Инструкция для команды сопровождения HR Assistant.
 
@@ -327,19 +329,18 @@ WHERE status = 'sending'
 
 **Приоритет:** 🔴 Critical
 
-**Описание:** Поле `metadata` в таблице `outbox` не заполняется в Processing Worker, но используется в Delivery Worker.
+**Статус:** ✅ Fixed (2026-09-01)
 
-**Влияние:**
-- TTS не работает корректно (fallback на текст из `body`)
-- Visual generation не работает корректно (fallback на default prompt)
+**Описание:** Поле `metadata` в таблице `outbox` не заполнялось в Processing Worker, но использовалось в Delivery Worker.
 
-**Временное решение:**
-- Delivery Worker использует fallback-значения
-- Metadata игнорируется
+**Влияние (до исправления):**
+- TTS не работал корректно (fallback на текст из `body`)
+- Visual generation не работал корректно (fallback на default prompt)
 
-**Постоянное решение:**
-- Добавить заполнение metadata в Processing Worker
-- Протестировать TTS и visual generation
+**Исправление (2026-09-01):**
+- Все 5 INSERT в `outbox` в Processing Worker заполняют `metadata` (обе версии workflow)
+- Контракт metadata документирован в `SPEC.md`
+- Живая проверка TTS и visual generation пройдена, приёмка владельца состоялась
 
 **Ссылка:** [known-issues.md](known-issues.md#kp-001-несовместимость-metadata)
 
@@ -375,15 +376,18 @@ WHERE status = 'sending'
 
 **Приоритет:** ⚠️ Medium
 
+**Статус:** Open
+
 **Описание:** Отсутствует версионирование workflow n8n.
 
 **Влияние:**
 - Сложность отката изменений
 - Отсутствие истории
 
-**Решение:**
-- Внедрить Git-based версионирование
-- Создать CHANGELOG.md
+**Текущее состояние:**
+- Workflows версонируются в Git (`workflows/` в репозитории)
+- История изменений ведётся в [CHANGE_LOG.md](CHANGE_LOG.md)
+- Открытый остаток: документированный процесс версионирования workflow
 
 ---
 
@@ -556,9 +560,9 @@ n8n import:workflow --input=workflows/
 
 | Роль | Контакты |
 |------|----------|
-| **Администратор n8n** | [email] |
-| **Администратор БД** | [email] |
-| **Разработчик** | [email] |
+| **Администратор n8n** | (заполнить при передаче заказчику) |
+| **Администратор БД** | (заполнить при передаче заказчику) |
+| **Разработчик** | (заполнить при передаче заказчику) |
 
 ---
 
@@ -580,5 +584,5 @@ n8n import:workflow --input=workflows/
 
 ---
 
-**Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-24
+**Статус:** Рабочий документ эксплуатации
+**Последнее обновление:** 2026-09-15

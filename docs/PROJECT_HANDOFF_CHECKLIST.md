@@ -1,6 +1,10 @@
-# Project Handoff Checklist: HR Assistant
+# ✅ PROJECT_HANDOFF_CHECKLIST — HR Assistant
 
-**Чеклист для передачи проекта новому инженеру. Точка входа для первого знакомства с проектом.**
+**Назначение:** чеклист для передачи проекта новому инженеру. Точка входа для первого знакомства с проектом.
+
+**Основной читатель:** инженер, принимающий систему в эксплуатацию.
+
+**Версия проекта:** 2.3.0 (2026-09-01)
 
 ---
 
@@ -57,6 +61,7 @@ HR Assistant — мультимодальный AI-ассистент для а�
 | `HR Generate Video.json` | HR Generate Video | Генерация видео (on-demand) |
 | `HR Queue Watchdog - candidate_inputs.json` | Watchdog | Сброс зависших обработок |
 | `HR Queue Watchdog - outbox.json` | Watchdog | Сброс зависших сообщений |
+| `PEm05_ error_handler.json` | Error Handler | Централизованная обработка ошибок |
 
 **Описание workflow:** [../workflows/README.md](../workflows/README.md)
 
@@ -84,8 +89,15 @@ HR Assistant — мультимодальный AI-ассистент для а�
 | `POSTGRES_USER` | Пользователь БД | PostgreSQL |
 | `POSTGRES_PASSWORD` | Пароль БД | PostgreSQL |
 | `N8N_HOST` | Хост n8n | n8n |
+| `N8N_PORT` | Порт n8n | n8n |
+| `N8N_PROTOCOL` | Протокол n8n (https) | n8n |
 | `WEBHOOK_URL` | URL для webhooks | Telegram |
+| `N8N_EDITOR_BASE_URL` | Базовый URL редактора n8n | n8n |
 | `N8N_ENCRYPTION_KEY` | Ключ шифрования | n8n credentials |
+| `GENERIC_TIMEZONE` | Часовой пояс n8n | n8n |
+| `TRAEFIK_EMAIL` | Email для Let's Encrypt | Traefik |
+
+**Важно:** Telegram Bot Token и OpenAI API Key настраиваются в n8n credential store, НЕ в `.env`.
 
 **Настройка:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#шаг-1-подготовка-окружения)
 
@@ -258,9 +270,9 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
    # Отредактируйте .env
    ```
 
-2. **Запуск PostgreSQL**
+2. **Запуск PostgreSQL + n8n**
    ```bash
-   docker-compose -f config/docker-compose.yml up -d
+   docker compose -f config/docker-compose.yml up -d
    ```
 
 3. **Инициализация БД**
@@ -273,8 +285,8 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
    - OpenAI API
    - Telegram API
 
-5. **Импорт workflow**
-   - Импортировать все workflow из `workflows/`
+5. **Импорт production workflow**
+   - Импортировать production-набор из `workflows/` (см. §2); инженерные workflow (Multi Provider Test, Prompt Evaluation) импортировать не нужно
 
 6. **Настройка Telegram Webhook**
    ```bash
@@ -306,12 +318,12 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 **n8n логи:**
 ```bash
-docker compose -f docker-compose.n8n.yml logs n8n
+docker compose -f config/docker-compose.yml logs n8n
 ```
 
 **PostgreSQL логи:**
 ```bash
-docker compose -f docker-compose.db.yml logs postgres
+docker compose -f config/docker-compose.yml logs postgres_hr
 ```
 
 **Таблица processing_logs:**
@@ -351,15 +363,15 @@ SELECT * FROM processing_logs ORDER BY created_at DESC LIMIT 10;
 #### База данных недоступна
 
 1. Проверить статус: `docker ps`
-2. Проверить логи: `docker compose logs postgres`
-3. Перезапустить: `docker compose restart postgres`
+2. Проверить логи: `docker compose -f config/docker-compose.yml logs postgres_hr`
+3. Перезапустить: `docker compose -f config/docker-compose.yml restart postgres_hr`
 4. Проверить connection string
 
 #### n8n завис
 
 1. Проверить статус: `docker ps`
-2. Проверить логи: `docker compose logs n8n`
-3. Перезапустить: `docker compose restart n8n`
+2. Проверить логи: `docker compose -f config/docker-compose.yml logs n8n`
+3. Перезапустить: `docker compose -f config/docker-compose.yml restart n8n`
 
 #### OpenAI API недоступен
 
@@ -385,7 +397,7 @@ docker exec hr-assistant-db pg_dump -U hr_user hr_assistant > backup_$(date +%Y%
 docker exec -i hr-assistant-db psql -U hr_user hr_assistant < backup_20260623.sql
 ```
 
-**Подробнее:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#шаг-10-бэкапы)
+**Подробнее:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#шаг-11-бэкапы)
 
 ### Checklist
 
@@ -424,18 +436,24 @@ docker exec -i hr-assistant-db psql -U hr_user hr_assistant < backup_20260623.sq
 
 **KP-001: НЕСОВМЕСТИМОСТЬ metadata**
 
-Поле `metadata` в таблице `outbox` не заполняется в Processing Worker, но используется в Delivery Worker.
+Поле `metadata` в таблице `outbox` не заполнялось в Processing Worker, но использовалось в Delivery Worker.
 
-**Влияние:** TTS и visual generation используют fallback-значения.
+**Влияние (до исправления):** TTS и visual generation использовали fallback-значения.
 
-**Статус:** Открыто, требует исправления.
+**Статус:** ✅ Fixed (2026-09-01) — все 5 INSERT в Processing Worker заполняют metadata, контракт документирован в SPEC, живая проверка пройдена.
 
 **Ссылка:** [known-issues.md](known-issues.md#kp-001-несовместимость-metadata)
+
+**KP-003: ВЕРСИОНИРОВАНИЕ WORKFLOW (Open)**
+
+Workflows версонируются в Git, CHANGE_LOG ведётся; открытый остаток — документированный процесс версионирования workflow.
+
+**Ссылка:** [known-issues.md](known-issues.md#kp-003-отсутствие-версионирования-workflow)
 
 ### Checklist
 
 - [ ] Понять, где находится каждый SSOT-документ
-- [ ] Ознакомиться с известными ограничениями (KP-001)
+- [ ] Ознакомиться с известными ограничениями (KP-003 — единственный открытый)
 - [ ] Запомнить структуру документации проекта
 
 ---
@@ -444,18 +462,17 @@ docker exec -i hr-assistant-db psql -U hr_user hr_assistant < backup_20260623.sq
 
 ### Текущий статус
 
-**Статус:** Production-ready (v2.0)
+**Статус:** Production-ready (v2.3.0, 2026-09-01)
 
 **Документ:** [PROJECT_STATE.md](PROJECT_STATE.md)
 
 ### Следующие шаги
 
-**Phase 1: Исправление дефектов**
-- [ ] Исправить KP-001 (metadata gap)
-- [ ] Добавить заполнение metadata в Processing Worker
+**Phase 1: Устранение reproducibility debt**
+- [ ] Провести Clean-room Deployment Validation (развёртывание с нуля по DEPLOYMENT_GUIDE в чистом окружении)
 
 **Phase 2: Улучшения**
-- [ ] Внедрить версионирование workflow
+- [ ] Документировать процесс версионирования workflow (остаток KP-003)
 - [ ] Настроить мониторинг и алертинг
 - [ ] Добавить дашборды
 
@@ -479,14 +496,14 @@ docker exec -i hr-assistant-db psql -U hr_user hr_assistant < backup_20260623.sq
 ### Команды для быстрого старта
 
 ```bash
-# Запуск PostgreSQL
-docker-compose -f config/docker-compose.yml up -d
+# Запуск PostgreSQL + n8n
+docker compose -f config/docker-compose.yml up -d
 
 # Проверка статуса
 docker ps
 
 # Логи n8n
-docker compose logs n8n
+docker compose -f config/docker-compose.yml logs n8n
 
 # Проверка webhook
 curl https://api.telegram.org/bot${TOKEN}/getWebhookInfo
@@ -513,4 +530,4 @@ WHERE processing_status = 'processing_started'
 ---
 
 **Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-27
+**Последнее обновление:** 2026-09-15

@@ -1,4 +1,4 @@
-# AI Qualification: HR Assistant
+# 🧠 AI_QUALIFICATION — HR Assistant
 
 Документ описывает реальные промпты, модели и параметры AI-компонентов HR Assistant на основе workflow файлов.
 

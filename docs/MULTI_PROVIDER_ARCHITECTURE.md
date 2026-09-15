@@ -1,8 +1,9 @@
-# Мультипровайдерная LLM Архитектура
+# 🔀 Мультипровайдерная LLM Архитектура (инженерный стенд)
 
 **Создано:** 2026-06-28
+**Обновлено:** 2026-09-15
 **Статус:** Инженерный стенд для тестирования
-**Автор:** AI Automation Portfolio Lab
+**Основной читатель:** инженер, развивающий экспериментальный контур
 
 ---
 
@@ -52,7 +53,7 @@ Workflow `HR Processing Worker - Multi Provider Test` является **инж�
 | **Workflow** | HR Processing Worker - Multi Provider Test.json |
 | **LLM Provider** | RunPod (hardcoded) |
 | **Model** | hra-qwen (Qwen + LoRA adapter) |
-| **Structured Output** | ⚠️ Experimental |
+| **Structured Output** | ✅ Включён в конфигурации (`llm_supports_structured_output: true`) |
 | **Authentication** | None (RunPod proxy endpoint) |
 | **Purpose** | Инженерный стенд для LoRA smoke validation |
 | **Status** | ⚠️ Experimental, NOT production |
@@ -78,7 +79,7 @@ Test workflow специально создан для тестирования 
 |----------|----------|
 | **URL** | `https://api.openai.com/v1/chat/completions` |
 | **Model** | `gpt-4o-mini` |
-| **Auth** | OpenAI API credential (`pANFrhR1xZgvvzrJ`) |
+| **Auth** | OpenAI API credential (n8n credential store) |
 | **Structured Output** | ✅ Поддерживается (`json_schema`) |
 | **Error Handling** | ✅ Подключено к `Build processing error context` |
 
@@ -86,10 +87,10 @@ Test workflow специально создан для тестирования 
 
 | Параметр | Значение |
 |----------|----------|
-| **URL** | `https://bgi0g1thpts995-8000.proxy.runpod.net/v1/chat/completions` |
+| **URL** | `https://<RUNPOD_PROXY_HOST>-8000.proxy.runpod.net/v1/chat/completions` — фактический адрес задан в `Configure LLM Provider` тестового workflow |
 | **Model** | `hra-qwen` |
 | **Auth** | None (`authentication: none`) |
-| **Structured Output** | ❌ Не поддерживается |
+| **Structured Output** | ✅ Включён в конфигурации (`llm_supports_structured_output: true`) |
 | **Error Handling** | ✅ Подключено к `Build processing error context` |
 
 ---
@@ -182,7 +183,7 @@ const configs = {
   },
   runpod: {
     llm_provider: 'runpod',
-    llm_url: 'https://khu0q820y5ssqu-8000.proxy.runpod.net/v1/chat/completions',
+    llm_url: 'https://<RUNPOD_PROXY_HOST>-8000.proxy.runpod.net/v1/chat/completions',
     llm_model: 'hra-qwen',
     llm_supports_structured_output: true,
     llm_auth_credential_id: null
@@ -356,9 +357,27 @@ anthropic: {
 | `workflows/HR Processing Worker.json` | Production workflow (только OpenAI) |
 | `workflows/HR Processing Worker - Multi Provider Test.json` | Test workflow (RunPod hardcoded) |
 | `docs/MULTI_PROVIDER_ARCHITECTURE.md` | Этот документ |
-| `docs/WORKFLOW_MODIFICATION_GUIDE.md` | Инструкция по модификации |
 | `workflows/llm-provider-config.js` | Модуль конфигурации |
 | `docs/CHANGE_LOG.md` | Версия 2.2.0 |
+
+---
+
+## Модификация тестового workflow (история v2.1.0)
+
+Состав изменений, приведших тестовый workflow к текущей архитектуре (47 → 54 nodes):
+
+| Изменение | Количество | Детали |
+|-----------|------------|--------|
+| **Новые nodes** | +7 | 1 Configure LLM Provider + 3 IF Provider + 3 RunPod HTTP |
+| **Изменённые nodes** | 6 | 3 Prepare Body + 3 Parse |
+| **Переименованные nodes** | 3 | OpenAI HTTP nodes переименованы с суффиксом `(OpenAI)` |
+| **Удалённые nodes** | -3 | Merge nodes (не нужны) |
+
+**Инструкции по откату** (если после модификации возникли проблемы):
+
+1. Установить `provider = 'openai'` в Configure LLM Provider node (default)
+2. Импортировать предыдущую версию workflow
+3. Изменений в БД для отката нет
 
 ---
 

@@ -1,6 +1,13 @@
-# Архитектура системы HR Assistant
+# 🏗️ ARCHITECTURE — HR Assistant
 
 Документ описывает архитектуру, компоненты, потоки данных и технические решения HR Assistant.
+
+**Основной читатель:** инженер, развивающий или сопровождающий систему.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/raw/HRA_portfolio_dark.png">
+  <img src="screenshots/raw/HRA_portfolio_light.png" alt="HR Assistant — архитектурная витрина">
+</picture>
 
 ---
 
@@ -23,7 +30,7 @@ HR Assistant построен по принципу **event-driven architecture*
 graph TB
     subgraph External["Внешние системы"]
         TG[Telegram Bot API<br/>Webhook + Inline Keyboard]
-        OAI[OpenAI API<br/>GPT-4o-mini, GPT-4, TTS,<br/>GPT-image-1, Sora-2]
+        OAI[OpenAI API<br/>GPT-4o-mini, TTS,<br/>gpt-image-1, Sora-2]
     end
 
     subgraph N8N["n8n Workflows"]
@@ -89,10 +96,6 @@ graph TB
 
 **Узлы:** 43
 
-![Workflow HR Intake](screenshots/raw/report_v2_-016.png)
-
-*Workflow приёма входных данных (HR Intake)*
-
 **Поток данных:**
 ```mermaid
 graph LR
@@ -121,10 +124,6 @@ graph LR
 - Подготовка ответа в `outbox`
 
 **Узлы:** 47
-
-![Workflow Processing Worker](screenshots/raw/report_v2_-017.png)
-
-*Workflow обработки кандидата (Processing Worker)*
 
 **Поток данных:**
 ```mermaid
@@ -162,10 +161,6 @@ graph LR
 
 **Узлы:** 21
 
-![Workflow Delivery Worker](screenshots/raw/report_v2_-018.png)
-
-*Workflow доставки результата (Delivery Worker)*
-
 **Поток данных:**
 ```mermaid
 graph LR
@@ -194,10 +189,6 @@ graph LR
 - Отправка результата в Telegram
 
 **Узлы:** 15
-
-![Workflow Generate Video](screenshots/raw/report_v2_-019.png)
-
-*Workflow генерации видео (on-demand)*
 
 ---
 
@@ -233,9 +224,7 @@ graph LR
 
 ### ER-диаграмма
 
-![ER-диаграмма базы данных HR Assistant](screenshots/raw/report_v2_-001.png)
-
-*ER-диаграмма базы данных HR Assistant*
+ER-диаграмма базы данных и структура payload-контрактов — [INTEGRATION_DIAGRAM.md](INTEGRATION_DIAGRAM.md).
 
 ---
 
@@ -558,12 +547,14 @@ graph TD
 - Метод: LoRA (Low-Rank Adaptation)
 - Платформа: RunPod GPU Pod
 
-**Результаты experiment_002:**
-- Offline validation: значительное улучшение качества
-- Runtime smoke test: **failed negative test**
-- Вывод: модель не production-ready
+**Результаты Experiments 001–004:**
+- Offline Validation (Exp 002): улучшение качества vs baseline
+- Runtime negative smoke: ❌ Failed (Exp 002) → ✅ Pass (Exp 003, после hard negatives в teacher dataset)
+- External validation (Exp 004): LoRA decision_accuracy 0.931 vs GPT-4o-mini 0.925 (после vLLM-ускорения, сопоставимый p95 latency)
+- Telegram smoke (23 hard negatives): ❌ 35% vs 43% у GPT-4o-mini
+- **Вывод:** LoRA — рабочий on-premise / edge кандидат; production остаётся за GPT-4o-mini
 
-**Следующий шаг:** Расширение teacher dataset за счёт hard negative примеров
+**Следующий шаг:** stratified metrics и production smoke set (см. [PROJECT_STATE.md](PROJECT_STATE.md))
 
 **Документация:** [finetuning/README.md](../finetuning/README.md)
 
@@ -661,19 +652,22 @@ HR Assistant использует гибридную архитектуру хр
 - Упрощает ротацию токенов
 - Не требует обновления n8n credentials при смене токена
 
-**⚠️ KP-002: Bot token в репозитории**
+**✅ KP-002: Bot token в репозитории — Fixed (2026-06-24)**
 
-**Проблема:**
-- Файл `schema_hr_assistant.sql` содержит реальный bot token в INSERT-запросе
+**Проблема (устранена):**
+- Файл `schema_hr_assistant.sql` содержал реальный bot token в INSERT-запросе
 
-**Решение:**
-- Заменить реальный токен на placeholder для GitHub-публикации
-- Документировать процесс обновления токена в DEPLOYMENT_GUIDE
+**Решение (выполнено 2026-06-24):**
+- Реальный токен заменён на placeholder
+- Процесс обновления токена документирован в DEPLOYMENT_GUIDE
+- Токен хранится в таблице `bot_credentials`
 
 **Рекомендации:**
 - Хранить токен в n8n credential store (для HR Intake, HR Generate Video, Error Handler)
 - Использовать bot_credentials для Delivery Worker
 - Внедрить rotation policy для токенов
+
+**Ссылка:** [SECURITY_NOTES.md](SECURITY_NOTES.md), [known-issues.md](known-issues.md#kp-002-bot-token-в-репозитории)
 
 ---
 
@@ -693,13 +687,16 @@ HR Assistant использует гибридную архитектуру хр
 
 ## Связанные документы
 
+- [🏠 README.md](../README.md) — описание кейса
 - [SPEC.md](SPEC.md) — спецификация системы
 - [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) — руководство по развёртыванию
 - [AI_QUALIFICATION.md](AI_QUALIFICATION.md) — промпты и модели
+- [INTEGRATION_DIAGRAM.md](INTEGRATION_DIAGRAM.md) — интеграционные схемы и payload-контракты
 - [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md) — инструкция для поддержки
+- [SECURITY_NOTES.md](SECURITY_NOTES.md) — модель безопасности
 - [known-issues.md](known-issues.md) — известные проблемы
 
 ---
 
-**Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-24
+**Статус документа:** Production-ready (v2.3.0)
+**Последнее обновление:** 2026-09-15

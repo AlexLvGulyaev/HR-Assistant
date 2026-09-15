@@ -1,4 +1,4 @@
-# Prompt Evaluation
+# 🧪 Prompt Evaluation — HR Assistant
 
 **Подсистема A/B-тестирования промптов в HR Assistant**
 

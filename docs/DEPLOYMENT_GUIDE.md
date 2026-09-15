@@ -1,6 +1,8 @@
-# Руководство по развёртыванию HR Assistant
+# 🚀 DEPLOYMENT_GUIDE — HR Assistant
 
-Документ описывает процесс развёртывания HR Assistant в production-окружении.
+**Назначение:** единственный Source of Truth процесса развёртывания HR Assistant. Критерий качества — успешно развёрнутая работоспособная система, а не качество текста.
+
+> ⚠️ **Статус валидации:** документ валидируется запуском. Clean-room Deployment Validation (развёртывание с нуля в чистом окружении по этому документу) не проводилась — фиксируется как reproducibility debt. Проверки на существующем рабочем инстансе (Verification) валидацию не заменяют.
 
 ---
 
@@ -124,7 +126,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:14
+    image: postgres:16
     container_name: hr-assistant-db
     restart: unless-stopped
     environment:
@@ -230,7 +232,7 @@ version: '3.8'
 
 services:
   n8n:
-    image: n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n
     container_name: hr-assistant-n8n
     restart: unless-stopped
     environment:
@@ -248,10 +250,13 @@ services:
     ports:
       - "5678:5678"
     volumes:
-      - ./workflows:/home/node/.n8n
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/workflows:ro
     depends_on:
       - postgres
-    command: n8n start
+
+volumes:
+  n8n_data:
 
 volumes:
   n8n-data:
@@ -277,7 +282,6 @@ docker compose -f docker-compose.n8n.yml logs n8n
 ### 3.3. Настройка n8n
 
 **Веб-интерфейс:**
-**Веб-интерфейс:**
 1. Откройте `https://your-domain.com:5678`
 2. Создайте аккаунт администратора
 3. Перейдите к Шагу 5 для настройки credentials
@@ -286,15 +290,19 @@ docker compose -f docker-compose.n8n.yml logs n8n
 
 ## Шаг 4: Импорт Workflows
 
-### 4.1. Экспорт workflows из проекта
+### 4.1. Workflows проекта
 
-Workflows находятся в `workflows/`:
-- `hr_intake.json`
-- `hr_processing_worker.json`
-- `hr_delivery_worker.json`
-- `hr_generate_video.json`
-- `hr_queue_watchdog_candidate_inputs.json`
-- `hr_queue_watchdog_outbox.json`
+Production-набор находится в `workflows/` (имена файлов соответствуют именам workflow в n8n):
+
+- `HR Intake.json`
+- `HR Processing Worker.json`
+- `HR Delivery Worker.json`
+- `HR Generate Video.json`
+- `HR Queue Watchdog - candidate_inputs.json`
+- `HR Queue Watchdog - outbox.json`
+- `PEm05_ error_handler.json`
+
+> ℹ️ Дополнительно в `workflows/` лежат инженерные workflow, не относящиеся к production: `HR Processing Worker - Multi Provider Test.json` (стенд тестирования провайдеров) и `HRA Prompt Evaluation Experiment.json` (eval-контур). Их импортировать для production-развёртывания не нужно, активировать — тем более.
 
 ---
 
@@ -304,15 +312,16 @@ Workflows находятся в `workflows/`:
 
 1. Откройте n8n
 2. Перейдите в Workflows → Import from File
-3. Выберите файл `hr_intake.json`
-4. Повторите для всех workflows
+3. Выберите файл `HR Intake.json`
+4. Повторите для всех production workflows (см. §4.1)
 
-**Вариант 2: CLI**
+**Вариант 2: CLI** (требует volume `./workflows:/workflows:ro` из §3.1)
 
 ```bash
-# Импорт всех workflows
-for workflow in workflows/*.json; do
-  docker exec -it hr-assistant-n8n n8n import:workflow --input=/home/node/.n8n/workflows/$(basename $workflow)
+# Импорт всех production workflows
+for name in "HR Intake" "HR Processing Worker" "HR Delivery Worker" "HR Generate Video" \
+            "HR Queue Watchdog - candidate_inputs" "HR Queue Watchdog - outbox" "PEm05_ error_handler"; do
+  docker exec -it hr-assistant-n8n n8n import:workflow --input="/workflows/${name}.json"
 done
 ```
 
@@ -422,7 +431,7 @@ HR Assistant использует n8n credential store для хранения c
 
 ## Шаг 6: Настройка Telegram Webhook
 
-### 5.1. Получение URL Webhook
+### 6.1. Получение URL Webhook
 
 URL зависит от вашего домена:
 ```
@@ -431,7 +440,7 @@ https://your-domain.com/webhook/hr-assistant
 
 ---
 
-### 6.1. Установка Webhook
+### 6.2. Установка Webhook
 
 Замените `YOUR_BOT_TOKEN` на токен вашего бота:
 
@@ -456,7 +465,7 @@ curl -X POST "https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook" \
 
 ---
 
-### 6.2. Проверка Webhook
+### 6.3. Проверка Webhook
 
 ```bash
 curl -X GET "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"
@@ -476,9 +485,9 @@ curl -X GET "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"
 
 ---
 
-## Шаг 6: Настройка SSL (опционально)
+## Шаг 7: Настройка SSL (опционально)
 
-### 6.1. Docker Compose с Traefik
+### 7.1. Docker Compose с Traefik
 
 Создайте `docker-compose.traefik.yml`:
 
@@ -487,7 +496,7 @@ version: '3.8'
 
 services:
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3.3
     container_name: hr-assistant-traefik
     restart: unless-stopped
     ports:
@@ -501,7 +510,7 @@ services:
       - TRAEFIK_EMAIL=${TRAEFIK_EMAIL}
 
   n8n:
-    image: n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n
     container_name: hr-assistant-n8n
     restart: unless-stopped
     labels:
@@ -523,7 +532,7 @@ services:
       - traefik
 
   postgres:
-    image: postgres:14
+    image: postgres:16
     container_name: hr-assistant-db
     restart: unless-stopped
     environment:
@@ -538,7 +547,7 @@ services:
 
 ---
 
-### 6.2. Конфигурация Traefik
+### 7.2. Конфигурация Traefik
 
 Создайте `traefik/traefik.yml`:
 
@@ -569,31 +578,33 @@ providers:
 
 ---
 
-## Шаг 7: Загрузка вакансий
+## Шаг 8: Загрузка вакансий
 
-### 7.1. Добавление вакансий в БД
+### 8.1. Добавление вакансий в БД
+
+> ⚠️ Статус вакансии должен быть `'open'` — Processing Worker отбирает вакансии только по `status = 'open'`.
 
 ```sql
 INSERT INTO vacancies (title, description, requirements, salary_min, salary_max, status)
 VALUES
-  ('Senior Frontend Developer', 'Разработка frontend-приложений на React', 'React, TypeScript, 5+ лет опыта', 180000, 250000, 'active'),
-  ('UX Designer', 'Проектирование UX/UI интерфейсов', 'Figma, Sketch, 3+ года опыта', 120000, 180000, 'active'),
-  ('Backend Developer', 'Разработка backend-сервисов на Java', 'Java, Spring Boot, 5+ лет опыта', 200000, 300000, 'active');
+  ('Senior Frontend Developer', 'Разработка frontend-приложений на React', 'React, TypeScript, 5+ лет опыта', 180000, 250000, 'open'),
+  ('UX Designer', 'Проектирование UX/UI интерфейсов', 'Figma, Sketch, 3+ года опыта', 120000, 180000, 'open'),
+  ('Backend Developer', 'Разработка backend-сервисов на Java', 'Java, Spring Boot, 5+ лет опыта', 200000, 300000, 'open');
 ```
 
 ---
 
-### 7.2. Проверка вакансий
+### 8.2. Проверка вакансий
 
 ```sql
-SELECT id, title, status FROM vacancies WHERE status = 'active';
+SELECT id, title, status FROM vacancies WHERE status = 'open';
 ```
 
 ---
 
-## Шаг 8: Тестирование
+## Шаг 9: Тестирование
 
-### 8.1. Тестирование Telegram Bot
+### 9.1. Тестирование Telegram Bot
 
 ```bash
 # Отправка тестового сообщения в Telegram-бот
@@ -603,7 +614,7 @@ SELECT id, title, status FROM vacancies WHERE status = 'active';
 
 ---
 
-### 8.2. Тестирование обработки резюме
+### 9.2. Тестирование обработки резюме
 
 ```bash
 # Отправка тестового резюме (текст)
@@ -618,7 +629,7 @@ SELECT id, title, status FROM vacancies WHERE status = 'active';
 
 ---
 
-### 8.3. Проверка логов
+### 9.3. Проверка логов
 
 ```bash
 # Логи n8n
@@ -633,9 +644,9 @@ SELECT * FROM processing_logs ORDER BY created_at DESC LIMIT 10;
 
 ---
 
-## Шаг 9: Мониторинг
+## Шаг 10: Мониторинг
 
-### 9.1. Healthcheck
+### 10.1. Healthcheck
 
 ```bash
 # Проверка PostgreSQL
@@ -647,7 +658,7 @@ curl -f http://localhost:5678/healthz || exit 1
 
 ---
 
-### 9.2. Метрики
+### 10.2. Метрики
 
 **SQL-запросы для мониторинга:**
 
@@ -666,9 +677,9 @@ SELECT
 
 ---
 
-## Шаг 10: Бэкапы
+## Шаг 11: Бэкапы
 
-### 10.1. Бэкап PostgreSQL
+### 11.1. Бэкап PostgreSQL
 
 ```bash
 # Создание бэкапа
@@ -680,17 +691,14 @@ docker exec -i hr-assistant-db psql -U ${POSTGRES_USER} ${POSTGRES_DB} < backup_
 
 ---
 
-### 10.2. Автоматические бэкапы
+### 11.2. Автоматические бэкапы
 
 ```bash
-# Добавить в crontab
-crontab -e
-
-# Ежедневный бэкап в 2:00
-0 2 * * * /opt/hr-assistant/scripts/backup.sh >> /var/log/hr-assistant/backup.log 2>&1
+# Создать каталоги и скрипт бэкапа
+mkdir -p /opt/hr-assistant/scripts /opt/hr-assistant/backups /var/log/hr-assistant
 ```
 
-**Скрипт `scripts/backup.sh`:**
+Создайте скрипт `/opt/hr-assistant/scripts/backup.sh` со следующим содержимым и сделайте исполняемым (`chmod +x`):
 
 ```bash
 #!/bin/bash
@@ -705,30 +713,38 @@ docker exec hr-assistant-db pg_dump -U ${POSTGRES_USER} ${POSTGRES_DB} > ${BACKU
 find ${BACKUP_DIR} -name "backup_*.sql" -mtime +7 -delete
 ```
 
+```bash
+chmod +x /opt/hr-assistant/scripts/backup.sh
+
+# Добавить в crontab ежедневный бэкап в 2:00
+crontab -e
+# 0 2 * * * /opt/hr-assistant/scripts/backup.sh >> /var/log/hr-assistant/backup.log 2>&1
+```
+
 ---
 
 ## Обновление
 
 ### Обновление Workflows
 
+Workflows хранятся в БД n8n — обновление выполняется реимпортом изменённого JSON через веб-интерфейс (Workflows → Import from File) или CLI:
+
 ```bash
-# Остановка n8n
-docker compose -f docker-compose.n8n.yml stop
-
-# Обновление файлов workflows
-cp workflows/*.json /home/node/.n8n/workflows/
-
-# Запуск n8n
-docker compose -f docker-compose.n8n.yml start
+# Реимпорт изменённого workflow (volume ./workflows:/workflows:ro из §3.1)
+docker exec -it hr-assistant-n8n n8n import:workflow --input="/workflows/HR Processing Worker.json"
 ```
+
+История изменений workflows — [📝 CHANGE_LOG.md](CHANGE_LOG.md).
 
 ---
 
 ### Обновление БД
 
+Отдельных файлов миграций в репозитории нет: актуальная схема — `database/schema_hr_assistant.sql`. Изменения схемы применяются точечными SQL-скриптами из `database/` (нумерованные файлы `02…17` — eval-контур):
+
 ```bash
-# Применение миграций
-docker exec -i hr-assistant-db psql -U ${POSTGRES_USER} ${POSTGRES_DB} < migrations/001_update_schema.sql
+# Пример: применить скрипт изменения схемы
+docker exec -i hr-assistant-db psql -U ${POSTGRES_USER} ${POSTGRES_DB} -f - < database/<script>.sql
 ```
 
 ---
@@ -791,12 +807,13 @@ docker compose -f docker-compose.db.yml logs postgres
 
 ## Связанные документы
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — архитектура системы
-- [SPEC.md](SPEC.md) — спецификация системы
-- [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md) — инструкция для поддержки
-- [known-issues.md](known-issues.md) — известные проблемы
+- [🏗️ ARCHITECTURE.md](ARCHITECTURE.md) — архитектура системы
+- [📘 SPEC.md](SPEC.md) — спецификация системы
+- [⚙️ SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md) — инструкция для поддержки (эксплуатация)
+- [🛠️ known-issues.md](known-issues.md) — известные проблемы
+- [📂 PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) — карта репозитория
 
 ---
 
-**Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-23
+**Статус:** Source of Truth развёртывания. Clean-room Deployment Validation не проводилась — reproducibility debt (см. PROJECT_STATE.md).
+**Последнее обновление:** 2026-09-15

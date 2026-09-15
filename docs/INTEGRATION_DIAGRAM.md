@@ -1,6 +1,8 @@
-# Диаграмма интеграций: HR Assistant
+# 🔌 INTEGRATION_DIAGRAM — HR Assistant
 
-Документ описывает интеграции HR Assistant с внешними системами и внутренними компонентами.
+Документ описывает интеграции HR Assistant с внешними системами и внутренними компонентами: диаграммы, payload-контракты, коды ошибок, retry-политики.
+
+**Основной читатель:** инженер, сопровождающий интеграции системы.
 
 ---
 
@@ -753,12 +755,12 @@ SELECT
 
 ## Связанные документы
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — архитектура системы
-- [SPEC.md](SPEC.md) — спецификация системы
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) — руководство по развёртыванию
-- [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md) — инструкция для поддержки
+- [🏗️ ARCHITECTURE.md](ARCHITECTURE.md) — архитектура системы
+- [📘 SPEC.md](SPEC.md) — спецификация системы
+- [🚀 DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) — руководство по развёртыванию
+- [⚙️ SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md) — инструкция для поддержки
 
 ---
 
 **Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-24
+**Последнее обновление:** 2026-09-15

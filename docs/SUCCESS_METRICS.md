@@ -1,6 +1,8 @@
-# Success Metrics: HR Assistant
+# 📈 SUCCESS_METRICS — HR Assistant
 
-**Полный справочник метрик успеха проекта HR Assistant.**
+**Назначение:** полный справочник метрик успеха проекта HR Assistant. Каждая метрика ссылается на SSOT-документ, в котором она определена.
+
+**Основной читатель:** владелец проекта и инженер, оценивающие качество и эффект системы.
 
 ---
 
@@ -296,10 +298,10 @@ WHERE created_at > NOW() - INTERVAL '1 hour';
 
 ```bash
 # Логи n8n
-docker compose -f docker-compose.n8n.yml logs n8n
+docker compose -f config/docker-compose.yml logs n8n
 
 # Логи PostgreSQL
-docker compose -f docker-compose.db.yml logs postgres
+docker compose -f config/docker-compose.yml logs postgres_hr
 ```
 
 ---
@@ -401,4 +403,4 @@ ORDER BY created_at DESC;
 ---
 
 **Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-27
+**Последнее обновление:** 2026-09-15

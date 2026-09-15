@@ -62,3 +62,8 @@ env/
 Thumbs.db
 .vscode/
 .idea/
+
+# ============================================================
+# Internal showcase design (not part of the public case)
+# ============================================================
+docs/NARRATIVE_BLUEPRINT.md

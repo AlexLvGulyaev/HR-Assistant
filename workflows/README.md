@@ -1,6 +1,8 @@
-# HR Assistant Workflows
+# 🛠️ Workflows — HR Assistant
 
-**Last Updated:** 2026-06-23
+**Назначение:** каталог workflow-файлов кейса. Имена файлов соответствуют именам workflow в n8n.
+
+**Last Updated:** 2026-09-15
 
 ---
 
@@ -10,7 +12,7 @@
 
 **⚠️ Важно:** Эти workflow используются в production для обработки реальных запросов.
 
-#### 1. HR Intake (hr-intake.json)
+#### 1. HR Intake (`HR Intake.json`)
 
 **Узлов:** 43
 
@@ -28,7 +30,7 @@
 
 ---
 
-#### 2. HR Processing Worker (hr-processing-worker.json)
+#### 2. HR Processing Worker (`HR Processing Worker.json`)
 
 **Узлов:** 47
 
@@ -40,12 +42,12 @@
 - Валидация JSON-структуры
 - Попытка ремонта невалидного JSON
 - Создание/обновление записи кандидата в `candidates`
-- Matching с вакансиями (GPT-4)
+- Matching с вакансиями (GPT-4o-mini)
 - Подготовка ответа в `outbox`
 
 **Интеграции:**
 - PostgreSQL (SELECT, UPDATE, INSERT)
-- OpenAI API (GPT-4o-mini, GPT-4)
+- OpenAI API (GPT-4o-mini)
 
 **Обработка ошибок:**
 - Retry (3 попытки, интервал 5 секунд)
@@ -54,7 +56,7 @@
 
 ---
 
-#### 3. HR Delivery Worker (hr-delivery-worker.json)
+#### 3. HR Delivery Worker (`HR Delivery Worker.json`)
 
 **Узлов:** 21
 
@@ -74,7 +76,7 @@
 
 ---
 
-#### 4. HR Generate Video (hr-generate-video.json)
+#### 4. HR Generate Video (`HR Generate Video.json`)
 
 **Узлов:** 15
 
@@ -91,7 +93,7 @@
 
 ---
 
-#### 5. HR Queue Watchdog - candidate_inputs (hr-queue-watchdog-candidate-inputs.json)
+#### 5. HR Queue Watchdog - candidate_inputs (`HR Queue Watchdog - candidate_inputs.json`)
 
 **Узлов:** 2
 
@@ -105,7 +107,7 @@
 
 ---
 
-#### 6. HR Queue Watchdog - outbox (hr-queue-watchdog-outbox.json)
+#### 6. HR Queue Watchdog - outbox (`HR Queue Watchdog - outbox.json`)
 
 **Узлов:** 2
 
@@ -121,7 +123,7 @@
 
 ### Вспомогательные workflow (1)
 
-#### 7. error_handler (error-handler.json)
+#### 7. Error Handler (`PEm05_ error_handler.json`)
 
 **Узлов:** 5
 
@@ -137,7 +139,7 @@
 
 **⚠️ Важно:** Эти workflow являются **инженерными стендами** и НЕ используются в production. Они предназначены для тестирования и исследования в рамках экспериментального ML-контура.
 
-#### 8. HRA Prompt Evaluation Experiment (HRA Prompt Evaluation Experiment.json)
+#### 8. HRA Prompt Evaluation Experiment (`HRA Prompt Evaluation Experiment.json`)
 
 **Узлов:** ~50
 
@@ -161,7 +163,7 @@
 
 ---
 
-#### 9. HR Processing Worker - Multi Provider Test (HR Processing Worker - Multi Provider Test.json)
+#### 9. HR Processing Worker - Multi Provider Test (`HR Processing Worker - Multi Provider Test.json`)
 
 **Узлов:** 54
 

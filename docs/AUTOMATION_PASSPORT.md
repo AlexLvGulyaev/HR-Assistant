@@ -1,6 +1,6 @@
-# Паспорт автоматизации: HR Assistant
+# 🪪 AUTOMATION_PASSPORT — HR Assistant
 
-Документ содержит ключевые сведения об автоматизации HR Assistant для быстрой ориентации и управления жизненным циклом.
+**Основной читатель:** руководитель/владелец проекта и инженер, принимающий систему в эксплуатацию. Документ содержит ключевые сведения об автоматизации для быстрой ориентации и управления жизненным циклом.
 
 ---
 
@@ -10,10 +10,10 @@
 |----------|----------|
 | **Название автоматизации** | HR Assistant (HR-ассистент) |
 | **Код автоматизации** | hr-assistant |
-| **Версия** | 2.0 |
+| **Версия** | 2.3.0 (2026-09-01) |
 | **Статус** | Production-ready |
 | **Дата запуска** | 2026-04-29 |
-| **Дата паспорта** | 2026-06-24 |
+| **Дата паспорта** | 2026-09-15 |
 
 ---
 
@@ -61,9 +61,9 @@
 
 | Роль | Ответственный | Обязанности |
 |------|--------------|-------------|
-| **Product Owner** | [Имя] | Бизнес-требования, приоритеты, ROI |
-| **Technical Owner** | [Имя] | Архитектура, инфраструктура, обновления |
-| **Operations** | [Имя] | Мониторинг, инциденты, поддержка |
+| **Product Owner** | (заполнить при передаче заказчику) | Бизнес-требования, приоритеты, ROI |
+| **Technical Owner** | (заполнить при передаче заказчику) | Архитектура, инфраструктура, обновления |
+| **Operations** | (заполнить при передаче заказчику) | Мониторинг, инциденты, поддержка |
 
 ---
 
@@ -190,17 +190,19 @@
 | `eval_prompt_runs` | Запуски экспериментов |
 | `eval_prompt_results` | Результаты выполнения |
 
-### Результаты Experiment 002
+### Результаты экспериментов
 
 | Метрика | Base Qwen | Qwen + LoRA | GPT-4o-mini (baseline) |
 |---------|-----------|-------------|------------------------|
-| Offline Validation | ✅ Baseline | ✅ **Improved** | Reference |
+| Offline Validation | ✅ Baseline | ✅ Improved (Exp 002) | Reference |
 | Runtime Positive Test | ✅ Pass | ✅ Pass | N/A |
-| Runtime Negative Test | ✅ Pass | ❌ **Failed** | N/A |
+| Runtime Negative Test | ✅ Pass | ❌ Failed (Exp 002) → ✅ Pass (Exp 003, после hard negatives в teacher dataset) | N/A |
+| External validation (Exp 004) | — | ✅ 0.931 vs GPT-4o-mini 0.925 | 0.925 |
+| Telegram smoke (23 hard negatives) | — | ❌ 35 % | ✅ 43 % |
 
-**Вывод:** Модель не готова к production. Требуется расширение teacher dataset за счёт hard negative примеров.
+**Вывод (после Experiments 001–004):** LoRA — рабочий on-premise / edge кандидат; production-контур остаётся за GPT-4o-mini. LoRA не применяется в production.
 
-**Документация:** [EXPERIMENTAL_ML_PIPELINE.md](EXPERIMENTAL_ML_PIPELINE.md)
+**Документация:** [EXPERIMENTAL_ML_PIPELINE.md](EXPERIMENTAL_ML_PIPELINE.md), [finetuning/README.md](../finetuning/README.md)
 
 ---
 
@@ -473,20 +475,21 @@ curl -X GET "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo"
 
 | Роль | Контакт |
 |------|---------|
-| **Product Owner** | [email] |
-| **Technical Owner** | [email] |
-| **Operations** | [email] |
-| **Support** | [email] |
+| **Product Owner** | (заполнить при передаче заказчику) |
+| **Technical Owner** | (заполнить при передаче заказчику) |
+| **Operations** | (заполнить при передаче заказчику) |
+| **Support** | (заполнить при передаче заказчику) |
 
 ---
 
 ## Связанные документы
 
-- [PROJECT_STATE.md](PROJECT_STATE.md) — состояние проекта
-- [README.md](../README.md) — описание кейса
-- [SPEC.md](SPEC.md) — спецификация системы
+- [📊 PROJECT_STATE.md](PROJECT_STATE.md) — состояние проекта
+- [🏠 README.md](../README.md) — описание кейса
+- [📘 SPEC.md](SPEC.md) — спецификация системы
+- [🛡️ SECURITY_NOTES.md](SECURITY_NOTES.md) — модель безопасности
 
 ---
 
-**Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-24
+**Статус:** Паспорт актуален
+**Последнее обновление:** 2026-09-15
