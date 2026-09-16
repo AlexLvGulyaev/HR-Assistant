@@ -660,20 +660,7 @@ curl -f http://localhost:5678/healthz || exit 1
 
 ### 10.2. Метрики
 
-**SQL-запросы для мониторинга:**
-
-```sql
--- Количество обработанных за час
-SELECT COUNT(*) FROM final_decisions WHERE created_at > NOW() - INTERVAL '1 hour';
-
--- Ошибки за час
-SELECT COUNT(*) FROM processing_logs WHERE status = 'error' AND created_at > NOW() - INTERVAL '1 hour';
-
--- Зависшие записи
-SELECT
-  (SELECT COUNT(*) FROM candidate_inputs WHERE processing_status = 'processing_started') as stuck_processing,
-  (SELECT COUNT(*) FROM outbox WHERE status = 'sending') as stuck_sending;
-```
+Операционный мониторинг (SQL-запросы по обработке, ошибкам и зависшим записям) — Source of Truth в [SUPPORT_RUNBOOK.md §7](SUPPORT_RUNBOOK.md#-7-мониторинг).
 
 ---
 

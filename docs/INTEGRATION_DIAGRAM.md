@@ -15,55 +15,14 @@ HR Assistant интегрируется с:
 
 ---
 
-## 🗺️ 2. Архитектурная диаграмма интеграций
+## 🗺️ 2. Архитектурная диаграмма
 
-```mermaid
-graph TB
-    subgraph External["Внешние системы"]
-        Telegram[Telegram Bot API]
-        OpenAI[OpenAI API]
-        PostgreSQL[(PostgreSQL)]
-    end
+Полная системная диаграмма (workflows, таблицы, watchdog-и, расписания) — в [ARCHITECTURE.md §2](ARCHITECTURE.md#-2-архитектурная-диаграмма). Этот документ фокусируется на деталях каждой интеграции:
 
-    subgraph n8n["n8n Workflows"]
-        HRIntake[HR Intake<br/>Webhook]
-        Processing[HR Processing Worker]
-        Delivery[HR Delivery Worker]
-        Video[HR Generate Video<br/>On-demand]
-
-        Watchdog1[Watchdog<br/>candidate_inputs]
-        Watchdog2[Watchdog<br/>outbox]
-    end
-
-    subgraph AI["AI Models (OpenAI)"]
-        GPT[gpt-4o-mini<br/>Data extraction & Matching]
-        TTS[gpt-4o-mini-tts<br/>Text-to-Speech]
-        Image[gpt-image-1<br/>Image Generation]
-        Sora[sora-2<br/>Video Generation]
-    end
-
-    Telegram -->|Webhook| HRIntake
-    HRIntake -->|candidate_inputs| PostgreSQL
-    PostgreSQL -->|polling| Processing
-    Processing -->|gpt-4o-mini| GPT
-    Processing -->|match results| PostgreSQL
-    PostgreSQL -->|polling| Delivery
-    Delivery -->|gpt-4o-mini-tts| TTS
-    Delivery -->|gpt-image-1| Image
-    Delivery -->|outbox| PostgreSQL
-    PostgreSQL -->|messages| Telegram
-
-    Processing -.->|on-demand| Video
-    Video -->|sora-2| Sora
-    Video -->|video| PostgreSQL
-
-    Watchdog1 -.->|cleanup| PostgreSQL
-    Watchdog2 -.->|cleanup| PostgreSQL
-
-    style External fill:#e1f5ff
-    style n8n fill:#fff4e1
-    style AI fill:#f0f0f0
-```
+- §3 — Telegram Bot API: вход (webhook), исходящие сообщения
+- §4 — OpenAI API: извлечение данных, matching, TTS, image, video
+- §5 — PostgreSQL: прямое подключение, операции
+- §6 — Внутренние интеграции: очереди, polling workers
 
 ---
 
@@ -383,16 +342,7 @@ async function callWithRetry(fn, maxRetries = 3, delay = 5000) {
 
 #### Основные таблицы
 
-| Таблица | Назначение | Ключевые поля |
-|---------|-----------|---------------|
-| `intake_events` | Входящие события | id, execution_id, input_type |
-| `candidate_inputs` | Входные данные | id, intake_event_id, normalized_text |
-| `candidates` | Профили кандидатов | id, full_name, skills |
-| `candidate_contacts` | Контакты | id, candidate_id, contact_value |
-| `vacancies` | Вакансии | id, title, requirements |
-| `matches` | Результаты matching | id, candidate_id, vacancy_id, score |
-| `final_decisions` | Итоговые решения | id, candidate_id, best_match_id |
-| `outbox` | Исходящие сообщения | id, status, body |
+Схема БД — Source of Truth: [database/README.md](../database/README.md); архитектурный обзор таблиц — [ARCHITECTURE.md §4](ARCHITECTURE.md#-4-база-данных).
 
 ---
 
@@ -584,115 +534,9 @@ WHERE status = 'sending'
 
 ---
 
-## 🗂️ 7. Схема данных
+## 📊 7. Мониторинг интеграций
 
-### ER-диаграмма
-
-```mermaid
-erDiagram
-    intake_events ||--|| candidate_inputs : "generates"
-    candidate_inputs ||--|| candidates : "creates"
-    candidates ||--|{ candidate_contacts : "has"
-    candidates ||--|{ matches : "matched_with"
-    vacancies ||--|{ matches : "has"
-    candidates ||--|| final_decisions : "receives"
-    matches ||--o| final_decisions : "best_match"
-    candidates ||--|{ outbox : "receives_messages"
-    intake_events ||--|{ outbox : "triggers"
-
-    intake_events {
-        uuid id PK
-        text execution_id UK
-        text source
-        text input_type
-        bigint telegram_chat_id
-        bigint telegram_user_id
-        text external_message_id
-        timestamptz received_at
-        jsonb raw_payload
-        text status
-    }
-
-    candidate_inputs {
-        uuid id PK
-        uuid intake_event_id FK
-        text execution_id
-        text source
-        text input_type
-        text original_text
-        text normalized_text
-        text file_name
-        text processing_status
-    }
-
-    candidates {
-        uuid id PK
-        text full_name
-        text city
-        text desired_position
-        numeric experience_years
-        text[] skills
-        numeric salary_expectation
-        text candidate_summary
-        uuid source_input_id FK
-        text data_quality_status
-    }
-
-    candidate_contacts {
-        uuid id PK
-        uuid candidate_id FK
-        text contact_type
-        text contact_value
-        text normalized_value
-        boolean is_primary
-    }
-
-    vacancies {
-        uuid id PK
-        text title
-        text description
-        text requirements
-        numeric salary_min
-        numeric salary_max
-        text status
-    }
-
-    matches {
-        uuid id PK
-        uuid candidate_id FK
-        uuid vacancy_id FK
-        numeric score
-        text decision
-        text reason
-        jsonb raw_llm_response
-    }
-
-    final_decisions {
-        uuid id PK
-        uuid candidate_id FK
-        uuid best_match_id FK
-        boolean has_match
-        text decision_status
-        text decision_reason
-    }
-
-    outbox {
-        uuid id PK
-        uuid intake_event_id FK
-        uuid candidate_id FK
-        text channel
-        text recipient
-        text message_type
-        text body
-        text status
-        jsonb reply_markup
-        timestamptz sent_at
-    }
-```
-
----
-
-## 📊 8. Мониторинг интеграций
+Операционные SQL-запросы мониторинга (обработка за час, ошибки, зависшие записи) — в [SUPPORT_RUNBOOK.md §7](SUPPORT_RUNBOOK.md#-7-мониторинг). Здесь — метрики уровня интеграций.
 
 ### Telegram Bot API
 
@@ -753,7 +597,7 @@ SELECT
 
 ---
 
-## 📚 9. Связанные документы
+## 📚 8. Связанные документы
 
 - [🏗️ ARCHITECTURE.md](ARCHITECTURE.md) — архитектура системы
 - [📘 SPEC.md](SPEC.md) — спецификация системы

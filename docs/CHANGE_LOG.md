@@ -71,6 +71,7 @@
 
 | Дата | Документы | Что изменено |
 |------|-----------|--------------|
+| 2026-09-16 | INTEGRATION_DIAGRAM, DEPLOYMENT_GUIDE §10.2, SUPPORT_RUNBOOK §8 | SSOT-дедуп однородных документов: INTEG §2 — системный граф заменён ссылкой на ARCHITECTURE §2; INTEG §5 — таблица таблиц заменена ссылками на database/README (SOT) и ARCHITECTURE §4; INTEG §7 (ER-дубль) удалён, перенумерация §8→7, §9→8; DG §10.2 — SQL-дубль → ссылка на RUNBOOK §7 (SOT операционных SQL); RUNBOOK §8 — pg_dump-дубль → ссылка на DG Шаг 11 (SOT настройки бэкапов) |
 | 2026-09-16 | SUPPORT_RUNBOOK §5, SPEC §6, PROJECT_HANDOFF_CHECKLIST | Дедуп known-issues: полные KP-блоки (3 в RUNBOOK, 2 в SPEC, 2 в HANDOFF) заменены сводными таблицами/однострочниками со ссылками; known-issues.md — единственный реестр дефектов (SSOT) |
 | 2026-09-16 | PROJECT_STATE | Уточнение строки «LoRA Model Production» в таблице готовности: факт эксперимента (offline external validation 0.931 vs 0.925 обгоняет, real-world Telegram smoke 35% vs 43% проигрывает); закрытый вопрос latency optimization убран из открытых (vLLM-ускорение выполнено, p95 ~2.1 сек) |
 | 2026-09-16 | 14 документов docs/, docs/screenshots/MEDIA_INDEX.md, EXPERIMENTAL_ML_PIPELINE | Правка футеров: устранена склейка строк «Обновление/История» в 14 документах; в MEDIA_INDEX исправлен путь к CHANGE_LOG; из EXPERIMENTAL_ML_PIPELINE удалена старая шапка Created/Updated/Status/Author (метаданные — только в футере, факты Experiment 004 — в теле) |

@@ -468,21 +468,7 @@ SELECT
 
 ## 💾 8. Бэкапы и восстановление
 
-### Бэкап PostgreSQL
-
-**Рекомендуемая частота:** ежедневно
-
-**Команда:**
-```bash
-pg_dump -h localhost -U postgres -d hr_assistant > backup_$(date +%Y%m%d).sql
-```
-
-**Восстановление:**
-```bash
-psql -h localhost -U postgres -d hr_assistant < backup_20260623.sql
-```
-
----
+Настройка бэкапов PostgreSQL (первый бэкап, восстановление, скрипт, cron-расписание) — Source of Truth: [DEPLOYMENT_GUIDE.md, Шаг 11](DEPLOYMENT_GUIDE.md#-шаг-11-бэкапы).
 
 ### Бэкап n8n Workflows
 
