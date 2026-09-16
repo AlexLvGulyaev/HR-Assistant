@@ -43,7 +43,7 @@
 | Fine-tuning Experiment 003 | Completed | ✅ 100% | Runtime negative smoke пройден (7/7), offline decision accuracy на original test снизилась до 0.667 |
 | Fine-tuning Cycle 4 / Experiment 004 | Completed | ✅ 100% | External validation пройдена: LoRA 0.931 vs GPT-4o-mini 0.941 на каноническом runtime (102 пары, GPT-4o reference). После vLLM-ускорения: LoRA 0.931 vs GPT-4o-mini 0.925 (3 повторных прогона, p95 latency ~2.1 сек). LoRA является рабочим on-premise / edge кандидатом; production остаётся за GPT-4o-mini из-за Telegram smoke 35% vs 43%. |
 | Runtime Smoke Validation | Engineering Test | ✅ 100% | Локальный `runtime_smoke_test.py` + Multi Provider Test workflow |
-| LoRA Model Production | Not Ready | ❌ 0% | LoRA не обгоняет GPT-4o-mini и не готова к production; открытые вопросы: score calibration, latency optimization, production smoke set |
+| LoRA Model Production | Not Ready | ❌ 0% | Offline external validation: LoRA обгоняет GPT-4o-mini (0.931 vs 0.925, vLLM), real-world Telegram smoke: 35% vs 43% — production остаётся за GPT-4o-mini. Открытые вопросы: score calibration, production smoke set |
 
 **Вывод:** Fine-tuning Documentation Package завершён. Architecture 1.0 реализована: публичная документация `finetuning/` содержит `README.md`, `TECHNICAL_FOUNDATION.md`, отчёты Experiments 001–004, `teacher_dataset_report.md` и `external_validation_report.md`. LoRA-модель не production-ready; следующий цикл должен устранить hard-negative failures в real-world условиях через teacher-label audit и production smoke set.
 
