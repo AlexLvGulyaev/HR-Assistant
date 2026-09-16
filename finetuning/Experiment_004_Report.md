@@ -8,7 +8,7 @@
 
 ---
 
-## 1. Контекст
+## 🎯 1. Контекст
 
 Experiment 004 — ответ на precision/recall trade-off, выявленный в Experiment 003.
 
@@ -20,7 +20,7 @@ Experiment 004 проверяет, можно ли восстановить reca
 
 ---
 
-## 2. Гипотеза
+## 🔬 2. Гипотеза
 
 **H₀ (нулевая гипотеза):**  
 Добавление positive/borderline примеров в teacher dataset при неизменных параметрах модели не улучшает recall на genuine match-кейсах и не позволяет LoRA соответствовать или превосходить GPT-4o-mini.
@@ -38,7 +38,7 @@ Experiment 004 проверяет, можно ли восстановить reca
 
 ---
 
-## 3. Изменения относительно предыдущего эксперимента
+## 🔄 3. Изменения относительно предыдущего эксперимента
 
 | Компонент | Experiment 003 | Experiment 004 |
 |-----------|----------------|----------------|
@@ -56,7 +56,7 @@ Experiment 004 проверяет, можно ли восстановить reca
 
 ---
 
-## 4. Неизменяемые параметры
+## 🔒 4. Неизменяемые параметры
 
 | Группа | Параметр | Значение | Источник |
 |--------|----------|----------|----------|
@@ -81,7 +81,7 @@ Experiment 004 проверяет, можно ли восстановить reca
 
 ---
 
-## 5. Датасет
+## 🗄️ 5. Датасет
 
 ### 5.1. Teacher dataset Experiment 004
 
@@ -137,7 +137,7 @@ External validation dataset не пересекается с train/validation/te
 
 ---
 
-## 6. Выполнение
+## ⚙️ 6. Выполнение
 
 ### 6.1. Участники и роли
 
@@ -166,14 +166,14 @@ External validation dataset не пересекается с train/validation/te
 | 10. Real-world Telegram smoke test | 23 hard-negative/edge анкеты | Telegram-бот + n8n workflow | Пользователь + Telegram/n8n | Telegram smoke results | Результаты LoRA vs GPT-4o-mini зафиксированы |
 | 11. Документирование и вердикт | Все метрики | Отчёт эксперимента | VPS Claude Code + Пользователь | `Experiment_004_Report.md` | Вердикт принят и задокументирован |
 
-### 6.3. Ключевые отклонения и инженерные решения
+### 6.3. Отклонения и инженерные решения
 
 - **Этап 7 выполнен дважды.** Первый запуск с `max_tokens = 300` выявил truncation bug: два кейса вернули HTTP 422 из-за нераспарсиваемого JSON. После фикса (`max_tokens` увеличен до 512 и добавлен graceful JSON fallback в [`hra_qwen_api_lora.py`](../api/hra_qwen_api_lora.py)) сравнение повторено.
 - **Latency optimization.** Основной runtime на Transformers + PEFT давал p95 latency ≈ 17 сек. В рамках Exp 004 исследованы альтернативные runtime: 4-bit NF4-квантизация ([`../api/hra_qwen_api_lora_4bit.py`](../api/hra_qwen_api_lora_4bit.py)) и vLLM OpenAI-compatible runtime ([`../api/hra_qwen_api_lora_vllm.py`](../api/hra_qwen_api_lora_vllm.py)). vLLM сократил p95 latency до ~2.1 сек. Канонический runtime Experiments 003–004 — FastAPI + Transformers + PEFT.
 
 ---
 
-## 7. Результаты обучения
+## 📈 7. Результаты обучения
 
 | Метрика | Значение |
 |---------|----------|
@@ -199,7 +199,7 @@ Early convergence: лучший чекпоинт достигается на э�
 
 ---
 
-## 8. Offline evaluation
+## 🧪 8. Offline evaluation
 
 ### 8.1. Generation test (test set, 15 записей)
 
@@ -225,7 +225,7 @@ Early convergence: лучший чекпоинт достигается на э�
 
 ---
 
-## 9. Runtime validation
+## ⚡ 9. Runtime validation
 
 ### 9.1. Runtime smoke test
 
@@ -239,7 +239,7 @@ Early convergence: лучший чекпоинт достигается на э�
 | stability_repeat | 1 | 1 | 0 |
 | **Итого** | **7** | **7** | **0** |
 
-**Ключевой вывод:** все заранее зафиксированные отрицательные и edge-case сценарии корректно отклонены; unexpected matches отсутствуют. Достижения Experiment 003 по hard negatives сохранены.
+**Вывод:** все заранее зафиксированные отрицательные и edge-case сценарии корректно отклонены; unexpected matches отсутствуют. Достижения Experiment 003 по hard negatives сохранены.
 
 > **Доказательство:** полные ответы LoRA по каждому smoke-кейсу — в [`data/evidence/experiment_004_runtime_smoke.json`](data/evidence/experiment_004_runtime_smoke.json).
 
@@ -288,7 +288,7 @@ Early convergence: лучший чекпоинт достигается на э�
 
 ---
 
-## 10. Дополнительная валидация
+## 🧾 10. Дополнительная валидация
 
 ### 10.1. Сравнение с GPT-4o-mini (test set, 15 записей)
 
@@ -356,11 +356,11 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 
 **Reference (GPT-4o):** `match`, score 63.
 
-**Model prediction (LoRA Experiment 004, vLLM):** `no_match`, score 57, с обоснованием, что кандидат — AI Automation Specialist, а не системный аналитик, и не хватает ключевых hard skills.
+**Model prediction (LoRA Experiment 004, vLLM):** `no_match`, score 57, с обоснованием, что кандидат — AI Automation Specialist, а не системный аналитик, и не хватает профильных hard skills.
 
 **GPT-4o-mini prediction:** `match`, score 70.
 
-**Почему этот пример важен:** Иллюстрирует, почему у LoRA выше FNR (13.6% vs 4.5%): она строже штрафует за отсутствие прямых ключевых навыков, даже когда reference judge считает смежный профиль подходящим.
+**Почему этот пример важен:** Иллюстрирует, почему у LoRA выше FNR (13.6% vs 4.5%): она строже штрафует за отсутствие прямых профильных навыков, даже когда reference judge считает смежный профиль подходящим.
 
 **Evidence:** [`data/evidence/experiment_004_external_validation_vllm_examples.jsonl`](data/evidence/experiment_004_external_validation_vllm_examples.jsonl), запись `HRA-EVAL-V2-000305`, vacancy "Системный аналитик".
 
@@ -443,7 +443,7 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 
 ---
 
-## 11. Интерпретация
+## 💡 11. Интерпретация
 
 ### 11.1. Что показал эксперимент
 
@@ -464,7 +464,7 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 
 ---
 
-## 12. Вердикт
+## ⚖️ 12. Вердикт
 
 > **Гипотеза частично подтверждена.**
 
@@ -479,7 +479,7 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 
 ---
 
-## 13. Следующий эксперимент
+## ➡️ 13. Следующий эксперимент
 
 Результаты Experiment 004 непосредственно ведут к proposal Experiment 005. Цель следующего цикла — устранить разрыв между высокой offline decision accuracy (~93%) и низким production-качеством на hard-negative/edge кейсах (35% в Telegram smoke).
 
@@ -509,7 +509,7 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 
 ---
 
-## 14. Источники и артефакты
+## 📚 14. Источники и артефакты
 
 ### 14.1. Публичные конфигурации и скрипты
 
@@ -540,3 +540,9 @@ GPT-4o-mini остаётся точнее на малой teacher-размече
 - Best checkpoint: `checkpoint-87` (эпоха 3), выбран по `eval_loss = 0.3273`.
 
 Датасет `HRA-EVAL-V4`, external validation set `HRA-EVAL-V5-EXT`, smoke set и манифесты включены в репозиторий в каталоге [`data/`](data/). Все профили в них синтетические: HR Assistant никогда не работал в реальном боевом режиме. Первичные артефакты обучения (weights, raw metrics, evaluation JSON, operation logs) хранятся в закрытом рабочем контуре и не публикуются.
+
+---
+
+**Статус:** Технический отчёт Experiment 004
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../docs/CHANGE_LOG.md#-4-история-изменений-документации)

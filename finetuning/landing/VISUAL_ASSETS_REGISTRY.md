@@ -1,27 +1,27 @@
 # Реестр визуальных артефактов лендинга HR Assistant LoRA v3
 
 **Назначение:** единый источник истины для SVG-артефактов storytelling-лендинга `https://hra-lora.alex-n8n.site`.  
-**Концепция:** [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md) — повествовательная спецификация.  
+**Концепция:** сцены и артефакты лендинга описаны во внутренней повествовательной спецификации (хранится вне публичного репозитория).  
 **Source of truth:** текущая реализация landing (`index.html`, `assets/visuals/`).
 
 ---
 
-## 0. Категории артефактов
+## 🗂️ 0. Категории артефактов
 
 В реестре описаны две независимые категории визуальных артефактов:
 
 | Категория | Где используется | Количество | Раздел |
 |-----------|------------------|------------|--------|
-| **SVG лендинга** | Непосредственно в `index.html` на сценах | 24 | [§1](#1-сцены-и-артефакты-лендинга) |
-| **Иллюстрации Narrative Blueprint** | В [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md) для визуального усиления повествования | 16 | [§2](#2-иллюстрации-narrative-blueprint) |
+| **SVG лендинга** | Непосредственно в `index.html` на сценах | 24 | [§1](#-1-сцены-и-артефакты-лендинга) |
+| **Иллюстрации повествовательной спецификации** | Во внутренней повествовательной спецификации для визуального усиления повествования | 16 | [§2](#-2-иллюстрации-повествовательной-спецификации) |
 
 Каждый SVG лендинга привязан к конкретной сцене и решает одну повествовательную задачу. Цифры, подписи и цвета в SVG соответствуют данным из [`data/experimentData.js`](data/experimentData.js) и исходным JSON-артефактам в [`../runs/`](../runs/).
 
-Иллюстрации Blueprint — это те же SVG-графики landing и одна дополнительная схема эволюции Люмины, встроенные в документ как акценты повествования.
+Иллюстрации повествовательной спецификации — это те же SVG-графики landing и одна дополнительная схема эволюции Люмины, встроенные в документ как акценты повествования.
 
 ---
 
-## 1. Сцены и артефакты лендинга
+## 🖼️ 1. Сцены и артефакты лендинга
 
 | Интерфейсная сцена | DOM-секция | Основной SVG | Назначение | Источник данных |
 |--------------------|------------|--------------|------------|-----------------|
@@ -46,16 +46,16 @@
 | 17 · Разбор эпох | `scene-19` | [`G-028-exp004-epoch-breakdown.svg`](assets/visuals/G-028-exp004-epoch-breakdown.svg) | Train/eval loss Exp 004 с marker лучшей эпохи | `../runs/experiment_004/trainer_state.json`, `generation_test_report.json` |
 | 18 · Лучшая эпоха | `scene-20` | [`G-016-best-epoch-markers.svg`](assets/visuals/G-016-best-epoch-markers.svg) | Best epoch во всех экспериментах | `../runs/experiment_00*/trainer_state.json` |
 | 19 · Данные важнее архитектуры | `scene-21` | [`D-010-dataset-change-log.svg`](assets/visuals/D-010-dataset-change-log.svg) | Что менялось, что было зафиксировано | `../runs/experiment_00*/adapter_config.json`, `configs/experiment_*.yaml` |
-| 20 · Архив | `scene-22` | [`G-001-loss-curves.svg`](assets/visuals/G-001-loss-curves.svg), [`G-007-test-eval-loss.svg`](assets/visuals/G-007-test-eval-loss.svg), [`G-006-per-component-mae.svg`](assets/visuals/G-006-per-component-mae.svg), [`G-010-latency-cdf.svg`](assets/visuals/G-010-latency-cdf.svg), [`G-014-lora-vs-gpt-radar.svg`](assets/visuals/G-014-lora-vs-gpt-radar.svg), [`D-003-dataset-composition-transition.svg`](assets/visuals/D-003-dataset-composition-transition.svg) | Evidence room: ключевые графики | Соответствующие JSON-источники |
+| 20 · Архив | `scene-22` | [`G-001-loss-curves.svg`](assets/visuals/G-001-loss-curves.svg), [`G-007-test-eval-loss.svg`](assets/visuals/G-007-test-eval-loss.svg), [`G-006-per-component-mae.svg`](assets/visuals/G-006-per-component-mae.svg), [`G-010-latency-cdf.svg`](assets/visuals/G-010-latency-cdf.svg), [`G-014-lora-vs-gpt-radar.svg`](assets/visuals/G-014-lora-vs-gpt-radar.svg), [`D-003-dataset-composition-transition.svg`](assets/visuals/D-003-dataset-composition-transition.svg) | Evidence room: сводные графики | Соответствующие JSON-источники |
 | 21 · О методе | `scene-23` | [`D-001-pipeline-schematic.svg`](assets/visuals/D-001-pipeline-schematic.svg) | Полный pipeline | `configs/experiment_*.yaml`, `api/`, runtime-отчёты |
 
 ---
 
-## 2. Иллюстрации Narrative Blueprint
+## 🎨 2. Иллюстрации повествовательной спецификации
 
-Эти артефакты используются в [`NARRATIVE_BLUEPRINT.md`](NARRATIVE_BLUEPRINT.md) для визуального усиления повествовательных акцентов. Большинство из них — это те же SVG-графики landing, встроенные в текст документа. Дополнительно: одна схема эволюции Люмины.
+Эти артефакты используются во внутренней повествовательной спецификации для визуального усиления повествовательных акцентов. Большинство из них — это те же SVG-графики landing, встроенные в текст документа. Дополнительно: одна схема эволюции Люмины.
 
-| Рисунок | SVG | Где в Blueprint | Назначение |
+| Рисунок | SVG | Где в спецификации | Назначение |
 |---------|-----|-----------------|------------|
 | 1 | [`lumina-evolution.svg`](assets/visuals/lumina-evolution.svg) | §3.3 | Девять состояний Люмины в прогрессии |
 | 2 | [`G-001-loss-curves.svg`](assets/visuals/G-001-loss-curves.svg) | Сцена 4 | Train/eval loss Exp 001 |
@@ -76,7 +76,7 @@
 
 ---
 
-## 3. Принципы именования и генерации
+## 📐 3. Принципы именования и генерации
 
 - Все SVG лежат в [`assets/visuals/`](assets/visuals/).
 - Имя файла: `<TYPE>-<NNN>-<kebab-description>.svg`.
@@ -85,5 +85,6 @@
 
 ---
 
-**Статус реестра:** синхронизирован с интерфейсной нумерацией landing v3 (21 сцена), все SVG — кликабельные ссылки.  
-**Последнее обновление:** 2026-07-27
+**Статус:** Реестр визуальных артефактов; синхронизирован с landing v3 (21 сцена)
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../../docs/CHANGE_LOG.md#-4-история-изменений-документации)

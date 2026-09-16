@@ -3,7 +3,7 @@
 Как быстро пройти историю эксперимента: лендинг — не интерактивное
 демо, а последовательность кадров, где главный герой — сама модель.
 
-## Маршрут проверки
+## 🧭 1. Маршрут проверки
 
 1. **Открыть** [лендинг](https://hra-lora.alex-n8n.site) → **прочитать**
    первую сцену → **увидеть** постановку: главный герой — языковая модель
@@ -17,7 +17,7 @@
 4. **Дойти** до внешней валидации → **сравнить** с эталоном на
    независимой выборке: LoRA 93.1% против GPT-4o-mini 94.1%.
 
-## Что ещё доступно
+## 📚 2. Что ещё доступно
 
 - Первоисточники истории — четыре GitHub-отчёта по экспериментам:
   - [Experiment 001 — Technical Baseline](https://github.com/AlexLvGulyaev/HR-Assistant/blob/main/finetuning/Experiment_001_Report.md)
@@ -26,3 +26,9 @@
   - [Experiment 004 — Balanced Teacher Dataset for Production-Ready LoRA](https://github.com/AlexLvGulyaev/HR-Assistant/blob/main/finetuning/Experiment_004_Report.md)
 - Как лендинг развёрнут:
   [DEPLOYMENT_GUIDE.md](https://github.com/AlexLvGulyaev/HR-Assistant/blob/main/finetuning/landing/DEPLOYMENT_GUIDE.md).
+
+---
+
+**Статус:** Маршрут демонстрации LoRA storytelling-лендинга
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../../docs/CHANGE_LOG.md#-4-история-изменений-документации)

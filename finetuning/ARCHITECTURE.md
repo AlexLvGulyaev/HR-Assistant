@@ -4,7 +4,7 @@
 
 ---
 
-## 1. Общая архитектура контура
+## 🧩 1. Общая архитектура контура
 
 ```mermaid
 flowchart TD
@@ -47,7 +47,7 @@ flowchart TD
 
 ---
 
-## 2. Инфраструктура исполнения
+## 🛠️ 2. Инфраструктура исполнения
 
 ```mermaid
 flowchart LR
@@ -90,7 +90,7 @@ flowchart LR
 
 ---
 
-## 3. Жизненный цикл одного эксперимента
+## 🔄 3. Жизненный цикл одного эксперимента
 
 ```mermaid
 flowchart TD
@@ -114,7 +114,7 @@ flowchart TD
 
 ---
 
-## 4. Эволюция Experiments 001–004
+## 📈 4. Эволюция Experiments 001–004
 
 ```mermaid
 flowchart LR
@@ -129,7 +129,7 @@ flowchart LR
     E004 -.->|"Как закрыть real-world gap?"| E005
 ```
 
-| Эксперимент | Что изменялось | Что оставалось неизменным | Ключевой результат | Вопрос к следующему циклу |
+| Эксперимент | Что изменялось | Что оставалось неизменным | Результат | Вопрос к следующему циклу |
 |-------------|----------------|---------------------------|--------------------|---------------------------|
 | **Exp 001** | Первый LoRA-контур: `r=8`, 4 target modules, `HRA-EXP-V1`, 90 записей | — | Пайплайн работает: обучение стабильно, `valid_json_rate=1.0`, JSON-контракт выполняется; качество matching не проверялось | Какие параметры LoRA улучшат качество? |
 | **Exp 002** | Ёмкость адаптера: `r=16`, 7 target modules, пересмотренный split `HRA-EXP-V2` | Базовая модель, runtime-контур, Judge GPT-4.1 | Offline-метрики выросли: `decision_accuracy` 0.444 → 0.778, `MAE_score` 29.78 → 21.89; positive smoke passed, **negative smoke failed** | Почему модель пропускает сложные negative кейсы? |
@@ -140,7 +140,7 @@ flowchart LR
 
 ---
 
-## 5. Эволюция Teacher Dataset
+## 🗄️ 5. Эволюция Teacher Dataset
 
 ```mermaid
 flowchart LR
@@ -161,7 +161,7 @@ flowchart LR
 
 ---
 
-## Связанные документы
+## 📚 6. Связанные документы
 
 | Документ | Назначение |
 |----------|-----------|
@@ -171,3 +171,9 @@ flowchart LR
 | [`Experiment_002_Report.md`](Experiment_002_Report.md) | Параметрическая оптимизация и runtime negative failure |
 | [`Experiment_003_Report.md`](Experiment_003_Report.md) | Hard negatives, over-correction и каталог ошибок |
 | [`Experiment_004_Report.md`](Experiment_004_Report.md) | Сбалансированный dataset, GPT-4o-mini comparison, external validation, Telegram smoke |
+
+---
+
+**Статус:** Архитектура finetuning-контура (состав, жизненный цикл, эволюция)
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../docs/CHANGE_LOG.md#-4-история-изменений-документации)
