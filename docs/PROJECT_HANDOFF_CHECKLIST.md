@@ -433,21 +433,10 @@ docker exec -i hr-assistant-db psql -U hr_user hr_assistant < backup_20260623.sq
 
 ### Известные ограничения
 
-**KP-001: НЕСОВМЕСТИМОСТЬ metadata**
+Единственный реестр дефектов — [known-issues.md](known-issues.md).
 
-Поле `metadata` в таблице `outbox` не заполнялось в Processing Worker, но использовалось в Delivery Worker.
-
-**Влияние (до исправления):** TTS и visual generation использовали fallback-значения.
-
-**Статус:** ✅ Fixed (2026-09-01) — все 5 INSERT в Processing Worker заполняют metadata, контракт документирован в SPEC, живая проверка пройдена.
-
-**Ссылка:** [known-issues.md](known-issues.md#kp-001-несовместимость-metadata)
-
-**KP-003: ВЕРСИОНИРОВАНИЕ WORKFLOW (Open)**
-
-Workflows версонируются в Git, CHANGE_LOG ведётся; открытый остаток — документированный процесс версионирования workflow.
-
-**Ссылка:** [known-issues.md](known-issues.md#kp-003-отсутствие-версионирования-workflow)
+- **KP-001** (несовместимость metadata) — ✅ Fixed (2026-09-01): [known-issues.md](known-issues.md#kp-001-несовместимость-metadata)
+- **KP-003** (версионирование workflow) — 🔴 Open, остаток: документированный процесс версионирования workflow: [known-issues.md](known-issues.md#kp-003-отсутствие-версионирования-workflow)
 
 ### Checklist
 

@@ -325,69 +325,13 @@ WHERE status = 'sending'
 
 ## 🚨 5. Известные проблемы
 
-### KP-001: НЕСОВМЕСТИМОСТЬ metadata
+Единственный реестр дефектов с деталями и историей — [known-issues.md](known-issues.md). Сводка:
 
-**Приоритет:** 🔴 Critical
-
-**Статус:** ✅ Fixed (2026-09-01)
-
-**Описание:** Поле `metadata` в таблице `outbox` не заполнялось в Processing Worker, но использовалось в Delivery Worker.
-
-**Влияние (до исправления):**
-- TTS не работал корректно (fallback на текст из `body`)
-- Visual generation не работал корректно (fallback на default prompt)
-
-**Исправление (2026-09-01):**
-- Все 5 INSERT в `outbox` в Processing Worker заполняют `metadata` (обе версии workflow)
-- Контракт metadata документирован в `SPEC.md`
-- Живая проверка TTS и visual generation пройдена, приёмка владельца состоялась
-
-**Ссылка:** [known-issues.md](known-issues.md#kp-001-несовместимость-metadata)
-
----
-
-### KP-002: BOT TOKEN В РЕПОЗИТОРИИ
-
-**Приоритет:** ⚠️ Medium
-
-**Статус:** ✅ Fixed (2026-06-24)
-
-**Описание:** Bot token был захардкожен в SQL-файле `schema_hr_assistant.sql`.
-
-**Влияние:**
-- Риск утечки credentials при публикации
-- Сложность ротации токена
-
-**Исправление:**
-1. ✅ Заменён реальный токен на placeholder `REPLACE_ME_WITH_YOUR_BOT_TOKEN`
-2. ✅ Добавлена документация в `DEPLOYMENT_GUIDE.md`
-3. ✅ Добавлено предупреждение в `README.md`
-
-**Архитектура хранения токена:**
-- Токен хранится в таблице `bot_credentials` (БД)
-- При первичной установке: заменить placeholder на реальный токен в SQL
-- При ротации: UPDATE запрос в БД (документировано в DEPLOYMENT_GUIDE.md)
-
-**Ссылка:** [known-issues.md](known-issues.md#kp-002-bot-token-в-репозитории)
-
----
-
-### KP-003: ОТСУТСТВИЕ ВЕРСИОНИРОВАНИЯ WORKFLOW
-
-**Приоритет:** ⚠️ Medium
-
-**Статус:** Open
-
-**Описание:** Отсутствует версионирование workflow n8n.
-
-**Влияние:**
-- Сложность отката изменений
-- Отсутствие истории
-
-**Текущее состояние:**
-- Workflows версонируются в Git (`workflows/` в репозитории)
-- История изменений ведётся в [CHANGE_LOG.md](CHANGE_LOG.md)
-- Открытый остаток: документированный процесс версионирования workflow
+| ID | Проблема | Приоритет | Статус | Остаток |
+|----|----------|-----------|--------|---------|
+| [KP-001](known-issues.md#kp-001-несовместимость-metadata) | Несовместимость metadata | 🔴 Critical | ✅ Fixed (2026-09-01) | — |
+| [KP-002](known-issues.md#kp-002-bot-token-в-репозитории) | Bot token в репозитории | ⚠️ Medium | ✅ Fixed (2026-06-24) | — |
+| [KP-003](known-issues.md#kp-003-отсутствие-версионирования-workflow) | Отсутствие версионирования workflow | ⚠️ Medium | 🔴 Open | документированный процесс версионирования workflow |
 
 ---
 
