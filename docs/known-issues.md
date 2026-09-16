@@ -2,11 +2,10 @@
 
 **Назначение:** реестр дефектов с актуальными статусами. Исправленные записи сохраняются как история; открытыми считаются только дефекты со статусом Open. Планы развития — в [`PROJECT_STATE.md`](PROJECT_STATE.md), история изменений — в [`CHANGE_LOG.md`](CHANGE_LOG.md).
 
-**Last Updated:** 2026-09-15
 
 ---
 
-## Critical Issues
+## 🚨 1. Critical Issues
 
 ### KP-001: НЕСОВМЕСТИМОСТЬ metadata
 
@@ -111,7 +110,7 @@ metadata: {
 
 ---
 
-## Medium Issues
+## ⚠️ 2. Medium Issues
 
 ### KP-002: BOT TOKEN В РЕПОЗИТОРИИ
 
@@ -188,7 +187,7 @@ VALUES (
 
 ---
 
-## Low Issues
+## 🟡 3. Low Issues
 
 ### KP-004: МАТЕРИАЛЫ УРОКОВ В КОРНЕ ПРОЕКТА
 
@@ -215,7 +214,7 @@ VALUES (
 
 ---
 
-## 📋 Tracking
+## 📋 4. Tracking
 
 | ID | Приоритет | Статус | Дата |
 |----|-----------|--------|------|
@@ -226,8 +225,13 @@ VALUES (
 
 ---
 
-## References
+## 📚 5. References
 
 - [PROJECT_STATE.md](PROJECT_STATE.md)
 - [SPEC.md](SPEC.md)
 - [README.md](../README.md)
+
+---
+
+**Статус:** Рабочий реестр дефектов; открытыми считаются только записи со статусом Open
+**Последнее обновление:** 2026-09-16

@@ -4,11 +4,10 @@
 
 **Основной читатель:** инженер, принимающий систему в эксплуатацию.
 
-**Версия проекта:** 2.3.0 (2026-09-01)
 
 ---
 
-## Как использовать этот документ
+## 📖 1. Как использовать этот документ
 
 Этот документ — навигационная карта с практическими действиями. Он содержит ссылки на существующую документацию и чеклисты для проверки.
 
@@ -19,7 +18,7 @@
 
 ---
 
-## 1. Project Overview
+## 🎯 2. Project Overview
 
 ### Что это за проект
 
@@ -45,7 +44,7 @@ HR Assistant — мультимодальный AI-ассистент для а�
 
 ---
 
-## 2. Workflow Export
+## 🧩 3. Workflow Export
 
 ### Где находятся workflow
 
@@ -65,7 +64,7 @@ HR Assistant — мультимодальный AI-ассистент для а�
 
 **Описание workflow:** [../workflows/README.md](../workflows/README.md)
 
-**Архитектура workflow:** [ARCHITECTURE.md](ARCHITECTURE.md#компоненты-системы)
+**Архитектура workflow:** [ARCHITECTURE.md](ARCHITECTURE.md#-3-компоненты-системы)
 
 ### Checklist
 
@@ -75,7 +74,7 @@ HR Assistant — мультимодальный AI-ассистент для а�
 
 ---
 
-## 3. Variables
+## 🔧 4. Variables
 
 ### Переменные окружения
 
@@ -99,7 +98,7 @@ HR Assistant — мультимодальный AI-ассистент для а�
 
 **Важно:** Telegram Bot Token и OpenAI API Key настраиваются в n8n credential store, НЕ в `.env`.
 
-**Настройка:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#шаг-1-подготовка-окружения)
+**Настройка:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#-шаг-1-подготовка-окружения)
 
 ### Переменные в n8n workflow
 
@@ -114,7 +113,7 @@ HR Assistant — мультимодальный AI-ассистент для а�
 
 ---
 
-## 4. Credentials Inventory
+## 🔐 5. Credentials Inventory
 
 ### Обязательные credentials
 
@@ -129,9 +128,9 @@ HR Assistant — мультимодальный AI-ассистент для а�
 
 HR Delivery Worker читает Telegram Bot Token из таблицы `bot_credentials`, что позволяет менять токен без перезапуска n8n. Остальные workflow используют n8n credential store.
 
-**Настройка credentials:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#шаг-5-настройка-n8n-credentials)
+**Настройка credentials:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#-шаг-5-настройка-n8n-credentials)
 
-**Безопасность:** [ARCHITECTURE.md](ARCHITECTURE.md#безопасность)
+**Безопасность:** [ARCHITECTURE.md](ARCHITECTURE.md#-11-безопасность)
 
 ### Checklist
 
@@ -143,7 +142,7 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 ---
 
-## 5. Prompt Engineering Guide
+## 📝 6. Prompt Engineering Guide
 
 ### Система промптов проекта
 
@@ -171,13 +170,13 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 ---
 
-## 6. Trigger URL / API Endpoints
+## 🔌 7. Trigger URL / API Endpoints
 
 ### Telegram Webhook
 
 **URL:** `https://your-domain.com/webhook/hr-assistant`
 
-**Настройка:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#шаг-6-настройка-telegram-webhook)
+**Настройка:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#-шаг-6-настройка-telegram-webhook)
 
 ### n8n Webhooks
 
@@ -202,7 +201,7 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 ---
 
-## 7. Success Metrics
+## 📈 8. Success Metrics
 
 ### Бизнес-метрики
 
@@ -231,7 +230,7 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 ---
 
-## 8. Error SOP
+## 🚨 9. Error SOP
 
 ### Типовые проблемы и решения
 
@@ -256,7 +255,7 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 ---
 
-## 9. Step-by-Step Instructions
+## 📋 10. Step-by-Step Instructions
 
 ### Первый запуск
 
@@ -299,7 +298,7 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 ### Диагностика
 
-**SQL-запросы:** [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#диагностика)
+**SQL-запросы:** [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#-4-диагностика)
 
 ### Checklist
 
@@ -312,7 +311,7 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 ---
 
-## 10. Logs & Metrics Dashboard
+## 📜 11. Logs & Metrics Dashboard
 
 ### Где смотреть логи
 
@@ -343,7 +342,7 @@ SELECT * FROM processing_logs ORDER BY created_at DESC LIMIT 10;
 | Ошибки за час | `SELECT COUNT(*) FROM processing_logs WHERE status = 'error' AND created_at > NOW() - INTERVAL '1 hour'` | > 5% |
 | Зависшие обработки | `SELECT COUNT(*) FROM candidate_inputs WHERE processing_status = 'processing_started'` | > 0 > 5 мин |
 
-**Мониторинг:** [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#мониторинг-и-алертинг)
+**Мониторинг:** [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-14-мониторинг-и-алертинг)
 
 ### Checklist
 
@@ -354,11 +353,11 @@ SELECT * FROM processing_logs ORDER BY created_at DESC LIMIT 10;
 
 ---
 
-## 11. Emergency Procedures
+## 🆘 12. Emergency Procedures
 
 ### Критические ситуации
 
-**Полный документ:** [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#порядок-действий-при-сбоях)
+**Полный документ:** [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#-6-порядок-действий-при-сбоях)
 
 #### База данных недоступна
 
@@ -397,7 +396,7 @@ docker exec hr-assistant-db pg_dump -U hr_user hr_assistant > backup_$(date +%Y%
 docker exec -i hr-assistant-db psql -U hr_user hr_assistant < backup_20260623.sql
 ```
 
-**Подробнее:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#шаг-11-бэкапы)
+**Подробнее:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#-шаг-11-бэкапы)
 
 ### Checklist
 
@@ -408,7 +407,7 @@ docker exec -i hr-assistant-db psql -U hr_user hr_assistant < backup_20260623.sq
 
 ---
 
-## 12. SSOT Map
+## 🗂️ 13. SSOT Map
 
 ### Картина источников истины
 
@@ -458,7 +457,7 @@ Workflows версонируются в Git, CHANGE_LOG ведётся; откр
 
 ---
 
-## 13. Roadmap
+## 🗺️ 14. Roadmap
 
 ### Текущий статус
 
@@ -481,7 +480,7 @@ Workflows версонируются в Git, CHANGE_LOG ведётся; откр
 - [ ] Кэширование matching
 - [ ] Оптимизация токенов
 
-**Полный roadmap:** [PROJECT_STATE.md](PROJECT_STATE.md#next-steps)
+**Полный roadmap:** [PROJECT_STATE.md](PROJECT_STATE.md#-8-next-steps)
 
 ### Checklist
 
@@ -491,7 +490,7 @@ Workflows версонируются в Git, CHANGE_LOG ведётся; откр
 
 ---
 
-## Quick Reference
+## 📌 15. Quick Reference
 
 ### Команды для быстрого старта
 
@@ -529,5 +528,5 @@ WHERE processing_status = 'processing_started'
 
 ---
 
-**Статус документа:** Production-ready
-**Последнее обновление:** 2026-09-15
+**Статус:** Production-ready
+**Последнее обновление:** 2026-09-16

@@ -6,7 +6,7 @@
 
 ---
 
-## Предварительные требования
+## 📋 Предварительные требования
 
 ### Программное обеспечение
 
@@ -38,7 +38,7 @@
 
 ---
 
-## Шаг 1: Подготовка окружения
+## 🔧 Шаг 1: Подготовка окружения
 
 ### 1.1. Установка Docker
 
@@ -109,7 +109,7 @@ cp .env.example .env
 
 ---
 
-## Шаг 2: Развёртывание PostgreSQL
+## 🗄️ Шаг 2: Развёртывание PostgreSQL
 
 ### 2.1. Docker Compose для PostgreSQL
 
@@ -221,7 +221,7 @@ WHERE bot_code = 'hr_assistant';
 
 ---
 
-## Шаг 3: Развёртывание n8n
+## 🛠️ Шаг 3: Развёртывание n8n
 
 ### 3.1. Docker Compose для n8n
 
@@ -288,7 +288,7 @@ docker compose -f docker-compose.n8n.yml logs n8n
 
 ---
 
-## Шаг 4: Импорт Workflows
+## 📥 Шаг 4: Импорт Workflows
 
 ### 4.1. Workflows проекта
 
@@ -342,7 +342,7 @@ curl -X POST http://localhost:5678/api/v1/workflows/1/activate \
 
 ---
 
-## Шаг 5: Настройка n8n Credentials
+## 🔐 Шаг 5: Настройка n8n Credentials
 
 ### 5.1. Обзор
 
@@ -429,7 +429,7 @@ HR Assistant использует n8n credential store для хранения c
 
 ---
 
-## Шаг 6: Настройка Telegram Webhook
+## 🔌 Шаг 6: Настройка Telegram Webhook
 
 ### 6.1. Получение URL Webhook
 
@@ -485,7 +485,7 @@ curl -X GET "https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo"
 
 ---
 
-## Шаг 7: Настройка SSL (опционально)
+## 🔒 Шаг 7: Настройка SSL (опционально)
 
 ### 7.1. Docker Compose с Traefik
 
@@ -578,7 +578,7 @@ providers:
 
 ---
 
-## Шаг 8: Загрузка вакансий
+## 💼 Шаг 8: Загрузка вакансий
 
 ### 8.1. Добавление вакансий в БД
 
@@ -602,7 +602,7 @@ SELECT id, title, status FROM vacancies WHERE status = 'open';
 
 ---
 
-## Шаг 9: Тестирование
+## 🧪 Шаг 9: Тестирование
 
 ### 9.1. Тестирование Telegram Bot
 
@@ -644,7 +644,7 @@ SELECT * FROM processing_logs ORDER BY created_at DESC LIMIT 10;
 
 ---
 
-## Шаг 10: Мониторинг
+## 📊 Шаг 10: Мониторинг
 
 ### 10.1. Healthcheck
 
@@ -677,7 +677,7 @@ SELECT
 
 ---
 
-## Шаг 11: Бэкапы
+## 💾 Шаг 11: Бэкапы
 
 ### 11.1. Бэкап PostgreSQL
 
@@ -723,7 +723,7 @@ crontab -e
 
 ---
 
-## Обновление
+## 🔄 Обновление
 
 ### Обновление Workflows
 
@@ -749,7 +749,7 @@ docker exec -i hr-assistant-db psql -U ${POSTGRES_USER} ${POSTGRES_DB} -f - < da
 
 ---
 
-## Устранение неполадок
+## 🚨 Устранение неполадок
 
 ### Проблема: n8n не запускается
 
@@ -805,7 +805,7 @@ docker compose -f docker-compose.db.yml logs postgres
 
 ---
 
-## Связанные документы
+## 📚 Связанные документы
 
 - [🏗️ ARCHITECTURE.md](ARCHITECTURE.md) — архитектура системы
 - [📘 SPEC.md](SPEC.md) — спецификация системы
@@ -816,4 +816,4 @@ docker compose -f docker-compose.db.yml logs postgres
 ---
 
 **Статус:** Source of Truth развёртывания. Clean-room Deployment Validation не проводилась — reproducibility debt (см. PROJECT_STATE.md).
-**Последнее обновление:** 2026-09-15
+**Последнее обновление:** 2026-09-16

@@ -89,3 +89,8 @@ hr-assistant/
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — как компоненты устроены и связаны
 - [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) — как развернуть содержимое репозитория
 - [`screenshots/MEDIA_INDEX.md`](screenshots/MEDIA_INDEX.md) — какие изображения где используются
+
+---
+
+**Статус:** Карта репозитория проекта
+**Последнее обновление:** 2026-09-16

@@ -6,19 +6,19 @@
 
 ---
 
-## Как использовать этот документ
+## 📖 1. Как использовать этот документ
 
 Этот документ объединяет все метрики проекта в одном месте. Каждая метрика ссылается на SSOT (Source of Truth) для получения детальной информации.
 
 ---
 
-## Business Metrics
+## 💼 2. Business Metrics
 
 ### Время обработки резюме
 
 | Метрика | До | После | Изменение | SSOT |
 |---------|----|----|-----------|------|
-| **Время на анализ резюме** | 10-15 минут | < 1 минута | 10-15x | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#измеримый-эффект) |
+| **Время на анализ резюме** | 10-15 минут | < 1 минута | 10-15x | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#-5-измеримый-эффект) |
 
 **Целевое значение:** < 1 минута
 
@@ -37,7 +37,7 @@ WHERE fd.created_at > NOW() - INTERVAL '1 hour';
 
 | Метрика | До | После | Изменение | SSOT |
 |---------|----|----|-----------|------|
-| **Форматы ввода** | 1 (текст/документ) | 4 (текст, голос, документ, изображение) | 4x | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#измеримый-эффект) |
+| **Форматы ввода** | 1 (текст/документ) | 4 (текст, голос, документ, изображение) | 4x | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#-5-измеримый-эффект) |
 
 **Целевое значение:** 4 формата
 
@@ -53,8 +53,8 @@ WHERE fd.created_at > NOW() - INTERVAL '1 hour';
 
 | Метрика | До | После | Изменение | SSOT |
 |---------|----|----|-----------|------|
-| **Извлечение данных** | Вручную | Автоматически (AI) | 100% авто | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#измеримый-эффект) |
-| **Matching** | Вручную | Автоматически (AI) | 100% авто | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#измеримый-эффект) |
+| **Извлечение данных** | Вручную | Автоматически (AI) | 100% авто | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#-5-измеримый-эффект) |
+| **Matching** | Вручную | Автоматически (AI) | 100% авто | [BUSINESS_VALUE.md](BUSINESS_VALUE.md#-5-измеримый-эффект) |
 
 **Целевое значение:** 100% автоматизация
 
@@ -64,10 +64,10 @@ WHERE fd.created_at > NOW() - INTERVAL '1 hour';
 
 | Формат | Конверсия | SSOT |
 |--------|-----------|------|
-| Текст | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#метрики) |
-| Голос | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#метрики) |
-| Документ | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#метрики) |
-| Изображение | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#метрики) |
+| Текст | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| Голос | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| Документ | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| Изображение | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
 
 **Как измеряется:**
 ```sql
@@ -107,20 +107,20 @@ ORDER BY score_range;
 - Low (40-59): 20-30% кандидатов
 - Very low (0-39): 10-20% кандидатов
 
-**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#6-мониторинг-качества)
+**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-9-мониторинг-качества)
 
 ---
 
-## Technical Metrics
+## ⚙️ 3. Technical Metrics
 
 ### Latency
 
 | Метрика | Целевое значение | SSOT |
 |---------|-----------------|------|
-| **Среднее время ответа (текст)** | < 30 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#ключевые-метрики) |
-| **Среднее время ответа (голос)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#ключевые-метрики) |
-| **Среднее время ответа (документ)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#ключевые-метрики) |
-| **Среднее время ответа (изображение)** | < 90 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#ключевые-метрики) |
+| **Среднее время ответа (текст)** | < 30 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| **Среднее время ответа (голос)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| **Среднее время ответа (документ)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| **Среднее время ответа (изображение)** | < 90 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
 
 **Как измеряется:**
 ```sql
@@ -140,7 +140,7 @@ GROUP BY ci.input_type;
 
 | Метрика | Целевое значение | SSOT |
 |---------|-----------------|------|
-| **Доступность (SLA)** | 99% | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#ключевые-метрики) |
+| **Доступность (SLA)** | 99% | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
 
 **Как измеряется:**
 - Uptime мониторинг (n8n, PostgreSQL, Telegram Bot)
@@ -153,9 +153,9 @@ GROUP BY ci.input_type;
 
 | Метрика | Целевое значение | SSOT |
 |---------|-----------------|------|
-| **HR Intake success rate** | > 99% | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#мониторинг) |
-| **Processing Worker success rate** | > 95% | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#мониторинг) |
-| **Delivery Worker success rate** | > 99% | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#мониторинг) |
+| **HR Intake success rate** | > 99% | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#-7-мониторинг) |
+| **Processing Worker success rate** | > 95% | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#-7-мониторинг) |
+| **Delivery Worker success rate** | > 99% | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#-7-мониторинг) |
 
 **Как измеряется:**
 ```sql
@@ -174,8 +174,8 @@ WHERE created_at > NOW() - INTERVAL '1 hour';
 
 | Метрика | Целевое значение | SSOT |
 |---------|-----------------|------|
-| **Валидность JSON (извлечение)** | > 95% | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#1-извлечение-данных-кандидата) |
-| **Валидность JSON (matching)** | > 99% | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#3-matching-кандидата-с-вакансиями) |
+| **Валидность JSON (извлечение)** | > 95% | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-3-извлечение-данных-кандидата) |
+| **Валидность JSON (matching)** | > 99% | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-5-matching-кандидата-с-вакансиями) |
 
 **Fallback:** Если JSON невалиден → JSON Repair → Processing Error
 
@@ -185,14 +185,14 @@ WHERE created_at > NOW() - INTERVAL '1 hour';
 
 | Метрика | Порог | Действие | SSOT |
 |---------|-------|----------|------|
-| **Processing time > 60 sec** | Warning | Проверить OpenAI API | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#мониторинг-и-алертинг) |
-| **Error rate > 5%** | Critical | Проверить логи | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#мониторинг-и-алертинг) |
-| **Queue backlog > 100** | Warning | Проверить Workers | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#мониторинг-и-алертинг) |
-| **DB connections > 80%** | Critical | Проверить PostgreSQL | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#мониторинг-и-алертинг) |
+| **Processing time > 60 sec** | Warning | Проверить OpenAI API | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-14-мониторинг-и-алертинг) |
+| **Error rate > 5%** | Critical | Проверить логи | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-14-мониторинг-и-алертинг) |
+| **Queue backlog > 100** | Warning | Проверить Workers | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-14-мониторинг-и-алертинг) |
+| **DB connections > 80%** | Critical | Проверить PostgreSQL | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-14-мониторинг-и-алертинг) |
 
 ---
 
-## Prompt Engineering Metrics
+## ✏️ 4. Prompt Engineering Metrics
 
 ### Эксперимент HRA-EXP-V1
 
@@ -279,7 +279,7 @@ WHERE created_at > NOW() - INTERVAL '1 hour';
 
 ---
 
-## Dashboard
+## 📊 5. Dashboard
 
 ### Где смотреть метрики
 
@@ -340,7 +340,7 @@ ORDER BY created_at DESC;
 
 ---
 
-## Интерпретация результатов
+## 🔍 6. Интерпретация результатов
 
 ### Целевые показатели
 
@@ -361,9 +361,9 @@ ORDER BY created_at DESC;
 | Симптом | Возможная причина | Действие | SSOT |
 |---------|------------------|----------|------|
 | **Processing time > 60 сек** | OpenAI API latency | Проверить status.openai.com | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#инцидент-2-openai-api-недоступен) |
-| **Error rate > 5%** | Ошибки в workflow | Проверить processing_logs | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#диагностика) |
+| **Error rate > 5%** | Ошибки в workflow | Проверить processing_logs | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#-4-диагностика) |
 | **Queue backlog > 100** | Workers не справляются | Проверить Watchdog | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#проблема-зависшие-записи) |
-| **JSON validity < 95%** | Проблемы с промптом | Проверить промпт, запустить ремонт | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#2-ремонт-невалидного-json) |
+| **JSON validity < 95%** | Проблемы с промптом | Проверить промпт, запустить ремонт | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-4-ремонт-невалидного-json) |
 
 ---
 
@@ -375,12 +375,12 @@ ORDER BY created_at DESC;
 |---------|-------------|----------|------|
 | **Processing time > 90 сек** | 🔴 Critical | Немедленно проверить OpenAI API | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#инцидент-2-openai-api-недоступен) |
 | **Availability < 95%** | 🔴 Critical | Проверить все компоненты | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#инцидент-3-база-данных-недоступна) |
-| **Error rate > 10%** | 🔴 Critical | Проверить логи, перезапустить Workers | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#диагностика) |
+| **Error rate > 10%** | 🔴 Critical | Проверить логи, перезапустить Workers | [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#-4-диагностика) |
 | **MAE > 20** | 🟡 Attention | Провести анализ качества промпта | [PROMPT_ENGINEERING_GUIDE.md](PROMPT_ENGINEERING_GUIDE.md) |
 
 ---
 
-## Связанные документы
+## 📚 7. Связанные документы
 
 ### Business Metrics
 
@@ -402,5 +402,5 @@ ORDER BY created_at DESC;
 
 ---
 
-**Статус документа:** Production-ready
-**Последнее обновление:** 2026-09-15
+**Статус:** Production-ready
+**Последнее обновление:** 2026-09-16

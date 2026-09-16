@@ -1,12 +1,11 @@
 # 📊 PROJECT_STATE — HR Assistant
 
-**Last Updated:** 2026-09-15
 **Status:** Production-ready (v2.3.0, 2026-09-01) + Experimental ML-контур (Experiment 004 completed; LoRA validated as on-premise candidate) + LoRA storytelling landing deployed
 **Case ID:** hr-assistant
 
 ---
 
-## Project Summary
+## 🎯 1. Project Summary
 
 **HR Assistant (HR-ассистент)** — мультимодальный AI-ассистент для автоматизации первичной обработки резюме и подбора вакансий. Система принимает резюме в различных форматах через Telegram, извлекает структурированные данные с помощью LLM, сравнивает профиль кандидата с открытыми вакансиями и формирует мультимедийный ответ.
 
@@ -23,7 +22,7 @@
 
 ---
 
-## Current Status
+## 📊 2. Current Status
 
 ### Production-контур
 
@@ -121,7 +120,7 @@
 
 ---
 
-## Documentation Status
+## 📖 3. Documentation Status
 
 ### Documentation Audit (2026-06-24)
 
@@ -130,7 +129,7 @@
 - Исправлено 27 нарушений (синтетические данные, неверные модели, ошибки изображений)
 - Все документы приведены в соответствие с реальными источниками (workflow, БД, MEDIA_INDEX)
 
-**Применённый паттерн:** [documentation-source-of-truth-discipline.md](../../../shared/patterns/documentation-source-of-truth-discipline.md)
+**Метод:** дисциплина Source of Truth — каждый факт в документе сверяется с реальным источником (workflow, БД, конфигурация).
 
 ---
 
@@ -245,7 +244,7 @@
 
 ---
 
-## Market Validation
+## 💼 4. Market Validation
 
 **Статус:** Проект разработан в инженерной среде AI Automation Portfolio Lab (учебно-портфельный проект)
 
@@ -255,7 +254,7 @@
 
 ---
 
-## Commercial Assessment
+## 💰 5. Commercial Assessment
 
 ### Ценность для бизнеса
 
@@ -277,7 +276,7 @@
 
 ---
 
-## Key Technology Areas
+## 🛠️ 6. Key Technology Areas
 
 ### Компетенции
 
@@ -300,7 +299,7 @@
 
 ---
 
-## Decision
+## 🧭 7. Decision
 
 **Решение:** Интегрировать HR Assistant в APL как полноценный кейс с последующим исправлением критических дефектов и созданием документации.
 
@@ -312,7 +311,7 @@
 
 ---
 
-## Next Steps
+## 🗺️ 8. Next Steps
 
 ### Phase 0: Fine-tuning Cycle 3 — Experiment 003 (приоритет: критический)
 
@@ -480,13 +479,13 @@
 
 ---
 
-## Documentation Roadmap — ✅ выполнен
+## 📋 9. Documentation Roadmap (выполнен)
 
 Документационный пакет создан полностью (2026-06-23) и верифицирован SOT-аудитом (2026-06-24). Исторический план создания (приоритеты «высокий/средний/низкий» на 19 документов и таблица источников материалов) удалён 01.09.2026 как исполненный — актуальный состав документации см. в Phase 1 (✅) и разделе Documentation Status. Таблица источников сохранена в истории git (до 01.09.2026).
 
 ---
 
-## Related Documents
+## 📚 10. Related Documents
 
 ### Созданные документы
 
@@ -496,7 +495,7 @@
 
 ---
 
-## Status History
+## 📜 11. Status History
 
 | Дата | Статус | Изменение |
 |------|--------|-----------|
@@ -517,3 +516,7 @@
 | 2026-06-23 | Production-ready | Интеграция в APL, выявлены критические дефекты |
 | 2026-04-29 | Production-ready | Финальная версия V2.0 |
 | 2026-04-29 | Development | Разработка V2.0 |
+
+---
+
+**Последнее обновление:** 2026-09-16

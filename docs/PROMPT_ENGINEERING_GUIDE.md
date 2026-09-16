@@ -4,7 +4,7 @@
 
 ---
 
-## Обзор системы промптов
+## 🎯 1. Обзор системы промптов
 
 HR Assistant использует промпты в двух контекстах:
 
@@ -15,7 +15,7 @@ HR Assistant использует промпты в двух контекста�
 
 ---
 
-## Боевые промпты (Production)
+## ⚙️ 2. Боевые промпты (Production)
 
 ### 1. Candidate Extraction
 
@@ -55,7 +55,7 @@ HR Assistant использует промпты в двух контекста�
 
 **Статус:** Production-ready
 
-**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#1-извлечение-данных-кандидата)
+**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-3-извлечение-данных-кандидата)
 
 ---
 
@@ -78,7 +78,7 @@ HR Assistant использует промпты в двух контекста�
 
 **Статус:** Production-ready
 
-**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#2-ремонт-невалидного-json)
+**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-4-ремонт-невалидного-json)
 
 ---
 
@@ -134,11 +134,11 @@ HR Assistant использует промпты в двух контекста�
 
 **Статус:** Production-ready
 
-**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#3-matching-кандидата-с-вакансиями)
+**SSOT:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-5-matching-кандидата-с-вакансиями)
 
 ---
 
-## Экспериментальные промпты (Prompt Evaluation)
+## 🧪 3. Экспериментальные промпты (Prompt Evaluation)
 
 ### Подсистема Prompt Evaluation
 
@@ -206,7 +206,7 @@ Prompt Evaluation — изолированная подсистема для A/B
 
 ---
 
-## Сравнение промптов
+## ⚖️ 4. Сравнение промптов
 
 | Аспект | Judge | Prompt A (Production) | Prompt B (Experimental) |
 |--------|-------|----------------------|------------------------|
@@ -221,7 +221,7 @@ Prompt Evaluation — изолированная подсистема для A/B
 
 ---
 
-## Как безопасно изменять промпты
+## ✏️ 5. Как безопасно изменять промпты
 
 ### Рекомендуемый процесс
 
@@ -329,7 +329,7 @@ Prompt Evaluation — изолированная подсистема для A/B
 
 ---
 
-## Стоимость промптов
+## 💰 6. Стоимость промптов
 
 ### Токены на запрос
 
@@ -341,20 +341,20 @@ Prompt Evaluation — изолированная подсистема для A/B
 | **Итого (без ремонта, 1 вакансия)** | | | | **~$0.003** |
 | **Итого (с ремонтом, 3 вакансии)** | | | | **~$0.006** |
 
-**Подробнее:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#5-стоимость)
+**Подробнее:** [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-7-стоимость)
 
 ---
 
-## Метрики качества
+## 📈 7. Метрики качества
 
 ### Production-метрики
 
 | Метрика | Значение | Источник |
 |---------|----------|----------|
-| Полнота извлечения (recall) | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#6-мониторинг-качества) |
-| Точность извлечения (precision) | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#6-мониторинг-качества) |
-| F1-score | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#6-мониторинг-качества) |
-| Accuracy (matching) | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#6-мониторинг-качества) |
+| Полнота извлечения (recall) | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-9-мониторинг-качества) |
+| Точность извлечения (precision) | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-9-мониторинг-качества) |
+| F1-score | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-9-мониторинг-качества) |
+| Accuracy (matching) | Данные в production | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-9-мониторинг-качества) |
 
 ---
 
@@ -366,15 +366,15 @@ Prompt Evaluation — изолированная подсистема для A/B
 
 ---
 
-## Документация промптов
+## 📖 8. Документация промптов
 
 ### SSOT для промптов
 
 | Промпт | SSOT |
 |--------|------|
-| Candidate Extraction | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#1-извлечение-данных-кандидата) |
-| JSON Repair | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#2-ремонт-невалидного-json) |
-| Matching (Prompt A) | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#3-matching-кандидата-с-вакансиями) |
+| Candidate Extraction | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-3-извлечение-данных-кандидата) |
+| JSON Repair | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-4-ремонт-невалидного-json) |
+| Matching (Prompt A) | [AI_QUALIFICATION.md](AI_QUALIFICATION.md#-5-matching-кандидата-с-вакансиями) |
 | Judge | [prompt_evaluation/PROMPTS.md](prompt_evaluation/PROMPTS.md#judge-prompt) |
 | Prompt B | [prompt_evaluation/PROMPTS.md](prompt_evaluation/PROMPTS.md#prompt-b-experimental) |
 
@@ -402,7 +402,7 @@ Prompt Evaluation — изолированная подсистема для A/B
 
 ---
 
-## Связанные документы
+## 📚 9. Связанные документы
 
 - [AI_QUALIFICATION.md](AI_QUALIFICATION.md) — промпты, модели, параметры (SSOT)
 - [SUCCESS_METRICS.md](SUCCESS_METRICS.md) — метрики успеха
@@ -412,5 +412,5 @@ Prompt Evaluation — изолированная подсистема для A/B
 
 ---
 
-**Статус документа:** Production-ready
-**Последнее обновление:** 2026-06-27
+**Статус:** Production-ready
+**Последнее обновление:** 2026-09-16

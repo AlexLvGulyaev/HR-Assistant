@@ -1,13 +1,10 @@
 # 🔀 Мультипровайдерная LLM Архитектура (инженерный стенд)
 
-**Создано:** 2026-06-28
-**Обновлено:** 2026-09-15
-**Статус:** Инженерный стенд для тестирования
 **Основной читатель:** инженер, развивающий экспериментальный контур
 
 ---
 
-## Обзор
+## 🎯 1. Обзор
 
 Этот документ описывает архитектуру для тестирования нескольких LLM-провайдеров в HR Assistant.
 
@@ -22,7 +19,7 @@ Workflow `HR Processing Worker - Multi Provider Test` является **инж�
 
 ---
 
-## Требования
+## 📋 2. Требования
 
 1. **OpenAI (production)** — используется в production workflow
 2. **RunPod (test)** — используется для тестирования LoRA-адаптеров
@@ -32,7 +29,7 @@ Workflow `HR Processing Worker - Multi Provider Test` является **инж�
 
 ---
 
-## Production vs Test Architecture
+## ⚙️ 3. Production vs Test Architecture
 
 ### Production Workflow: HR Processing Worker.json
 
@@ -71,7 +68,7 @@ Test workflow специально создан для тестирования 
 
 ---
 
-## Поддерживаемые провайдеры
+## 🔌 4. Поддерживаемые провайдеры
 
 ### OpenAI (по умолчанию)
 
@@ -95,7 +92,7 @@ Test workflow специально создан для тестирования 
 
 ---
 
-## Архитектура
+## 🏗️ 5. Архитектура
 
 ### Паттерн прямого подключения (Production-Ready)
 
@@ -132,7 +129,7 @@ IF: Provider?
 
 ---
 
-## Что дублируется?
+## 🧩 6. Что дублируется?
 
 **Транспортный слой (6 nodes):**
 - 3 OpenAI HTTP Request nodes (с credentials, с response_format)
@@ -146,7 +143,7 @@ IF: Provider?
 
 ---
 
-## Что НЕ дублируется?
+## 🚫 7. Что НЕ дублируется?
 
 **Бизнес-логика (9 nodes):**
 - 3 Prepare Body nodes (условный `response_format` на основе `llm_config`)
@@ -162,7 +159,7 @@ IF: Provider?
 
 ---
 
-## Детали реализации
+## 🔧 8. Детали реализации
 
 ### Node: Configure LLM Provider
 
@@ -257,7 +254,7 @@ RunPod HTTP Request
 
 ---
 
-## Переключение провайдеров
+## 🔄 9. Переключение провайдеров
 
 ### На RunPod
 
@@ -275,7 +272,7 @@ const provider = 'openai';
 
 ---
 
-## Расширяемость
+## 📈 10. Расширяемость
 
 ### Добавление нового провайдера (например, Anthropic Claude)
 
@@ -309,7 +306,7 @@ anthropic: {
 
 ---
 
-## Соответствие принципу Open/Closed
+## ✅ 11. Соответствие принципу Open/Closed
 
 **Открыто для расширения:**
 - Добавление новых провайдеров требует только конфигурацию + изменения транспортного слоя
@@ -323,7 +320,7 @@ anthropic: {
 
 ---
 
-## Тестирование
+## 🧪 12. Тестирование
 
 ### OpenAI (по умолчанию)
 
@@ -350,7 +347,7 @@ anthropic: {
 
 ---
 
-## Изменённые файлы
+## 🗂️ 13. Изменённые файлы
 
 | Файл | Изменение |
 |------|-----------|
@@ -362,7 +359,7 @@ anthropic: {
 
 ---
 
-## Модификация тестового workflow (история v2.1.0)
+## ✏️ 14. Модификация тестового workflow (история v2.1.0)
 
 Состав изменений, приведших тестовый workflow к текущей архитектуре (47 → 54 nodes):
 
@@ -381,7 +378,7 @@ anthropic: {
 
 ---
 
-## Риски и ограничения
+## ⚠️ 15. Риски и ограничения
 
 ### 1. Стабильность RunPod endpoint
 
@@ -407,7 +404,7 @@ console.log(`LLM Provider: ${provider}`);
 
 ---
 
-## Ссылки
+## 📚 16. Ссылки
 
 - [OpenAI Chat Completions API](https://platform.openai.com/docs/api-reference/chat)
 - [OpenAI Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs)
@@ -415,3 +412,8 @@ console.log(`LLM Provider: ${provider}`);
 - [n8n HTTP Request Node](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/)
 - [n8n IF Node](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.if/)
 - [EXPERIMENTAL_ML_PIPELINE.md](EXPERIMENTAL_ML_PIPELINE.md) — Архитектура экспериментального ML-контура
+
+---
+
+**Статус:** Инженерный стенд для тестирования (не production)
+**Последнее обновление:** 2026-09-16
