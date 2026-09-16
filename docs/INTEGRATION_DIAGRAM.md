@@ -383,7 +383,7 @@ async function callWithRetry(fn, maxRetries = 3, delay = 5000) {
 
 #### Основные таблицы
 
-| Таблица | Назначение | Основные поля |
+| Таблица | Назначение | Ключевые поля |
 |---------|-----------|---------------|
 | `intake_events` | Входящие события | id, execution_id, input_type |
 | `candidate_inputs` | Входные данные | id, intake_event_id, normalized_text |

@@ -227,7 +227,7 @@ ER-диаграмма базы данных и структура payload-кон
 
 ### Основные таблицы (Production-контур)
 
-| Таблица | Назначение | Основные поля |
+| Таблица | Назначение | Ключевые поля |
 |---------|-----------|---------------|
 | `intake_events` | Входящие события | id, execution_id, input_type, telegram_chat_id |
 | `candidate_inputs` | Входные данные | id, intake_event_id, normalized_text, processing_status |
@@ -247,7 +247,7 @@ ER-диаграмма базы данных и структура payload-кон
 
 **⚠️ Важно:** Эти таблицы изолированы от production и используются только для Prompt Evaluation и Fine-tuning.
 
-| Таблица | Назначение | Основные поля |
+| Таблица | Назначение | Ключевые поля |
 |---------|-----------|---------------|
 | `eval_prompt_datasets` | Версии датасетов для A/B-тестирования | id, dataset_code, name, status |
 | `eval_prompt_cases` | Тестовые кейсы (кандидаты) | id, dataset_id, case_code, case_type |
