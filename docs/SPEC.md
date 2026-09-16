@@ -580,5 +580,5 @@ graph TB
 
 ---
 
-**Статус:** Production-ready (v2.3.0)
+**Статус:** Production-ready
 **Последнее обновление:** 2026-09-16
