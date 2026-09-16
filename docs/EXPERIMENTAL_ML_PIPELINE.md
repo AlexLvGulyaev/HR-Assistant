@@ -132,7 +132,7 @@ graph TD
 | Experiment 003 | 123 кейса (+33 hard negative) | ✅ **eval_loss 0.31** | ✅ **Pass (7/7)** |
 | Experiment 004 | 162 записи (54 кандидата, +positive/borderline) | ✅ **Internal test: 0.933 accuracy, 5.80 MAE** | ✅ **Pass (7/7)**; external validation (n=102, vLLM): 0.931 vs GPT-4o-mini 0.925 |
 
-**Ключевой вывод:**
+**Вывод:**
 - LoRA улучшает offline качество.
 - Experiment 002 **не прошёл runtime negative smoke test** из-за недостатка hard negative примеров. Примеры false positive — в [`finetuning/data/evidence/experiment_002_failure_modes.jsonl`](../finetuning/data/evidence/experiment_002_failure_modes.jsonl).
 - Experiment 003 добавил hard negatives и **прошёл runtime negative smoke test (7/7)**, но ценой умеренного снижения decision accuracy на original test set (precision/recall trade-off). Ответы LoRA по smoke-кейсам — в [`finetuning/data/evidence/experiment_003_runtime_smoke.json`](../finetuning/data/evidence/experiment_003_runtime_smoke.json), over-correction кейсы — в [`finetuning/data/evidence/experiment_003_overcorrection.jsonl`](../finetuning/data/evidence/experiment_003_overcorrection.jsonl).

@@ -64,10 +64,10 @@ WHERE fd.created_at > NOW() - INTERVAL '1 hour';
 
 | Формат | Конверсия | SSOT |
 |--------|-----------|------|
-| Текст | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
-| Голос | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
-| Документ | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
-| Изображение | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| Текст | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
+| Голос | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
+| Документ | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
+| Изображение | Данные в production | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
 
 **Как измеряется:**
 ```sql
@@ -117,10 +117,10 @@ ORDER BY score_range;
 
 | Метрика | Целевое значение | SSOT |
 |---------|-----------------|------|
-| **Среднее время ответа (текст)** | < 30 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
-| **Среднее время ответа (голос)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
-| **Среднее время ответа (документ)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
-| **Среднее время ответа (изображение)** | < 90 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| **Среднее время ответа (текст)** | < 30 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
+| **Среднее время ответа (голос)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
+| **Среднее время ответа (документ)** | < 60 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
+| **Среднее время ответа (изображение)** | < 90 сек | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
 
 **Как измеряется:**
 ```sql
@@ -140,7 +140,7 @@ GROUP BY ci.input_type;
 
 | Метрика | Целевое значение | SSOT |
 |---------|-----------------|------|
-| **Доступность (SLA)** | 99% | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-ключевые-метрики) |
+| **Доступность (SLA)** | 99% | [AUTOMATION_PASSPORT.md](AUTOMATION_PASSPORT.md#-3-метрики) |
 
 **Как измеряется:**
 - Uptime мониторинг (n8n, PostgreSQL, Telegram Bot)

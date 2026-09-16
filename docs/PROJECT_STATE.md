@@ -9,7 +9,7 @@
 
 **HR Assistant (HR-ассистент)** — мультимодальный AI-ассистент для автоматизации первичной обработки резюме и подбора вакансий. Система принимает резюме в различных форматах через Telegram, извлекает структурированные данные с помощью LLM, сравнивает профиль кандидата с открытыми вакансиями и формирует мультимедийный ответ.
 
-**Ключевые возможности:**
+**Возможности:**
 - Мультимодальный ввод: текст, голос, PDF/DOCX, изображения
 - Извлечение данных: ФИО, город, должность, опыт, навыки, контакты, зарплатные ожидания
 - Matching: сравнение профиля кандидата с вакансиями
@@ -45,7 +45,7 @@
 | Runtime Smoke Validation | Engineering Test | ✅ 100% | Локальный `runtime_smoke_test.py` + Multi Provider Test workflow |
 | LoRA Model Production | Not Ready | ❌ 0% | LoRA не обгоняет GPT-4o-mini и не готова к production; открытые вопросы: score calibration, latency optimization, production smoke set |
 
-**Ключевой вывод:** Fine-tuning Documentation Package завершён. Architecture 1.0 реализована: публичная документация `finetuning/` содержит `README.md`, `TECHNICAL_FOUNDATION.md`, отчёты Experiments 001–004, `teacher_dataset_report.md` и `external_validation_report.md`. LoRA-модель не production-ready; следующий цикл должен устранить hard-negative failures в real-world условиях через teacher-label audit и production smoke set.
+**Вывод:** Fine-tuning Documentation Package завершён. Architecture 1.0 реализована: публичная документация `finetuning/` содержит `README.md`, `TECHNICAL_FOUNDATION.md`, отчёты Experiments 001–004, `teacher_dataset_report.md` и `external_validation_report.md`. LoRA-модель не production-ready; следующий цикл должен устранить hard-negative failures в real-world условиях через teacher-label audit и production smoke set.
 
 ### Production Readiness
 
@@ -83,7 +83,7 @@
    - **Рекомендации:** score calibration, vLLM/TGI inference, quantization, расширение teacher dataset, production smoke set.
 
 4. **🟡 VALIDATION ACCURACY VS PRODUCTION HARD NEGATIVES MISMATCH** (открыто 2026-07-22)
-   - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation (и 0.931 vs 0.925 GPT-4o-mini после vLLM-ускорения), но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 5 из 33 hard-negative-like записей (15 %) размечены reference-teacher как `match` (BA → SA, DA → SA и др.). External validation V5-EXT не покрывает ключевые failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах. Детальные примеры — в [`finetuning/data/evidence/telegram_smoke_test_summary.json`](../finetuning/data/evidence/telegram_smoke_test_summary.json) и [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](../finetuning/data/evidence/teacher_label_mismatch_v4.json).
+   - **Описание:** LoRA показывает decision_accuracy 0.931 на external validation (и 0.931 vs 0.925 GPT-4o-mini после vLLM-ускорения), но в реальном Telegram smoke test на 23 hard-negative/edge анкетах даёт только 35 % корректных ответов (vs 43 % у GPT-4o-mini). Анализ teacher dataset V4 показал, что 5 из 33 hard-negative-like записей (15 %) размечены reference-teacher как `match` (BA → SA, DA → SA и др.). External validation V5-EXT не покрывает основные failure modes Telegram: процессный аналитик, salary mismatch 450 000, extreme sparse junior/стажёр. В результате `decision_accuracy` по всему набору не отражает production-качество на сложных кейсах. Детальные примеры — в [`finetuning/data/evidence/telegram_smoke_test_summary.json`](../finetuning/data/evidence/telegram_smoke_test_summary.json) и [`finetuning/data/evidence/teacher_label_mismatch_v4.json`](../finetuning/data/evidence/teacher_label_mismatch_v4.json).
    - **Влияние:** Метрика 0.931 создаёт ложное ощущение готовности LoRA к production; критические false positives (аналитики на SA, junior, salary mismatch) остаются незамеченными до реального тестирования.
    - **Статус:** Открыто. Решение: ввести stratified metrics и production smoke set.
    - **Ссылки:** [teacher_dataset_report.md](../finetuning/reports/teacher_dataset_report.md), [Experiment_004_Report.md](../finetuning/Experiment_004_Report.md)
@@ -91,7 +91,7 @@
      - Ввести stratified decision accuracy: POSITIVE, OBVIOUSNOMATCH, BORDERLINE, HARD NEGATIVE.
      - Считать FPR по категориям hard negatives (BA/DA/process analyst → SA, junior/стажёр, salary mismatch, одиночный навык).
      - Сформировать production smoke set (~30–50 кейсов), покрывающий HN1–HN8, EC1, EC3, EC4, POSITIVE, OBVIOUSNOMATCH.
-     - Перед следующим циклом дообучения ре-разметить hard negatives с жёстким критерием: без прямых ключевых навыков → `no_match`.
+     - Перед следующим циклом дообучения ре-разметить hard negatives с жёстким критерием: без прямых совпадений требуемых навыков → `no_match`.
      - Добавить в teacher dataset extreme sparse profiles и salary mismatch.
 
 #### Representative example: teacher-label mismatch в production-like hard negative
@@ -301,7 +301,7 @@
 
 ## 🧭 7. Decision
 
-**Решение:** Интегрировать HR Assistant в APL как полноценный кейс с последующим исправлением критических дефектов и созданием документации.
+**Решение:** Интегрировать HR Assistant в APL как самостоятельный кейс с последующим исправлением критических дефектов и созданием документации.
 
 **Обоснование:**
 - Рабочий production-решение

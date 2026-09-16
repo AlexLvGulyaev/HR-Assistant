@@ -31,7 +31,7 @@ hr-assistant/
 | `docs/prompt_evaluation/` | Подсистема A/B-оценки промптов: [`README.md`](prompt_evaluation/README.md) — индекс подсистемы |
 | `docs/screenshots/` | Изображения кейса: [`MEDIA_INDEX.md`](screenshots/MEDIA_INDEX.md) — реестр и визуальный контракт |
 
-Ключевые документы: [`ARCHITECTURE.md`](ARCHITECTURE.md), [`SPEC.md`](SPEC.md), [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md), [`PROJECT_STATE.md`](PROJECT_STATE.md), [`CHANGE_LOG.md`](CHANGE_LOG.md).
+Основные документы: [`ARCHITECTURE.md`](ARCHITECTURE.md), [`SPEC.md`](SPEC.md), [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md), [`PROJECT_STATE.md`](PROJECT_STATE.md), [`CHANGE_LOG.md`](CHANGE_LOG.md).
 
 ### ⚙️ workflows/ — workflow n8n
 

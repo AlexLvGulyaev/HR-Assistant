@@ -26,7 +26,7 @@
 | **Telegram Bot Token (Delivery Worker)** | Таблица `bot_credentials` (БД) | HR Delivery Worker (SQL) | `UPDATE bot_credentials SET bot_token = ...` без перезапуска n8n |
 | **N8N_ENCRYPTION_KEY** | `.env` (вне репозитория) | n8n (шифрование credential store) | Смена только с осознанным решением — расшифровка credentials зависит от ключа |
 
-**Ключевые правила:**
+**Правила:**
 
 - Реальные secrets не коммитируются. В репозитории — только `.env.example` с placeholder-значениями.
 - Bot token в SQL-файле схемы — placeholder `REPLACE_ME_WITH_YOUR_BOT_TOKEN` (исправление KP-002, 2026-06-24); реальный токен задаётся при развёртывании.

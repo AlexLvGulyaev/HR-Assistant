@@ -24,7 +24,7 @@
 
 HR Assistant — мультимодальный AI-ассистент для автоматизации первичной обработки резюме и matching с вакансиями через Telegram-бот.
 
-**Ключевые возможности:**
+**Возможности:**
 - Мультимодальный ввод: текст, голос, PDF/DOCX, изображения
 - AI-извлечение данных: GPT-4o-mini (JSON Schema)
 - Автоматический matching кандидатов с вакансиями
@@ -148,7 +148,7 @@ HR Delivery Worker читает Telegram Bot Token из таблицы `bot_cred
 
 **Документ:** [PROMPT_ENGINEERING_GUIDE.md](PROMPT_ENGINEERING_GUIDE.md)
 
-**Ключевые промпты:**
+**Основные промпты:**
 
 | Промпт | Workflow | Модель | Назначение |
 |--------|----------|--------|-----------|
@@ -334,7 +334,7 @@ SELECT * FROM processing_logs ORDER BY created_at DESC LIMIT 10;
 
 **SQL-запросы для мониторинга:** [SUPPORT_RUNBOOK.md](SUPPORT_RUNBOOK.md#sql-запросы-для-мониторинга)
 
-**Ключевые метрики:**
+**Метрики:**
 
 | Метрика | SQL | Порог |
 |---------|-----|-------|
@@ -349,7 +349,7 @@ SELECT * FROM processing_logs ORDER BY created_at DESC LIMIT 10;
 - [ ] Проверить, что логи n8n доступны
 - [ ] Проверить, что логи PostgreSQL доступны
 - [ ] Выполнить тестовый SQL-запрос к processing_logs
-- [ ] Понять, где смотреть ключевые метрики
+- [ ] Понять, где смотреть метрики
 
 ---
 
@@ -517,7 +517,7 @@ WHERE processing_status = 'processing_started'
   AND created_at < NOW() - INTERVAL '5 minutes';
 ```
 
-### Ключевые файлы
+### Основные файлы
 
 | Файл | Назначение |
 |------|-----------|
