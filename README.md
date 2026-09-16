@@ -197,3 +197,8 @@ hr-assistant/
 ```
 
 Полная карта каталогов и файлов — в [📂 `docs/PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md).
+
+---
+
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 docs/CHANGE_LOG.md](docs/CHANGE_LOG.md#-4-история-изменений-документации)

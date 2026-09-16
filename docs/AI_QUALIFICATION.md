@@ -429,14 +429,11 @@ GROUP BY decision;
 - **База данных:** `database/schema_hr_assistant.sql` — таблицы candidates, matches
 - **Архитектура:** `docs/ARCHITECTURE.md` — общая архитектура системы
 
----
 
-## 📝 11. История изменений
-
-- **2026-06-24** — документ переписан по реальным промптам из workflow (`workflows/HR Processing Worker.json`): модель исправлена на GPT-4o-mini, добавлены система оценки matching и схема валидации JSON, выдуманные примеры заменены фактическими.
 
 ---
 
 **Статус:** Production-ready
 **Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](CHANGE_LOG.md#-4-история-изменений-документации)
 **Источник:** `workflows/HR Processing Worker.json`

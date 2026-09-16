@@ -529,4 +529,4 @@ WHERE processing_status = 'processing_started'
 ---
 
 **Статус:** Production-ready
-**Последнее обновление:** 2026-09-16
+**Последнее обновление:** 2026-09-16**История изменений:** [📝 CHANGE_LOG.md](CHANGE_LOG.md#-4-история-изменений-документации)

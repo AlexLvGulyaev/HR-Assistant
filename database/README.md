@@ -554,3 +554,9 @@ psql -U hr_user hr_assistant < backup_20260623.sql
 - [SPEC.md](../docs/SPEC.md) — функциональная спецификация
 - [workflows/README.md](../workflows/README.md) — описание workflow
 - [known-issues.md](../docs/known-issues.md) — известные проблемы
+
+---
+
+**Статус:** Схема БД и описание таблиц
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../docs/CHANGE_LOG.md#-4-история-изменений-документации)

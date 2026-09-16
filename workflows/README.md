@@ -310,3 +310,9 @@ WHERE bot_code = 'hr_assistant';
 - [SPEC.md](../docs/SPEC.md) — функциональная спецификация
 - [database/README.md](../database/README.md) — схема БД
 - [../README.md](../README.md) — описание кейса
+
+---
+
+**Статус:** Каталог workflow-файлов системы
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../docs/CHANGE_LOG.md#-4-история-изменений-документации)

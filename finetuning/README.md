@@ -220,3 +220,9 @@ finetuning/
 
 - [README.md](../README.md) — корневая точка входа в HR Assistant.
 - [docs/prompt_evaluation/](../docs/prompt_evaluation/) — уровень 1 ML-контура: Prompt Evaluation.
+
+---
+
+**Статус:** Каталог finetuning-компонентов экспериментального ML-контура
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../docs/CHANGE_LOG.md#-4-история-изменений-документации)

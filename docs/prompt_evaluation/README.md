@@ -117,3 +117,9 @@ Prompt Engineering → Prompt A/B Evaluation → Reference Dataset
 ---
 
 *Документация подсистемы Prompt Evaluation*
+
+---
+
+**Статус:** Документация подсистемы Prompt Evaluation
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](../CHANGE_LOG.md#-4-история-изменений-документации)

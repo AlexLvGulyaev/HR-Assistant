@@ -816,4 +816,4 @@ docker compose -f docker-compose.db.yml logs postgres
 ---
 
 **Статус:** Source of Truth развёртывания. Clean-room Deployment Validation не проводилась — reproducibility debt (см. PROJECT_STATE.md).
-**Последнее обновление:** 2026-09-16
+**Последнее обновление:** 2026-09-16**История изменений:** [📝 CHANGE_LOG.md](CHANGE_LOG.md#-4-история-изменений-документации)
