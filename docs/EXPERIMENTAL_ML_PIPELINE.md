@@ -1,10 +1,5 @@
 # Экспериментальный ML-контур HR Assistant
 
-**Created:** 2026-06-28
-**Updated:** 2026-09-15
-**Status:** Experimental — Experiment 004 завершён (LoRA validated as on-premise / edge candidate)
-**Author:** AI Automation Portfolio Lab
-
 ---
 
 ## 🎯 1. Обзор
@@ -325,4 +320,5 @@ Teacher dataset не содержит достаточное количеств�
 ---
 
 **Статус:** Experimental
-**Последнее обновление:** 2026-09-16**История изменений:** [📝 CHANGE_LOG.md](CHANGE_LOG.md#-4-история-изменений-документации)
+**Последнее обновление:** 2026-09-16
+**История изменений:** [📝 CHANGE_LOG.md](CHANGE_LOG.md#-4-история-изменений-документации)
